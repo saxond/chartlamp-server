@@ -1,0 +1,323 @@
+{
+	"swagger": "2.0",
+	"info": {
+		"version": "1.0.0",
+		"title": "Chartlamp API",
+		"description": "This is an API documentation for chartlamp using Swagger.",
+		"termsOfService": "http://example.com/terms/",
+		"contact": {
+			"name": "API Support",
+			"url": "http://www.example.com/support",
+			"email": "support@example.com"
+		},
+		"license": {
+			"name": "Apache 2.0",
+			"url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+		}
+	},
+	"host": "localhost:5000",
+	"basePath": "/api/v1",
+	"schemes": [
+		"http"
+	],
+	"securityDefinitions": {
+		"api_key": {
+			"type": "apiKey",
+			"name": "api-key",
+			"in": "header"
+		}
+	},
+	"security": [
+		{
+			"api_key": []
+		}
+	],
+	"paths": {
+		"/openai/list-fine-tuning-jobs": {
+			"get": {
+				"tags": [
+					"openai"
+				],
+				"summary": "List fine-tuning jobs",
+				"description": "Returns a list of fine-tuning jobs.",
+				"security": [
+					{
+						"api_key": []
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "A list of fine-tuning jobs.",
+						"schema": {
+							"type": "object",
+							"properties": {
+								"response": {
+									"type": "array",
+									"items": {
+										"type": "object",
+										"properties": {
+											"object": {
+												"type": "string"
+											},
+											"id": {
+												"type": "string"
+											},
+											"model": {
+												"type": "string"
+											},
+											"created_at": {
+												"type": "integer"
+											},
+											"finished_at": {
+												"type": "integer"
+											},
+											"fine_tuned_model": {
+												"type": "string"
+											},
+											"organization_id": {
+												"type": "string"
+											},
+											"result_files": {
+												"type": "array",
+												"items": {
+													"type": "string"
+												}
+											},
+											"status": {
+												"type": "string"
+											},
+											"validation_file": {
+												"type": "string",
+												"nullable": true
+											},
+											"training_file": {
+												"type": "string"
+											},
+											"hyperparameters": {
+												"type": "object",
+												"properties": {
+													"n_epochs": {
+														"type": "integer"
+													},
+													"batch_size": {
+														"type": "integer"
+													},
+													"learning_rate_multiplier": {
+														"type": "integer"
+													}
+												}
+											},
+											"trained_tokens": {
+												"type": "integer"
+											},
+											"error": {
+												"type": "object"
+											},
+											"user_provided_suffix": {
+												"type": "string",
+												"nullable": true
+											},
+											"seed": {
+												"type": "integer"
+											},
+											"estimated_finish": {
+												"type": "string",
+												"nullable": true
+											},
+											"integrations": {
+												"type": "array",
+												"items": {
+													"type": "string"
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Unauthorized - API key missing or invalid"
+					}
+				}
+			}
+		},
+		"/openai/complete-chat": {
+			"post": {
+				"tags": [
+					"openai"
+				],
+				"summary": "Complete chat",
+				"description": "Completes a chat based on the provided context and prompt.",
+				"security": [
+					{
+						"api_key": []
+					}
+				],
+				"parameters": [
+					{
+						"in": "body",
+						"name": "payload",
+						"description": "Chat completion payload",
+						"required": true,
+						"schema": {
+							"type": "object",
+							"properties": {
+								"context": {
+									"type": "string"
+								},
+								"prompt": {
+									"type": "string"
+								}
+							}
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Chat completion response",
+						"schema": {
+							"type": "object",
+							"properties": {
+								"response": {
+									"type": "string"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Unauthorized - API key missing or invalid"
+					}
+				}
+			}
+		},
+		"/openai/cancel-fine-tuning-job/{jobId}": {
+			"post": {
+				"tags": [
+					"openai"
+				],
+				"summary": "Cancel fine-tuning job",
+				"description": "Cancels a fine-tuning job based on the provided job ID.",
+				"security": [
+					{
+						"api_key": []
+					}
+				],
+				"parameters": [
+					{
+						"name": "jobId",
+						"in": "path",
+						"required": true,
+						"type": "string",
+						"description": "ID of the fine-tuning job to cancel"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Fine-tuning job cancellation response",
+						"schema": {
+							"type": "object",
+							"properties": {
+								"response": {
+									"type": "string"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Unauthorized - API key missing or invalid"
+					}
+				}
+			}
+		},
+		"/openai/list-fine-tuning-events/{jobId}": {
+			"get": {
+				"tags": [
+					"openai"
+				],
+				"summary": "List fine-tuning events",
+				"description": "Returns a list of events for a specific fine-tuning job.",
+				"security": [
+					{
+						"api_key": []
+					}
+				],
+				"parameters": [
+					{
+						"name": "jobId",
+						"in": "path",
+						"required": true,
+						"type": "string",
+						"description": "ID of the fine-tuning job to list events for"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "A list of fine-tuning events.",
+						"schema": {
+							"type": "object",
+							"properties": {
+								"response": {
+									"type": "array",
+									"items": {
+										"type": "object",
+										"properties": {
+											"event": {
+												"type": "string"
+											},
+											"timestamp": {
+												"type": "integer"
+											}
+										}
+									}
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Unauthorized - API key missing or invalid"
+					}
+				}
+			}
+		},
+		"/openai/delete-fine-tuned-model/{model}": {
+			"delete": {
+				"tags": [
+					"openai"
+				],
+				"summary": "Delete fine-tuned model",
+				"description": "Deletes a fine-tuned model based on the provided model name.",
+				"security": [
+					{
+						"api_key": []
+					}
+				],
+				"parameters": [
+					{
+						"name": "model",
+						"in": "path",
+						"required": true,
+						"type": "string",
+						"description": "Name of the fine-tuned model to delete"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Fine-tuned model deletion response",
+						"schema": {
+							"type": "object",
+							"properties": {
+								"response": {
+									"type": "string"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Unauthorized - API key missing or invalid"
+					}
+				}
+			}
+		}
+	}
+}
