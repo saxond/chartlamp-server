@@ -1,7 +1,7 @@
-# Basis of Estimate
+# Chartlamp Server
 
 ## Overview
-Basis of Estimate is a Node.js project written in TypeScript. This project provides functionalities related to construction assumptions and estimates.
+ChartLamp Server is a Node.js project written in TypeScript.
 
 ## Environment
 - **Node.js**
@@ -17,4 +17,9 @@ Basis of Estimate is a Node.js project written in TypeScript. This project provi
 1. Clone the repository:
    ```sh
    git clone <repository-url>
-   cd basis-of-estimate
+   cd <project-dir>
+
+2. Install dependencies and run the project:
+   ```sh
+   npm install
+   npm run dev
