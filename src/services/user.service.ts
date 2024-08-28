@@ -118,7 +118,6 @@ class UserService {
         await this.notificationService.sendPhoneCall(twoFactorAuth.phoneNumber!, message);
         break;
       case 'app':
-        // No need to send any notification for authenticator apps
         break;
       default:
         throw new Error('Invalid 2FA method');
@@ -160,7 +159,6 @@ class UserService {
     }
   }
 
-  //resendTwoFactorToken
   async resendTwoFactorToken(user: User) {
     const twoFactorAuth = await TwoFactorAuthModel.findById(user.twoFactorAuth);
     if (!twoFactorAuth) throw new Error('TwoFactorAuth not found');
