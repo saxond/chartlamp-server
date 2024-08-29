@@ -53,9 +53,9 @@ export class UserController {
     
             // Set cookie with session ID
             res.cookie('sessionId', req.sessionID, {
-                // httpOnly: true,
-                // secure: process.env.NODE_ENV === 'production', // Ensure this matches your environment
-                // sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax', // Adjust based on your needs
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production', // Ensure this matches your environment
+                sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Adjust based on your needs
                 maxAge: 30 * 60 * 1000 
             });
     
