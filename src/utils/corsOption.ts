@@ -1,6 +1,5 @@
-
-// CORS configuration
 const whitelist = process.env.CORS_WHITELIST?.split(',') || [];
+
 const corsOptions = {
   origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
     if (!origin || whitelist.indexOf(origin) !== -1) {
