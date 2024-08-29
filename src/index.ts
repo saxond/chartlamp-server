@@ -27,6 +27,8 @@ app.use(helmet());
 app.use(compression());
 app.use(morgan('combined'));
 
+app.set('trust proxy', 1); // Trust first proxy
+
 app.use(session({
     secret: SESSION_SECRET,
     resave: false,
