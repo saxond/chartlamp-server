@@ -58,7 +58,12 @@ class UserService {
       });
 
       await this.sendTwoFactorToken(user, token);
-      return { user, twoFactorRequired: true };
+      
+      return {  user:{_id: user._id,
+        name: user.name,
+        email: user.email,
+        organization: user.organization,
+        twoFactorAuth: user.twoFactorAuth}, twoFactorRequired: true };
     }
 
     return { user, twoFactorRequired: false };
@@ -87,6 +92,10 @@ class UserService {
     }
 
     return secret.base32;
+  }
+
+  async me(id: string) {
+    return await UserModel.findById(id).populate('twoFactorAuth').populate('organization').lean();
   }
 
   private async generateAppTwoFactorResponse(secret: speakeasy.GeneratedSecret, email: string) {

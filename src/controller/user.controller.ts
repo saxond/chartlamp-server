@@ -44,23 +44,25 @@ export class UserController {
         try {
             const { email, password } = req.body;
             const { user, twoFactorRequired } = await this.userService.login(email, password);
+            
+            // Set session user
             (req.session as CustomSession).user = { id: user._id, email: user.email };
+            
+            // Set session expiration to 30 minutes
+            req.session.cookie.maxAge = 30 * 60 * 1000; // 30 minutes in milliseconds
+    
+            // Set cookie with session ID
             res.cookie('sessionId', req.sessionID, {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'strict'
+                // httpOnly: true,
+                // secure: process.env.NODE_ENV === 'production', // Ensure this matches your environment
+                // sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax', // Adjust based on your needs
+                maxAge: 30 * 60 * 1000 // 30 minutes in milliseconds
             });
-
+    
             res.status(200).json({
                 message: 'Login successful',
-                user: {
-                    id: user._id,
-                    name: user.name,
-                    email: user.email,
-                    role: user.role,
-                    organization: user.organization,
-                    twoFactorRequired
-                }
+                user,
+                twoFactorRequired
             });
         } catch (error) {
             res.status(401).json({ error: (error as Error).message });
@@ -74,7 +76,20 @@ export class UserController {
                 res.status(401).json({ error: 'Unauthorized' });
                 return;
             }
-            res.status(200).json({ user });
+            const authUser = await this.userService.me(user.id);
+            
+            if (authUser) {
+                res.status(200).json({ user:{
+                    id: authUser._id,
+                    name: authUser.name,
+                    email: authUser.email,
+                    organization: authUser.organization,
+                    twoFactorAuth: authUser.twoFactorAuth
+                } });
+            }else{
+                res.status(404).json({ error: 'User not found' });
+            }
+         
         } catch (error) {
             res.status(500).json({ error: (error as Error).message });
         }
@@ -163,12 +178,12 @@ export class UserController {
 
             const isValid = await this.userService.verifyTwoFactorToken(appUser, token);
             if (isValid) {
-                res.status(200).json({ message: '2FA token verified' });
+                res.status(200).json({ message: '2FA token verified', status: isValid });
             } else {
-                res.status(401).json({ error: 'Invalid 2FA token' });
+                res.status(401).json({ message: 'Invalid 2FA token', status: isValid });
             }
         } catch (error) {
-            res.status(500).json({ error: (error as Error).message });
+            res.status(500).json({ error: (error as Error).message, status: false });
         }
     }
 }
