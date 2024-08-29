@@ -31,7 +31,12 @@ app.use(session({
     secret: SESSION_SECRET,
     resave: false,
     saveUninitialized: true,
-    cookie: { secure: process.env.NODE_ENV === 'production' }
+    cookie: {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production', // Ensure this matches your environment
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Adjust based on your needs
+      maxAge: 30 * 60 * 1000 
+    }
 }));
 
 app.get("/", (_req: Request, res: Response): Response => {
