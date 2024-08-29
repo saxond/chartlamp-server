@@ -31,7 +31,7 @@ app.use(session({
     secret: SESSION_SECRET,
     resave: false,
     saveUninitialized: true,
-    cookie: { secure: process.env.NODE_ENV === 'production' } // Use secure cookies in production
+    cookie: { secure: process.env.NODE_ENV === 'production' }
 }));
 
 app.get("/", (_req: Request, res: Response): Response => {
