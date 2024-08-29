@@ -49,14 +49,14 @@ export class UserController {
             (req.session as CustomSession).user = { id: user._id, email: user.email };
             
             // Set session expiration to 30 minutes
-            req.session.cookie.maxAge = 30 * 60 * 1000; // 30 minutes in milliseconds
+            req.session.cookie.maxAge = 30 * 60 * 1000; 
     
             // Set cookie with session ID
             res.cookie('sessionId', req.sessionID, {
                 // httpOnly: true,
                 // secure: process.env.NODE_ENV === 'production', // Ensure this matches your environment
                 // sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax', // Adjust based on your needs
-                maxAge: 30 * 60 * 1000 // 30 minutes in milliseconds
+                maxAge: 30 * 60 * 1000 
             });
     
             res.status(200).json({
