@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { Session } from 'express-session';
 import { User } from '../models/user.model';
 import UserService from '../services/user.service';
+import { formatResponse } from '../utils/helpers';
 
 interface CustomSession extends Session {
     user: {
@@ -24,7 +25,7 @@ export class UserController {
     private async handleUserNotFound(res: Response, userId: string): Promise<User | null> {
         const appUser = await this.userService.getUserById(userId);
         if (!appUser) {
-            res.status(404).json({ error: 'User not found' });
+            res.status(404).json(formatResponse(false, 'User not found'));
             return null;
         }
         return appUser;
@@ -34,9 +35,9 @@ export class UserController {
         try {
             const { name, organization, email, password } = req.body;
             const user = await this.userService.register({ name, email, organization, password });
-            res.status(201).json({ message: 'User registered successfully', user });
+            res.status(201).json(formatResponse(true, 'User registered successfully', { user }));
         } catch (error) {
-            res.status(500).json({ error: (error as Error).message });
+            res.status(400).json(formatResponse(false, (error as Error).message));
         }
     }
 
@@ -59,13 +60,9 @@ export class UserController {
                 maxAge: 30 * 60 * 1000 
             });
     
-            res.status(200).json({
-                message: 'Login successful',
-                user,
-                twoFactorRequired
-            });
+            res.status(200).json(formatResponse(true, 'Login successful', { user, twoFactorRequired }));
         } catch (error) {
-            res.status(401).json({ error: (error as Error).message });
+            res.status(401).json(formatResponse(false, (error as Error).message));
         }
     }
 
@@ -73,25 +70,25 @@ export class UserController {
         try {
             const user = this.getSessionUser(req);
             if (!user) {
-                res.status(401).json({ error: 'Unauthorized' });
+                res.status(401).json(formatResponse(false, 'Unauthorized'));
                 return;
             }
             const authUser = await this.userService.me(user.id);
             
             if (authUser) {
-                res.status(200).json({ user:{
+                res.status(200).json(formatResponse(true, 'User retrieved successfully', { user: {
                     id: authUser._id,
                     name: authUser.name,
                     email: authUser.email,
                     organization: authUser.organization,
                     twoFactorAuth: authUser.twoFactorAuth
-                } });
-            }else{
-                res.status(404).json({ error: 'User not found' });
+                }}));
+            } else {
+                res.status(404).json(formatResponse(false, 'User not found'));
             }
          
         } catch (error) {
-            res.status(500).json({ error: (error as Error).message });
+            res.status(400).json(formatResponse(false, (error as Error).message));
         }
     }
 
@@ -99,17 +96,17 @@ export class UserController {
         try {
             const user = this.getSessionUser(req);
             if (!user) {
-                res.status(401).json({ error: 'Unauthorized' });
+                res.status(401).json(formatResponse(false, 'Unauthorized'));
                 return;
             }
-            const { method,  } = req.body;
+            const { method } = req.body;
             const appUser = await this.handleUserNotFound(res, user.id);
             if (!appUser) return;
 
             const result = await this.userService.generateTwoFactorSecret(appUser, method);
-            res.status(200).json({ message: '2FA enabled', result });
+            res.status(200).json(formatResponse(true, '2FA enabled', { result }));
         } catch (error) {
-            res.status(500).json({ error: (error as Error).message });
+            res.status(400).json(formatResponse(false, (error as Error).message));
         }
     }
 
@@ -117,16 +114,16 @@ export class UserController {
         try {
             const user = this.getSessionUser(req);
             if (!user) {
-                res.status(401).json({ error: 'Unauthorized' });
+                res.status(401).json(formatResponse(false, 'Unauthorized'));
                 return;
             }
             const appUser = await this.handleUserNotFound(res, user.id);
             if (!appUser) return;
 
             await this.userService.disableTwoFactorAuth(appUser);
-            res.status(200).json({ message: '2FA disabled' });
+            res.status(200).json(formatResponse(true, '2FA disabled'));
         } catch (error) {
-            res.status(500).json({ error: (error as Error).message });
+            res.status(400).json(formatResponse(false, (error as Error).message));
         }
     }
 
@@ -134,7 +131,7 @@ export class UserController {
         try {
             const user = this.getSessionUser(req);
             if (!user) {
-                res.status(401).json({ error: 'Unauthorized' });
+                res.status(401).json(formatResponse(false, 'Unauthorized'));
                 return;
             }
             const { method } = req.body;
@@ -142,26 +139,26 @@ export class UserController {
             if (!appUser) return;
 
             const result = await this.userService.regenerateTwoFactorSecret(appUser, method);
-            res.status(200).json({ message: '2FA secret regenerated', result });
+            res.status(200).json(formatResponse(true, '2FA secret regenerated', { result }));
         } catch (error) {
-            res.status(500).json({ error: (error as Error).message });
+            res.status(400).json(formatResponse(false, (error as Error).message));
         }
     }
 
-     public async resendTwoFactorToken(req: Request, res: Response): Promise<void> {
+    public async resendTwoFactorToken(req: Request, res: Response): Promise<void> {
         try {
             const user = this.getSessionUser(req);
             if (!user) {
-                res.status(401).json({ error: 'Unauthorized' });
+                res.status(401).json(formatResponse(false, 'Unauthorized'));
                 return;
             }
             const appUser = await this.handleUserNotFound(res, user.id);
             if (!appUser) return;
     
             const result = await this.userService.resendTwoFactorToken(appUser);
-            res.status(200).json({ message: '2FA token resent', result });
+            res.status(200).json(formatResponse(true, '2FA token resent', { result }));
         } catch (error) {
-            res.status(500).json({ error: (error as Error).message });
+            res.status(400).json(formatResponse(false, (error as Error).message));
         }
     }
 
@@ -169,7 +166,7 @@ export class UserController {
         try {
             const user = this.getSessionUser(req);
             if (!user) {
-                res.status(401).json({ error: 'Unauthorized' });
+                res.status(401).json(formatResponse(false, 'Unauthorized'));
                 return;
             }
             const { token } = req.body;
@@ -178,12 +175,12 @@ export class UserController {
 
             const isValid = await this.userService.verifyTwoFactorToken(appUser, token);
             if (isValid) {
-                res.status(200).json({ message: '2FA token verified', status: isValid });
+                res.status(200).json(formatResponse(true, '2FA token verified'));
             } else {
-                res.status(401).json({ message: 'Invalid 2FA token', status: isValid });
+                res.status(401).json(formatResponse(false, 'Invalid 2FA token'));
             }
         } catch (error) {
-            res.status(500).json({ error: (error as Error).message, status: false });
+            res.status(400).json(formatResponse(false, (error as Error).message));
         }
     }
 }

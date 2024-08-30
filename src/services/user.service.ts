@@ -34,6 +34,9 @@ class UserService {
     });
 
     await user.save();
+    //subscribe user to 2fac
+    await this.generateTwoFactorSecret(user, 'email')
+
     return user;
   }
 
