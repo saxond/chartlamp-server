@@ -66,6 +66,17 @@ export class UserController {
         }
     }
 
+    public async logout(req: Request, res: Response): Promise<void> {
+        req.session.destroy((err) => {
+            if (err) {
+                res.status(400).json(formatResponse(false, 'Failed to logout'));
+                return;
+            }
+            res.clearCookie('sessionId');
+            res.status(200).json(formatResponse(true, 'Logout successful'));
+        });
+    }
+
     public async me(req: Request, res: Response): Promise<void> {
         try {
             const user = this.getSessionUser(req);
@@ -76,13 +87,7 @@ export class UserController {
             const authUser = await this.userService.me(user.id);
             
             if (authUser) {
-                res.status(200).json(formatResponse(true, 'User retrieved successfully', { user: {
-                    id: authUser._id,
-                    name: authUser.name,
-                    email: authUser.email,
-                    organization: authUser.organization,
-                    twoFactorAuth: authUser.twoFactorAuth
-                }}));
+                res.status(200).json(formatResponse(true, 'User retrieved successfully', { user: authUser}));
             } else {
                 res.status(404).json(formatResponse(false, 'User not found'));
             }
