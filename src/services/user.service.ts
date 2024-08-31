@@ -3,7 +3,7 @@ import qrcode from 'qrcode';
 import speakeasy from 'speakeasy';
 import { UserRegistrationInput } from '../interfaces/user';
 import { OrganizationModel } from '../models/organization.model';
-import { TwoFactorAuthModel } from '../models/twoFactorAuth.model';
+import { TwoFactorAuth, TwoFactorAuthModel } from '../models/twoFactorAuth.model';
 import { User, UserModel } from '../models/user.model';
 import notificationService from './notification.service'; // Import the instance directly
 
@@ -52,7 +52,7 @@ class UserService {
     }
 
     if (user.twoFactorAuth) {
-      const user2Fa = await TwoFactorAuthModel.findById(user.twoFactorAuth);
+      const user2Fa = await TwoFactorAuthModel.findByIdAndUpdate(user.twoFactorAuth._id, { isEnabled: false });
       if (!user2Fa) throw new Error('TwoFactorAuth not found');
 
       const token = speakeasy.totp({
@@ -66,7 +66,10 @@ class UserService {
         name: user.name,
         email: user.email,
         organization: user.organization,
-        twoFactorAuth: user.twoFactorAuth}, twoFactorRequired: true };
+        twoFactorAuth: typeof user.twoFactorAuth === "object"? {
+          isEnabled: (user.twoFactorAuth as TwoFactorAuth).isEnabled,
+          method: (user.twoFactorAuth as TwoFactorAuth).method,
+        } : null}, twoFactorRequired: true };
     }
 
     return { user, twoFactorRequired: false };
@@ -88,6 +91,7 @@ class UserService {
     });
 
     await twoFactorAuth.save();
+    
     await UserModel.findByIdAndUpdate(user._id, { twoFactorAuth: twoFactorAuth._id });
 
     if (method === 'app') {
@@ -98,7 +102,27 @@ class UserService {
   }
 
   async me(id: string) {
-    return await UserModel.findById(id).populate('twoFactorAuth').populate('organization').lean();
+    const user = await UserModel.findById(id)
+      .populate('twoFactorAuth')
+      .populate('organization')
+      .lean();
+  
+    if (!user) {
+      return null;
+    }
+  
+    const { _id, name, email, organization, twoFactorAuth } = user;
+  
+    return  {
+        _id,
+        name,
+        email,
+        organization,
+        twoFactorAuth: twoFactorAuth ? {
+          isEnabled: (twoFactorAuth as TwoFactorAuth).isEnabled,
+          method: (twoFactorAuth as TwoFactorAuth).method,
+        } : null,
+      };
   }
 
   private async generateAppTwoFactorResponse(secret: speakeasy.GeneratedSecret, email: string) {
@@ -146,6 +170,11 @@ class UserService {
       token,
       window: 1, // Allow a window of 1 time step before and after
     });
+
+    //update user 2fa status
+    if (verified) {
+      await TwoFactorAuthModel.findByIdAndUpdate(user.twoFactorAuth, { isEnabled: true });
+    }
 
     if (!verified) {
       console.error('Invalid 2FA token', { userId: user._id, token });
