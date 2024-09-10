@@ -52,7 +52,7 @@ class UserService {
     }
 
     if (user.twoFactorAuth) {
-      const user2Fa = await TwoFactorAuthModel.findByIdAndUpdate(user.twoFactorAuth._id, { isEnabled: false });
+      const user2Fa = await TwoFactorAuthModel.findByIdAndUpdate((user.twoFactorAuth as TwoFactorAuth)._id, { isEnabled: false });
       if (!user2Fa) throw new Error('TwoFactorAuth not found');
 
       const token = speakeasy.totp({

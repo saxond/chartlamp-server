@@ -4,7 +4,7 @@ import { User } from '../models/user.model';
 import UserService from '../services/user.service';
 import { formatResponse } from '../utils/helpers';
 
-interface CustomSession extends Session {
+export interface CustomSession extends Session {
     user: {
         id: string;
         email: string;
