@@ -20,7 +20,7 @@ export class User {
   @prop({ required: true })
   public password!: string;
 
-  @prop({ required: true, enum: ["admin", "user", "manager"], default: "admin" })
+  @prop({ required: true, enum: ["admin", "user", "guest"], default: "admin" })
   public role!: string;
 
   @prop({ ref: () => Organization, required: false })
