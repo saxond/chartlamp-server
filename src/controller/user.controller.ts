@@ -31,6 +31,17 @@ export class UserController {
         return appUser;
     }
 
+    //forgot password
+    public async forgotPassword(req: Request, res: Response): Promise<void> {
+        try {
+            const { email } = req.body;
+            await this.userService.sendResetEmail(email);
+            res.status(200).json(formatResponse(true, 'Password reset email sent'));
+        } catch (error) {
+            res.status(400).json(formatResponse(false, (error as Error).message));
+        }
+    }
+
     public async register(req: Request, res: Response): Promise<void> {
         try {
             const { name, organization, email, password } = req.body;

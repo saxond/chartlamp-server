@@ -8,6 +8,7 @@ const userController = new UserController();
 // Define routes for user registration and login
 router.post('/register', (req, res) => userController.register(req, res));
 router.post('/login', (req, res) => userController.login(req, res));
+router.post('/forgot-password', (req, res) => userController.forgotPassword(req, res));
 router.post('/logout', isAuthenticated, (req, res) => userController.logout(req, res));
 router.get('/me', isAuthenticated, (req, res) => userController.me(req, res));
 

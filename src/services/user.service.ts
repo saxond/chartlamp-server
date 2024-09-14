@@ -61,21 +61,71 @@ class UserService {
       });
 
       await this.sendTwoFactorToken(user, token);
-      
-      return {  user:{_id: user._id,
-        name: user.name,
-        email: user.email,
-        organization: user.organization,
-        twoFactorAuth: typeof user.twoFactorAuth === "object"? {
-          isEnabled: (user.twoFactorAuth as TwoFactorAuth).isEnabled,
-          method: (user.twoFactorAuth as TwoFactorAuth).method,
-        } : null}, twoFactorRequired: true };
+
+      return {
+        user: {
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+          organization: user.organization,
+          twoFactorAuth: typeof user.twoFactorAuth === "object" ? {
+            isEnabled: (user.twoFactorAuth as TwoFactorAuth).isEnabled,
+            method: (user.twoFactorAuth as TwoFactorAuth).method,
+          } : null
+        }, twoFactorRequired: true
+      };
     }
 
     return { user, twoFactorRequired: false };
   }
 
+  async sendResetEmail(email: string) {
+    const user = await UserModel.findOne({ email });
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    user.generatePasswordResetToken();
+
+    await user.save();
+
+
+    const mailOptions = {
+      to: user.email,
+      subject: 'Password Reset',
+      text: `You are receiving this because you (or someone else) have requested the reset of the password for your account.\n\n
+             Please click on the following link, or paste this into your browser to complete the process:\n\n
+             http://${process.env.HOST}/reset/${user.resetPasswordToken}\n\n
+             If you did not request this, please ignore this email and your password will remain unchanged.\n`,
+    };
+
+    await this.notificationService.sendEmail(user.email, mailOptions.subject, mailOptions.text);
+
+    return user.resetPasswordToken;
+  }
+
+  static async resetPassword(token: string, newPassword: string) {
+
+    const user = await UserModel.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpires: { $gt: new Date() },
+    });
+
+    if (!user) {
+      throw new Error('Password reset token is invalid or has expired');
+    }
+
+    user.password = newPassword;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    
+    await user.save();
+  }
+
+
   async generateTwoFactorSecret(user: User, method: string, phoneNumber?: string) {
+
     this.validateTwoFactorMethod(method);
 
     if (method === 'phone' && !phoneNumber) {
@@ -91,7 +141,7 @@ class UserService {
     });
 
     await twoFactorAuth.save();
-    
+
     await UserModel.findByIdAndUpdate(user._id, { twoFactorAuth: twoFactorAuth._id });
 
     if (method === 'app') {
@@ -106,23 +156,23 @@ class UserService {
       .populate('twoFactorAuth')
       .populate('organization')
       .lean();
-  
+
     if (!user) {
       return null;
     }
-  
+
     const { _id, name, email, organization, twoFactorAuth } = user;
-  
-    return  {
-        _id,
-        name,
-        email,
-        organization,
-        twoFactorAuth: twoFactorAuth ? {
-          isEnabled: (twoFactorAuth as TwoFactorAuth).isEnabled,
-          method: (twoFactorAuth as TwoFactorAuth).method,
-        } : null,
-      };
+
+    return {
+      _id,
+      name,
+      email,
+      organization,
+      twoFactorAuth: twoFactorAuth ? {
+        isEnabled: (twoFactorAuth as TwoFactorAuth).isEnabled,
+        method: (twoFactorAuth as TwoFactorAuth).method,
+      } : null,
+    };
   }
 
   private async generateAppTwoFactorResponse(secret: speakeasy.GeneratedSecret, email: string) {
@@ -203,7 +253,7 @@ class UserService {
   async resendTwoFactorToken(user: User) {
     const twoFactorAuth = await TwoFactorAuthModel.findById(user.twoFactorAuth);
     if (!twoFactorAuth) throw new Error('TwoFactorAuth not found');
-    
+
     const token = speakeasy.totp({
       secret: twoFactorAuth.secret!,
       encoding: 'base32',

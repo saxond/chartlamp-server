@@ -1,3 +1,4 @@
+// import axios from 'axios';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
@@ -6,6 +7,7 @@ import express, { Request, Response } from "express";
 import session from 'express-session';
 import helmet from 'helmet';
 import morgan from 'morgan';
+// import cron from 'node-cron';
 import swaggerUi from 'swagger-ui-express';
 import errorHandlerMiddleware from './middleware/errors/errorHandler';
 import notFoundMiddleware from './middleware/errors/notFound';
@@ -49,6 +51,21 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 app.use('/api/v1', api);
 app.use(notFoundMiddleware);
 app.use(errorHandlerMiddleware);
+
+
+// console.log('Scheduling cron job...');
+// cron.schedule('* * * * *', async() => {
+//   console.log('Running a task every minute');
+//   const result = await axios.get('http://localhost:5000/api/v1/dc/disease-classifications?page=1&limit=50',{
+//     headers: {
+//       'api-key': `${process.env.API_KEY}`
+//     }
+//   });
+
+//   console.log(result);
+//   // Add your task logic here
+// });
+// console.log('Cron job scheduled.');
 
 const start = async (): Promise<void> => {
   try {
