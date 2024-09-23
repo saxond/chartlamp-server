@@ -1,5 +1,6 @@
 import express from 'express';
 import { verifyApiKey } from '../middleware/verifyApiKey';
+import caseRoutes from './case';
 import diseaseClassificationRoutes from './diseaseClassification';
 import invitationRoutes from './invitation';
 import openAiRoutes from './openai';
@@ -16,6 +17,8 @@ router.use('/openai', openAiRoutes);
 router.use('/invitations', invitationRoutes);
 
 router.use('/dc', diseaseClassificationRoutes);
+
+router.use('/case', caseRoutes);
 
 export default router;
 
