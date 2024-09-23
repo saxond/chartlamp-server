@@ -1,0 +1,187 @@
+{
+    "sections": [
+        {
+            "code_range": "A00-B99",
+            "section": "Certain infectious and parasitic diseases",
+            "affected_body_part": [
+                "intestines",
+                "immune system",
+                "lymph nodes",
+                "bones",
+                "kidney",
+                "brain",
+                "spine",
+                "skin"
+            ]
+        },
+        {
+            "code_range": "C00-D49",
+            "section": "Neoplasms",
+            "affected_body_part": [
+                "Any tissue",
+                "Any organ"
+            ]
+        },
+        {
+            "code_range": "D50-D89",
+            "section": "Diseases of the blood and blood-forming organs and certain disorders involving the immune mechanism",
+            "affected_body_part": [
+                "Blood",
+                "Bone marrow",
+                "Immune system"
+            ]
+        },
+        {
+            "code_range": "E00-E89",
+            "section": "Endocrine, nutritional and metabolic diseases",
+            "affected_body_part": [
+                "Endocrine glands",
+                "Thyroid",
+                "Pancreas"
+            ]
+        },
+        {
+            "code_range": "F01-F99",
+            "section": "Mental, Behavioral and Neurodevelopmental disorders",
+            "affected_body_part": [
+                "Brain",
+                "Nervous system"
+            ]
+        },
+        {
+            "code_range": "G00-G99",
+            "section": "Diseases of the nervous system",
+            "affected_body_part": [
+                "Brain",
+                "Spinal cord",
+                "Peripheral nerves"
+            ]
+        },
+        {
+            "code_range": "H00-H59",
+            "section": "Diseases of the eye and adnexa",
+            "affected_body_part": [
+                "Eyes"
+            ]
+        },
+        {
+            "code_range": "H60-H95",
+            "section": "Diseases of the ear and mastoid process",
+            "affected_body_part": [
+                "Ears"
+            ]
+        },
+        {
+            "code_range": "I00-I99",
+            "section": "Diseases of the circulatory system",
+            "affected_body_part": [
+                "Heart",
+                "Blood vessels"
+            ]
+        },
+        {
+            "code_range": "J00-J99",
+            "section": "Diseases of the respiratory system",
+            "affected_body_part": [
+                "Lungs",
+                "Respiratory tract"
+            ]
+        },
+        {
+            "code_range": "K00-K95",
+            "section": "Diseases of the digestive system",
+            "affected_body_part": [
+                "Stomach",
+                "Intestines",
+                "Liver"
+            ]
+        },
+        {
+            "code_range": "L00-L99",
+            "section": "Diseases of the skin and subcutaneous tissue",
+            "affected_body_part": [
+                "Skin"
+            ]
+        },
+        {
+            "code_range": "M00-M99",
+            "section": "Diseases of the musculoskeletal system and connective tissue",
+            "affected_body_part": [
+                "Bones",
+                "Muscles",
+                "Connective tissues"
+            ]
+        },
+        {
+            "code_range": "N00-N99",
+            "section": "Diseases of the genitourinary system",
+            "affected_body_part": [
+                "Kidneys",
+                "Bladder",
+                "Reproductive organs"
+            ]
+        },
+        {
+            "code_range": "O00-O9A",
+            "section": "Pregnancy, childbirth and the puerperium",
+            "affected_body_part": [
+                "Reproductive system"
+            ]
+        },
+        {
+            "code_range": "P00-P96",
+            "section": "Certain conditions originating in the perinatal period",
+            "affected_body_part": [
+                "Newborn infants"
+            ]
+        },
+        {
+            "code_range": "Q00-Q99",
+            "section": "Congenital malformations, deformations and chromosomal abnormalities",
+            "affected_body_part": [
+                "Various organs",
+                "Various systems"
+            ]
+        },
+        {
+            "code_range": "R00-R99",
+            "section": "Symptoms, signs and abnormal clinical and laboratory findings, not elsewhere classified",
+            "affected_body_part": [
+                "Various organs",
+                "Various systems"
+            ]
+        },
+        {
+            "code_range": "S00-T88",
+            "section": "Injury, poisoning and certain other consequences of external causes",
+            "affected_body_part": [
+                "Various organs",
+                "Various systems"
+            ]
+        },
+        {
+            "code_range": "U00-U85",
+            "section": "Codes for special purposes",
+            "affected_body_part": [
+                "Various organs",
+                "Various systems"
+            ]
+        },
+        {
+            "code_range": "V00-Y99",
+            "section": "External causes of morbidity",
+            "affected_body_part": [
+                "Various organs",
+                "Various systems"
+            ]
+        },
+        {
+            "code_range": "Z00-Z99",
+            "section": "Factors influencing health status and contact with health services",
+            "affected_body_part": [
+                "Various organs",
+                "Various systems"
+            ]
+        }
+    ]
+}
