@@ -1,5 +1,4 @@
 import { getModelForClass, modelOptions, prop } from "@typegoose/typegoose";
-// import { User } from "./user.model"; // Ensure this path is correct
 
 @modelOptions({
   schemaOptions: {
@@ -7,8 +6,7 @@ import { getModelForClass, modelOptions, prop } from "@typegoose/typegoose";
   },
 })
 export class TwoFactorAuth {
-  // @prop({ ref: () => User, required: true })
-  // public user!: Ref<User>;
+  public _id?: string;
 
   @prop()
   public secret?: string;
