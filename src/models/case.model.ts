@@ -1,4 +1,9 @@
-import { getModelForClass, modelOptions, prop, Ref } from "@typegoose/typegoose";
+import {
+  getModelForClass,
+  modelOptions,
+  prop,
+  Ref,
+} from "@typegoose/typegoose";
 import { Organization } from "./organization.model"; // Ensure this path is correct
 import { User } from "./user.model"; // Ensure this path is correct
 

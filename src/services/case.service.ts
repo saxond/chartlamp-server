@@ -41,8 +41,8 @@ export class CaseService {
                         {
                             case: newCase._id,
                             url: doc,
-                            content: '',
-                            extractedData: '',
+                            content: 'test',
+                            extractedData: 'test',
                         },
                     ],
                     { session }
@@ -68,7 +68,7 @@ export class CaseService {
 
     // Get all cases
     static async getAllCases() {
-        return CaseModel.find().lean();
+        return CaseModel.find().sort({createdAt: -1}).lean();
     }
 
     // Update a case by ID
