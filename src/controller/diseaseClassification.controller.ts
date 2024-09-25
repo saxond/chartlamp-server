@@ -45,16 +45,16 @@ export class DiseaseClassificationController {
 
   static async getAll(req: Request, res: Response) {
     try {
-      const { page, limit } = req.query;
-      const diseaseClassifications = await diseaseClassificationService.getAllDiseaseClassifications(
-        parseInt(page as string, 10),
-        parseInt(limit as string)
-      );
-      res.status(200).json(diseaseClassifications);
+      // const { page, limit } = req.query;
+      // const diseaseClassifications = await diseaseClassificationService.getAllDiseaseClassifications(
+      //   parseInt(page as string, 10),
+      //   parseInt(limit as string)
+      // );
+      // res.status(200).json(diseaseClassifications);
       // const diseaseClassifications = await diseaseClassificationService.updateDiseaseClassificationRecords();
       // res.status(200).json(diseaseClassifications);
-      // const distinctAffectedBodyParts = await diseaseClassificationService.getDistinctAffectedBodyParts();
-      // res.status(200).json(distinctAffectedBodyParts);
+      const distinctAffectedBodyParts = await diseaseClassificationService.getDistinctAffectedBodyParts();
+      res.status(200).json(distinctAffectedBodyParts);
     } catch (error) {
         res.status(400).json(formatResponse(false, (error as Error).message));
     }
