@@ -60,11 +60,9 @@ export class DiseaseClassificationController {
 
   static async getImagesByIcdCode(req: Request, res: Response) {
     try {
-    //  await diseaseClassificationService.loadImageNames()
-    //   return res.status(200).json({ message: "Not implemented" });
+  
       const { icdCode } = req.params;
-          console.log("icdCodesss", icdCode);
-
+      
       const images = await diseaseClassificationService.getImagesByIcdCode(
         icdCode
       );

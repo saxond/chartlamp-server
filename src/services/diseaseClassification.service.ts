@@ -14,7 +14,7 @@ export class DiseaseClassificationService {
   constructor() {
     this.openAiService = new OpenAIService(
       (process.env.OPENAI_API_KEY as string) ||
-        "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"
+      "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"
     );
   }
 
@@ -39,6 +39,77 @@ export class DiseaseClassificationService {
     return DiseaseClassificationModel.findById(id).lean();
   }
 
+  // Extract affected body parts from CSV
+  async extractAffectedBodyParts() {
+    try {
+      const data = fs.readFileSync('ICDgraphicsSheet1.csv', 'utf-8');
+      const lines = data.trim().split('\n');
+      const result: { [key: string]: string[] } = {};
+
+      lines.forEach(line => {
+        const [key, ...values] = line.split(',');
+        const trimmedValues = values.map(value => value.trim()).filter(value => value !== '');
+        result[key.trim()] = trimmedValues.length > 0 ? trimmedValues : [key.trim()];
+      });
+
+      return result;
+    } catch (error) {
+      console.error('Error extracting affected body parts:', error);
+      throw new Error('Failed to extract affected body parts');
+    }
+  }
+
+    //get a disease classification by icdCode
+    async getDiseaseClassificationByIcdCode(icdCode: string) {
+      // return DiseaseClassificationModel.findOne({ icdCode }).lean();
+      icdCode = icdCode.replace(/\./g, '').toUpperCase();
+  
+      let diseaseC = await DiseaseClassificationModel.findOne({ icdCode }).lean();
+  
+      if (!diseaseC) {
+        diseaseC = await DiseaseClassificationModel.findOne({ icdCode: new RegExp(`^${icdCode}`) }).lean();
+      }
+  
+      if (!diseaseC) {
+        diseaseC = await DiseaseClassificationModel.findOne({ icdCode: new RegExp(`${icdCode}$`) }).lean();
+      }
+  
+      if (!diseaseC) {
+        diseaseC = await DiseaseClassificationModel.findOne({ icdCode: icdCode.slice(0, -1) }).lean();
+      }
+  
+      if (!diseaseC) {
+        diseaseC = await DiseaseClassificationModel.findOne({ icdCode: icdCode.slice(0, -2) }).lean();
+      }
+  
+      return diseaseC;
+    }
+
+
+  // Get affected body parts by icdCode
+  async getAffectedBodyPartsByIcdCode(icdCode: string) {
+    try {
+     
+      let diseaseC = await this.getDiseaseClassificationByIcdCode(icdCode);
+
+      if (!diseaseC) {
+        throw new Error('Disease classification not found');
+      }
+
+      const bodyPartsMap = await this.extractAffectedBodyParts();
+
+      if (diseaseC.affectedBodyPart && bodyPartsMap[diseaseC.affectedBodyPart]) {
+        return bodyPartsMap[diseaseC.affectedBodyPart];
+      }
+
+      return [diseaseC.affectedBodyPart];
+      
+    } catch (error) {
+
+      throw new Error('Failed to get affected body parts');
+    }
+  }
+
   //get a disease classification by icdCode
   async getByIcdCodes(icdCodes: string[]) {
     return DiseaseClassificationModel.findOne({
@@ -48,11 +119,7 @@ export class DiseaseClassificationService {
     }).lean();
   }
 
-  //get a disease classification by icdCode
-  async getDiseaseClassificationByIcdCode(icdCode: string) {
-    console.log("icdCode", icdCode);
-    return DiseaseClassificationModel.findOne({ icdCode }).lean();
-  }
+
 
   // Get all disease classifications
   async getAllDiseaseClassifications(page: number, limit: number) {
@@ -149,7 +216,6 @@ export class DiseaseClassificationService {
     const diseaseClassification = await this.getDiseaseClassificationByIcdCode(
       icdCode
     );
-    console.log("diseaseClassification", diseaseClassification);
     if (!diseaseClassification) {
       return [];
     } else {
@@ -165,12 +231,13 @@ export class DiseaseClassificationService {
   }
 
   async getImagesByIcdCodes(icdCodes: string) {
+
     const diseaseClassification = await DiseaseClassificationModel.find({
       icdCode: {
         $in: icdCodes,
       },
     }).lean();
-    console.log("Disease classification:", diseaseClassification);
+
     if (!diseaseClassification) {
       return [];
     } else {
@@ -194,7 +261,6 @@ export class DiseaseClassificationService {
       : searchString;
     const excludeString = excludeWords.map((word) => `-${word}`).join(" ");
     const textSearchQuery = `${parsedSearchString} ${excludeString}`.trim();
-    console.log("Text search query:", textSearchQuery);
 
     try {
       const results = await BodyPartToImageModel.find(
