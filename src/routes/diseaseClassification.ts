@@ -8,7 +8,15 @@ router.post('/disease-classifications', isAuthenticated, DiseaseClassificationCo
 router.get('/disease-classifications', DiseaseClassificationController.getAll);
 //seed data from csv
 router.get('/disease-classifications/seed', DiseaseClassificationController.seedData);
+router.post(
+  "/disease-classifications/icdCode/images",
+  DiseaseClassificationController.getImagesByIcdCodes
+);
 router.get('/disease-classifications/:icdCode', DiseaseClassificationController.getByIcdCode);
+router.get(
+  "/disease-classifications/:icdCode/images",
+  DiseaseClassificationController.getImagesByIcdCode
+);
 router.put('/disease-classifications/:id', DiseaseClassificationController.update);
 router.delete('/disease-classifications/:id', DiseaseClassificationController.delete);
 
