@@ -17,6 +17,7 @@ export interface AuthRequest extends Request {
 
 export function isAuthenticated(req: AuthRequest, res: Response, next: NextFunction): void {
   const sessionUser = (req.session as CustomSession).user;
+  console.log("sessionUser", sessionUser);
   if (sessionUser) {
     //get user user information from db 
     req.user = sessionUser;

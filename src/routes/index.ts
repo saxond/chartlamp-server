@@ -10,9 +10,9 @@ const router = express.Router();
 // Apply verifyApiKey middleware to all routes
 router.use(verifyApiKey);
 
-router.use('/user', userRoutes);
+router.use("/user", userRoutes);
 
-router.use('/openai', openAiRoutes);
+router.use("/openai", openAiRoutes);
 
 router.use('/invitations', invitationRoutes);
 
@@ -21,4 +21,3 @@ router.use('/dc', diseaseClassificationRoutes);
 router.use('/case', caseRoutes);
 
 export default router;
-

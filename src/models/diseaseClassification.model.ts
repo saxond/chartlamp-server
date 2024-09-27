@@ -8,7 +8,6 @@ import {
     timestamps: true,
   },
 })
-
 export class DiseaseClassification {
   _id?: string;
 
