@@ -274,4 +274,16 @@ export class DiseaseClassificationService {
       throw err;
     }
   }
+
+  async searchByDisease(terms: string) {
+  try {
+    const response = await axios.get(
+      `https://clinicaltables.nlm.nih.gov/api/icd10cm/v3/search?sf=code,name&terms=${terms}`
+    );
+    console.log("searchByDisease", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("getProperty - Error", error);
+  }
+}
 }
