@@ -59,37 +59,37 @@ export class DiseaseClassificationService {
     }
   }
 
-    //get a disease classification by icdCode
-    async getDiseaseClassificationByIcdCode(icdCode: string) {
-      // return DiseaseClassificationModel.findOne({ icdCode }).lean();
-      icdCode = icdCode.replace(/\./g, '').toUpperCase();
-  
-      let diseaseC = await DiseaseClassificationModel.findOne({ icdCode }).lean();
-  
-      if (!diseaseC) {
-        diseaseC = await DiseaseClassificationModel.findOne({ icdCode: new RegExp(`^${icdCode}`) }).lean();
-      }
-  
-      if (!diseaseC) {
-        diseaseC = await DiseaseClassificationModel.findOne({ icdCode: new RegExp(`${icdCode}$`) }).lean();
-      }
-  
-      if (!diseaseC) {
-        diseaseC = await DiseaseClassificationModel.findOne({ icdCode: icdCode.slice(0, -1) }).lean();
-      }
-  
-      if (!diseaseC) {
-        diseaseC = await DiseaseClassificationModel.findOne({ icdCode: icdCode.slice(0, -2) }).lean();
-      }
-  
-      return diseaseC;
+  //get a disease classification by icdCode
+  async getDiseaseClassificationByIcdCode(icdCode: string) {
+    // return DiseaseClassificationModel.findOne({ icdCode }).lean();
+    icdCode = icdCode.replace(/\./g, '').toUpperCase();
+
+    let diseaseC = await DiseaseClassificationModel.findOne({ icdCode }).lean();
+
+    if (!diseaseC) {
+      diseaseC = await DiseaseClassificationModel.findOne({ icdCode: new RegExp(`^${icdCode}`) }).lean();
     }
+
+    if (!diseaseC) {
+      diseaseC = await DiseaseClassificationModel.findOne({ icdCode: new RegExp(`${icdCode}$`) }).lean();
+    }
+
+    if (!diseaseC) {
+      diseaseC = await DiseaseClassificationModel.findOne({ icdCode: icdCode.slice(0, -1) }).lean();
+    }
+
+    if (!diseaseC) {
+      diseaseC = await DiseaseClassificationModel.findOne({ icdCode: icdCode.slice(0, -2) }).lean();
+    }
+
+    return diseaseC;
+  }
 
 
   // Get affected body parts by icdCode
   async getAffectedBodyPartsByIcdCode(icdCode: string) {
     try {
-     
+
       let diseaseC = await this.getDiseaseClassificationByIcdCode(icdCode);
 
       if (!diseaseC) {
@@ -103,7 +103,7 @@ export class DiseaseClassificationService {
       }
 
       return [diseaseC.affectedBodyPart];
-      
+
     } catch (error) {
 
       throw new Error('Failed to get affected body parts');
@@ -213,21 +213,25 @@ export class DiseaseClassificationService {
   }
 
   async getImagesByIcdCode(icdCode: string) {
-    const diseaseClassification = await this.getDiseaseClassificationByIcdCode(
-      icdCode
-    );
-    if (!diseaseClassification) {
+    // const diseaseClassification = await this.getDiseaseClassificationByIcdCode(
+    //   icdCode
+    // );
+    // console.log(diseaseClassification);
+
+    const affectedBodyPart = await this.getAffectedBodyPartsByIcdCode(icdCode);
+
+    if (!affectedBodyPart.length) {
       return [];
-    } else {
-      const affectedBodyPart = diseaseClassification.affectedBodyPart;
-      if (!affectedBodyPart) {
-        return [];
-      }
-      const results = await this.searchDocumentsWithExclusions(
-        affectedBodyPart
-      );
-      return results;
     }
+    // const affectedBodyPart = diseaseClassification.affectedBodyPart;
+    // if (!affectedBodyPart) {
+    //   return [];
+    // }
+    const results = await this.searchDocumentsWithExclusions(
+      affectedBodyPart as string[]
+    );
+    return results;
+
   }
 
   async getImagesByIcdCodes(icdCodes: string) {
@@ -255,20 +259,26 @@ export class DiseaseClassificationService {
   }
 
   async searchDocumentsWithExclusions(searchString: string | string[]) {
-    // Create a text search string with exclusions
-    const parsedSearchString = Array.isArray(searchString)
-      ? searchString.join(" ")
-      : searchString;
-    const excludeString = excludeWords.map((word) => `-${word}`).join(" ");
-    const textSearchQuery = `${parsedSearchString} ${excludeString}`.trim();
-
     try {
+      // Create a text search string with exclusions
+      const parsedSearchString = Array.isArray(searchString)
+        ? searchString.join(" ")
+        : searchString;
+      const excludeString = excludeWords.map((word) => `-${word}`).join(" ");
+      const textSearchQuery = `${parsedSearchString} ${excludeString}`.trim();
+
+      // console.log("Text search query:", textSearchQuery);
+
       const results = await BodyPartToImageModel.find(
         { $text: { $search: textSearchQuery } },
         { score: { $meta: "textScore" } }
       ).sort({ score: { $meta: "textScore" } });
 
-      return results;
+      return {
+        images: results,
+        bodyParts: searchString,
+      }
+
     } catch (err) {
       console.error("Error performing search:", err);
       throw err;
