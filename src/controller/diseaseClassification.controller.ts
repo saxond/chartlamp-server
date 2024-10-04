@@ -86,6 +86,8 @@ export class DiseaseClassificationController {
 
   static async getAll(req: Request, res: Response) {
     try {
+      // const response = await diseaseClassificationService.updateDiseaseClassificationRecords();
+      // res.status(200).json(response);
       const { page, limit } = req.query;
       const diseaseClassifications =
         await diseaseClassificationService.getAllDiseaseClassifications(
