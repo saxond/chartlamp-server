@@ -1,8 +1,10 @@
+import dotenv from 'dotenv-safe';
+dotenv.config(); // Ensure this is the first line
+
 // import axios from 'axios';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
-import dotenv from 'dotenv-safe';
 import express, { Request, Response } from "express";
 import session from 'express-session';
 import helmet from 'helmet';
@@ -15,8 +17,6 @@ import api from './routes';
 import swaggerDocument from './swagger/swagger.json';
 import corsOptions from './utils/corsOption';
 import { connectToMongo } from './utils/mongo';
-
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -62,7 +62,7 @@ app.use(errorHandlerMiddleware);
 //     }
 //   });
 
-//   console.log(result);
+//   console.log(result?.data);
 //   // Add your task logic here
 // });
 // console.log('Cron job scheduled.');

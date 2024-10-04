@@ -1,5 +1,8 @@
+import { createObjectCsvStringifier } from "csv-writer";
 import fs from "fs";
 import { Types } from "mongoose";
+import { pipeline } from "stream";
+import { promisify } from "util";
 import { BodyPartToImageModel } from "../models/bodyPartToImage.model";
 import {
   DiseaseClassification,
@@ -9,12 +12,14 @@ import { bodyParts, excludeWords } from "../scripts/constants";
 import { parseDiseaseClassificationCSV } from "../utils/parseDiseaseClassificationCSV";
 import OpenAIService from "./openai.service";
 
+const pipelineAsync = promisify(pipeline);
+
 export class DiseaseClassificationService {
   private openAiService: OpenAIService;
   constructor() {
     this.openAiService = new OpenAIService(
       (process.env.OPENAI_API_KEY as string) ||
-      "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"
+      "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"
     );
   }
 
@@ -96,13 +101,7 @@ export class DiseaseClassificationService {
         throw new Error('Disease classification not found');
       }
 
-      const bodyPartsMap = await this.extractAffectedBodyParts();
-
-      if (diseaseC.affectedBodyPart && bodyPartsMap[diseaseC.affectedBodyPart]) {
-        return bodyPartsMap[diseaseC.affectedBodyPart];
-      }
-
-      return [diseaseC.affectedBodyPart];
+      return [diseaseC.affectedBodyPartB];
 
     } catch (error) {
 
@@ -126,10 +125,43 @@ export class DiseaseClassificationService {
     //paginate
     const skip = page * limit;
     return DiseaseClassificationModel.find()
-      .select("icdCode description affectedBodyPart")
+      .select("icdCode description affectedBodyPart affectedBodyPartB")
       .skip(skip)
       .limit(limit)
       .lean();
+  }
+
+  //export disease classifications to csv
+ 
+  async exportDiseaseClassificationsToCSV() {
+    try {
+      const diseaseClassifications = await DiseaseClassificationModel.find().lean().cursor();
+      const csvStringifier = createObjectCsvStringifier({
+        header: [
+          { id: 'icdCode', title: 'ICD Code' },
+          { id: 'description', title: 'Description' },
+          { id: 'affectedBodyPart', title: 'Affected Body Part' },
+        ],
+      });
+
+      const writeStream = fs.createWriteStream('diseaseClassifications.csv');
+      writeStream.write(csvStringifier.getHeaderString());
+
+      await pipelineAsync(
+        diseaseClassifications,
+        async function* (source) {
+          for await (const diseaseClassification of source) {
+            yield csvStringifier.stringifyRecords([diseaseClassification]);
+          }
+        },
+        writeStream
+      );
+
+      return 'Disease classifications exported successfully';
+    } catch (error) {
+      console.error('Error exporting disease classifications to CSV:', error);
+      throw new Error('Failed to export disease classifications');
+    }
   }
 
   // Update a disease classification by ID
@@ -160,7 +192,7 @@ export class DiseaseClassificationService {
   //update disease classification records by using OpenAI
   async updateDiseaseClassificationRecords() {
     const diseaseClassifications = await DiseaseClassificationModel.find({
-      affectedBodyPart: { $in: [null, ""] },
+      affectedBodyPartB: { $in: [null, ""] },
     })
       .limit(1000)
       .lean();
@@ -171,20 +203,24 @@ export class DiseaseClassificationService {
 
     const updatePromises = diseaseClassifications.map(
       async (diseaseClassification) => {
-        const prompt = `Provide the affected body part for the following disease classification: ${diseaseClassification.description} ICDCODE: ${diseaseClassification.icdCode}. The body part should be in one of the categories: Intestine, Brain and spinal cord, Heart, Lungs, Joints, Bones, Varies depending on the complication, Bloodstream, Varies depending on the location of the infection, Kidneys, or Varies depending on the specific infection. The response should be just the category no added sentence before or after. For example, if the affected body part is the heart, the response should be Heart.`;
-
+        const prompt = `Provide me the body part affected by ${diseaseClassification.description}. If it affects joints or muscles or bones, give me the specific type of the Joints (e.g., knees, hips, shoulders), Bones(Tibia, Femur, Humerus, Pelvis, Ribs, Skull, Spine (vertebrae)) or Muscle (Biceps (upper arm, Triceps, Deltoids, e.t.c) . The response should be just the body part no added sentence before or after. For example, if the affected body part is the heart, the response should be Heart.`;
         try {
-          const response = await this.openAiService.completeChat({
-            context:
-              "Update the affected body part for the following disease classification",
-            prompt,
-            model: "gpt-3.5-turbo",
-            temperature: 0.3,
-          });
-          await DiseaseClassificationModel.findByIdAndUpdate(
-            diseaseClassification._id,
-            { affectedBodyPart: response }
-          );
+          if (diseaseClassification?.description && diseaseClassification?.description !=='') {
+            const response = await this.openAiService.completeChat({
+              context:
+                "Update the affected body part for the following disease classification",
+              prompt,
+              model: "gpt-3.5-turbo",
+              temperature: 0.4,
+            });
+            await DiseaseClassificationModel.findByIdAndUpdate(
+              diseaseClassification._id,
+              { affectedBodyPartB: response }
+            );
+          }
+
+          return "Record updated successfully";
+      
         } catch (error) {
           console.error(
             `Failed to update disease classification with ID ${diseaseClassification._id}:`,
@@ -201,7 +237,7 @@ export class DiseaseClassificationService {
 
   //get distinct affected body parts
   async getDistinctAffectedBodyParts() {
-    return DiseaseClassificationModel.distinct("affectedBodyPart").lean();
+    return DiseaseClassificationModel.distinct("affectedBodyPartB").lean();
   }
 
   async loadImageNames() {
@@ -213,22 +249,16 @@ export class DiseaseClassificationService {
   }
 
   async getImagesByIcdCode(icdCode: string) {
-    // const diseaseClassification = await this.getDiseaseClassificationByIcdCode(
-    //   icdCode
-    // );
-    // console.log(diseaseClassification);
 
-    const affectedBodyPart = await this.getAffectedBodyPartsByIcdCode(icdCode);
+    const affectedBodyPart = await this.getDiseaseClassificationByIcdCode(icdCode);
 
-    if (!affectedBodyPart.length) {
+    if (!affectedBodyPart?.affectedBodyPartB) {
       return [];
     }
-    // const affectedBodyPart = diseaseClassification.affectedBodyPart;
-    // if (!affectedBodyPart) {
-    //   return [];
-    // }
+   
     const results = await this.searchDocumentsWithExclusions(
-      affectedBodyPart as string[]
+      affectedBodyPart.affectedBodyPartB,
+      affectedBodyPart.description
     );
     return results;
 
@@ -258,7 +288,7 @@ export class DiseaseClassificationService {
     }
   }
 
-  async searchDocumentsWithExclusions(searchString: string | string[]) {
+  async searchDocumentsWithExclusions(searchString: string | string[], description?: string) {
     try {
       // Create a text search string with exclusions
       const parsedSearchString = Array.isArray(searchString)
@@ -266,8 +296,6 @@ export class DiseaseClassificationService {
         : searchString;
       const excludeString = excludeWords.map((word) => `-${word}`).join(" ");
       const textSearchQuery = `${parsedSearchString} ${excludeString}`.trim();
-
-      // console.log("Text search query:", textSearchQuery);
 
       const results = await BodyPartToImageModel.find(
         { $text: { $search: textSearchQuery } },
@@ -277,6 +305,7 @@ export class DiseaseClassificationService {
       return {
         images: results,
         bodyParts: searchString,
+        description,
       }
 
     } catch (err) {
