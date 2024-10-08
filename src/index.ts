@@ -39,7 +39,7 @@ app.use(session({
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production', // Ensure this matches your environment
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Adjust based on your needs
-      maxAge: 30 * 60 * 10000 
+      maxAge: 24 * 60 * 60 * 1000
     }
 }));
 
