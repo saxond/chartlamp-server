@@ -108,6 +108,22 @@ export class UserController {
         }
     }
 
+    //get team members
+    public async getTeamMembers(req: Request, res: Response): Promise<void> {
+        try {
+            const user = this.getSessionUser(req);
+            if (!user) {
+                res.status(401).json(formatResponse(false, 'Unauthorized'));
+                return;
+            }
+
+            const teamMembers = await this.userService.getTeamMembers(user.id);
+            res.status(200).json(formatResponse(true, 'Team members retrieved successfully', { teamMembers }));
+        } catch (error) {
+            res.status(400).json(formatResponse(false, (error as Error).message));
+        }
+    }
+
     public async enableTwoFactorAuth(req: Request, res: Response): Promise<void> {
         try {
             const user = this.getSessionUser(req);

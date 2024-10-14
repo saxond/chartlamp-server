@@ -5,9 +5,6 @@ import createHttpError from 'http-errors';
 
 export const verifyApiKey = (req: Request, res: Response, next: NextFunction): void => {
   const apiKey = req.headers['api-key'];
-  console.log('API_KEY:', apiKey); // Log the API key to verify
-  
-
   if (!apiKey || apiKey !== process.env.API_KEY) {
     return next(createHttpError(401, 'Unauthorized'));
   }

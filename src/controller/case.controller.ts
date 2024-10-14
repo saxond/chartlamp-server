@@ -48,6 +48,19 @@ export class CaseController {
       res.status(500).json({ message: (error as any).message });
     }
   }
+ 
+  //get user cases
+  static async getUserCases(req: AuthRequest, res: Response) {
+    try {
+      if (!req?.user) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+      const cases = await CaseService.getUserCases(req?.user?.id);
+      res.status(200).json(cases);
+    } catch (error) {
+      res.status(500).json({ message: (error as any).message });
+    }
+  }
 
   static async update(req: Request, res: Response) {
     try {

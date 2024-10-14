@@ -5,6 +5,7 @@ import { isAuthenticated } from '../middleware/isAuth';
 const router = express.Router();
 
 router.post('/', isAuthenticated, CaseController.create);
+router.get('/user', isAuthenticated, CaseController.getUserCases);
 router.get('/:id', isAuthenticated, CaseController.getById);
 router.get('/', isAuthenticated, CaseController.getAll);
 router.put('/:id', isAuthenticated, CaseController.update);

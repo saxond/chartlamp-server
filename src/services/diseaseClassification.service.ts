@@ -18,8 +18,7 @@ export class DiseaseClassificationService {
   private openAiService: OpenAIService;
   constructor() {
     this.openAiService = new OpenAIService(
-      (process.env.OPENAI_API_KEY as string) ||
-      "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"
+      (process.env.OPENAI_API_KEY as string)
     );
   }
 
