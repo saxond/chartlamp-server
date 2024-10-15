@@ -1,5 +1,6 @@
 import {
   getModelForClass,
+  index,
   modelOptions,
   prop,
   Ref,
@@ -7,6 +8,52 @@ import {
 import { Organization } from "./organization.model"; // Ensure this path is correct
 import { User } from "./user.model"; // Ensure this path is correct
 
+export interface CaseWithDocuments {
+  _id: string;
+  caseNumber: string;
+  plaintiff: string;
+  dateOfClaim: Date;
+  claimStatus: string;
+  actionRequired: string;
+  targetCompletion: Date;
+  organization: string;
+  user: string;
+  isArchived?: boolean;
+  reports: any[];
+  createdAt?: Date;
+  updatedAt?: Date;
+  documents: any[];
+}
+
+class Report {
+  @prop({ required: true })
+  public nameOfDisease!: string;
+
+  @prop()
+  public icdCode?: string;
+
+  @prop({ required: true })
+  public amountSpent!: number;
+
+  @prop()
+  public providerName?: string;
+
+  @prop()
+  public doctorName?: string;
+
+  @prop()
+  public medicalNote?: string;
+
+  @prop({ required: true })
+  public dateOfClaim!: Date;
+}
+
+@index({ caseNumber: 1 })
+@index({ plaintiff: 1 })
+@index({ dateOfClaim: 1 })
+@index({ claimStatus: 1 })
+@index({ organization: 1 })
+@index({ user: 1 })
 @modelOptions({
   schemaOptions: {
     timestamps: true,
@@ -36,6 +83,12 @@ export class Case {
 
   @prop({ ref: () => User, required: true })
   public user!: Ref<User>;
+
+  @prop({ default: false })
+  public isArchived?: boolean;
+
+  @prop({ type: () => [Report], default: [] })
+  public reports!: Report[];
 
   // Timestamps will be automatically added by mongoose
   public createdAt?: Date;

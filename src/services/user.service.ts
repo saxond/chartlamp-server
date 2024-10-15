@@ -2,7 +2,7 @@ import bcrypt from 'bcrypt';
 import qrcode from 'qrcode';
 import speakeasy from 'speakeasy';
 import { UserRegistrationInput } from '../interfaces/user';
-import { OrganizationModel } from '../models/organization.model';
+import { Organization, OrganizationModel } from '../models/organization.model';
 import { TwoFactorAuth, TwoFactorAuthModel } from '../models/twoFactorAuth.model';
 import { User, UserModel } from '../models/user.model';
 import notificationService from './notification.service'; // Import the instance directly
@@ -119,7 +119,7 @@ class UserService {
     user.password = newPassword;
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
-    
+
     await user.save();
   }
 
@@ -173,6 +173,17 @@ class UserService {
         method: (twoFactorAuth as TwoFactorAuth).method,
       } : null,
     };
+  }
+
+  //get team members
+  async getTeamMembers(userId: string) {
+    //get user organization
+    const user = await UserModel.findById(userId).populate('organization').lean();
+
+    if (!user?.organization) {
+      throw new Error('User not found');
+    }
+    return await UserModel.find({ organization: (user.organization as Organization)._id }).lean();
   }
 
   private async generateAppTwoFactorResponse(secret: speakeasy.GeneratedSecret, email: string) {

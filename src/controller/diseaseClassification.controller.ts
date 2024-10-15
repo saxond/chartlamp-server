@@ -1,9 +1,13 @@
 import { Request, Response } from "express";
 import { Types } from "mongoose";
 import { DiseaseClassificationService } from "../services/diseaseClassification.service"; // Ensure this path is correct
+// import { DocumentService } from "../services/document.service";
+import { CaseService } from "../services/case.service";
 import { formatResponse } from "../utils/helpers";
 
 const diseaseClassificationService = new DiseaseClassificationService();
+// const documentService = new DocumentService();
+// const caseService = new CaseService();
 
 export class DiseaseClassificationController {
   static async create(req: Request, res: Response) {
@@ -86,6 +90,13 @@ export class DiseaseClassificationController {
 
   static async getAll(req: Request, res: Response) {
     try {
+      // const response = await diseaseClassificationService.updateDiseaseClassificationRecords();
+      // res.status(200).json(response);
+      // await documentService.getDocumentWithoutContent();
+      const resD = await CaseService.getDocumentsForCase("66f2ba60835355b2c5d6f601");
+      
+      console.log(resD);
+
       const { page, limit } = req.query;
       const diseaseClassifications =
         await diseaseClassificationService.getAllDiseaseClassifications(
