@@ -1,4 +1,5 @@
 import fs from "fs";
+import axios from "axios";
 import { Types } from "mongoose";
 import { BodyPartToImageModel } from "../models/bodyPartToImage.model";
 import {
@@ -85,7 +86,6 @@ export class DiseaseClassificationService {
     return diseaseC;
   }
 
-
   // Get affected body parts by icdCode
   async getAffectedBodyPartsByIcdCode(icdCode: string) {
     try {
@@ -118,8 +118,6 @@ export class DiseaseClassificationService {
       },
     }).lean();
   }
-
-
 
   // Get all disease classifications
   async getAllDiseaseClassifications(page: number, limit: number) {
