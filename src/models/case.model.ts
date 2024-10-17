@@ -26,14 +26,14 @@ export interface CaseWithDocuments {
 }
 
 class Report {
-  @prop({ required: true })
-  public nameOfDisease!: string;
+  @prop()
+  public nameOfDisease?: string;
 
   @prop()
   public icdCode?: string;
 
-  @prop({ required: true })
-  public amountSpent!: number;
+  @prop()
+  public amountSpent?: string;
 
   @prop()
   public providerName?: string;
@@ -44,9 +44,10 @@ class Report {
   @prop()
   public medicalNote?: string;
 
-  @prop({ required: true })
-  public dateOfClaim!: Date;
+  @prop()
+  public dateOfClaim?: Date;
 }
+
 
 @index({ caseNumber: 1 })
 @index({ plaintiff: 1 })
@@ -89,6 +90,10 @@ export class Case {
 
   @prop({ type: () => [Report], default: [] })
   public reports!: Report[];
+
+  //Viewed on last date that the case was viewed
+  @prop({default: Date.now})
+  public lastViewed?: Date;
 
   // Timestamps will be automatically added by mongoose
   public createdAt?: Date;
