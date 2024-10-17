@@ -3,12 +3,14 @@ import { CaseController } from '../controller/case.controller'; // Ensure this p
 import { isAuthenticated } from '../middleware/isAuth';
 
 const router = express.Router();
+const caseController = new CaseController();
 
-router.post('/', isAuthenticated, CaseController.create);
-router.get('/user', isAuthenticated, CaseController.getUserCases);
-router.get('/:id', isAuthenticated, CaseController.getById);
-router.get('/', isAuthenticated, CaseController.getAll);
-router.put('/:id', isAuthenticated, CaseController.update);
-router.delete('/:id', isAuthenticated, CaseController.delete);
+// Case routes
+router.post('/', isAuthenticated, caseController.create);
+router.get('/', isAuthenticated, caseController.getAll);
+router.get('/user', isAuthenticated, caseController.getUserCases);
+router.get('/:id', isAuthenticated, caseController.getById);
+router.put('/:id', isAuthenticated, caseController.update);
+router.delete('/:id', isAuthenticated, caseController.delete);
 
 export default router;

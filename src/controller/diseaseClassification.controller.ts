@@ -7,7 +7,7 @@ import { formatResponse } from "../utils/helpers";
 
 const diseaseClassificationService = new DiseaseClassificationService();
 // const documentService = new DocumentService();
-// const caseService = new CaseService();
+const caseService = new CaseService();
 
 export class DiseaseClassificationController {
   static async create(req: Request, res: Response) {
@@ -90,13 +90,6 @@ export class DiseaseClassificationController {
 
   static async getAll(req: Request, res: Response) {
     try {
-      // const response = await diseaseClassificationService.updateDiseaseClassificationRecords();
-      // res.status(200).json(response);
-      // await documentService.getDocumentWithoutContent();
-      const resD = await CaseService.getDocumentsForCase("66f2ba60835355b2c5d6f601");
-      
-      console.log(resD);
-
       const { page, limit } = req.query;
       const diseaseClassifications =
         await diseaseClassificationService.getAllDiseaseClassifications(
@@ -104,10 +97,6 @@ export class DiseaseClassificationController {
           parseInt(limit as string)
         );
       res.status(200).json(diseaseClassifications);
-      // const diseaseClassifications = await diseaseClassificationService.updateDiseaseClassificationRecords();
-      // res.status(200).json(diseaseClassifications);
-      // const distinctAffectedBodyParts = await diseaseClassificationService.getDistinctAffectedBodyParts();
-      // res.status(200).json(distinctAffectedBodyParts);
     } catch (error) {
       res.status(400).json(formatResponse(false, (error as Error).message));
     }

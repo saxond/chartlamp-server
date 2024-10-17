@@ -3,10 +3,21 @@ import { CaseModel } from "../models/case.model"; // Ensure this path is correct
 import { DocumentModel } from "../models/document.model";
 import { Organization } from "../models/organization.model";
 import { UserModel } from "../models/user.model";
+import OpenAIService from "./openai.service";
+
+const MAX_TOKENS = 16385;
 
 export class CaseService {
+
+  private openAiService: OpenAIService;
+  constructor() {
+    this.openAiService = new OpenAIService(
+      (process.env.OPENAI_API_KEY as string)
+    );
+  }
+
   // Create a new case
-  static async createCase(data: {
+  async createCase(data: {
     caseNumber: string;
     plaintiff: string;
     dateOfClaim: Date;
@@ -63,22 +74,31 @@ export class CaseService {
   }
 
   // Get a case by ID
-  static async getCaseById(id: Types.ObjectId) {
-    const caseData = await CaseModel.findById(id).lean();
+  async getCaseById(id: Types.ObjectId) {
+
+    const caseData = await CaseModel.findById(id)
+      .populate('user', 'email name role profilePicture')
+      .lean();
+
     if (!caseData) {
       return null;
     }
 
+    if (!caseData.reports?.length) {
+      await this.populateReportFromCaseDocuments(id);
+    }
+
     const documents = await DocumentModel.find({ case: id }).lean();
+
     return { ...caseData, documents };
   }
   // Get all cases
-  static async getAllCases() {
+  async getAllCases() {
     return CaseModel.find().sort({ createdAt: -1 }).lean();
   }
 
   //get user cases
-  static async getUserCases(userId: string) {
+  async getUserCases(userId: string) {
     return CaseModel.find({
       user: userId,
       $or: [{ isArchived: false }, { isArchived: null }, { isArchived: { $exists: false } }]
@@ -86,12 +106,12 @@ export class CaseService {
   }
 
   //get user archived cases
-  static async getArchivedCases(userId: string) {
+  async getArchivedCases(userId: string) {
     return CaseModel.find({ user: userId, isArchived: true }).sort({ createdAt: -1 }).lean();
   }
 
   // Update a case by ID
-  static async updateCase(
+  async updateCase(
     id: Types.ObjectId,
     updateData: Partial<typeof CaseModel>
   ) {
@@ -99,43 +119,104 @@ export class CaseService {
   }
 
   //archive a case
-  static async archiveCase(id: Types.ObjectId) {
+  async archiveCase(id: Types.ObjectId) {
     return CaseModel.findByIdAndUpdate(id, { isArchived: true }, { new: true }).lean();
   }
 
   //unarchive a case
-  static async unarchiveCase(id: Types.ObjectId) {
+  async unarchiveCase(id: Types.ObjectId) {
     return CaseModel.findByIdAndUpdate(id, { isArchived: false }, { new: true }).lean();
   }
 
   // Delete a case by ID
-  static async deleteCase(id: Types.ObjectId) {
+  async deleteCase(id: Types.ObjectId) {
     return CaseModel.findByIdAndDelete(id).lean();
   }
 
-  //get all documents for a case
-  static async getDocumentsForCase(caseId: string): Promise<string> {
+
+  // Split content into chunks
+  private splitContent(content: string, maxTokens: number): string[] {
+    const chunks = [];
+    let currentChunk = '';
+
+    for (const word of content.split(' ')) {
+      if ((currentChunk + word).length > maxTokens) {
+        chunks.push(currentChunk);
+        currentChunk = word;
+      } else {
+        currentChunk += ` ${word}`;
+      }
+    }
+
+    if (currentChunk) {
+      chunks.push(currentChunk);
+    }
+
+    return chunks;
+  }
+
+  // Clean and parse the response from OpenAI
+  private cleanResponse(response: string): any[] {
+    const jsonString = response.replace(/```json|```/g, '').trim();
+    return JSON.parse(jsonString);
+  }
+
+  // Populate report from case documents
+  async populateReportFromCaseDocuments(caseId: Types.ObjectId): Promise<any> {
     try {
-
-      // name of disease
-      // amount spent/claim
-      // provider name(not important)
-      // doctor name(not important)
-      // medical note(not important)
-      // date of claim
-
       const documents = await DocumentModel.find({ case: caseId }).lean();
 
       if (!documents.length) {
         throw new Error("No documents found for the case");
       }
-      // Concatenate content efficiently
-      const content = documents.map(doc => doc.content).join('');
 
-      return content;
+      const content = documents.map(doc => doc.content).join(' ');
+
+      //remove empty strings and check if content is empty
+
+      if (!content?.trim()) {
+        return [];
+      }
+
+      const contentChunks = this.splitContent(content, MAX_TOKENS / 2); // Split content into smaller chunks
+
+      const results = await Promise.all(contentChunks.map(async (chunk) => {
+        const prompt = `Extract the following information from the document: Disease Name, Amount Spent, Provider Name, Doctor Name, Medical Note, Date of Claim in an array of object [{}] from the document content: ${chunk}`;
+
+        const response = await this.openAiService.completeChat({
+          context: "Extract the patient report from the document",
+          prompt,
+          model: "gpt-3.5-turbo",
+          temperature: 0.4,
+        });
+
+        return this.cleanResponse(response);
+
+      }));
+
+      // Flatten the array of arrays into a single array
+      const flattenedResults = results.flat();
+
+      if (flattenedResults.length) {
+
+        //create report objects from flattened results
+        const reportObjects = flattenedResults.map((result) => {
+          return {
+            nameOfDisease: result['Disease Name'] || '',
+            amountSpent: result['Amount Spent'] || 0,
+            providerName: result['Provider Name'] || '',
+            doctorName: result['Doctor Name'] || '',
+            medicalNote: result['Medical Note'] || '',
+            dateOfClaim: new Date(result['Date of Claim'])
+          }
+        });
+        //update case and add reports
+        await CaseModel.findOneAndUpdate({ _id: caseId }, { reports: reportObjects }, { new: true }).lean();
+      }
+      return flattenedResults;
+
     } catch (error) {
-      console.error('Error getting documents for case:', error);
-      throw new Error('Failed to get documents for case');
+      throw new Error('Failed to populate report from case documents');
     }
   }
 }
