@@ -1,5 +1,6 @@
 import { createObjectCsvStringifier } from "csv-writer";
 import fs from "fs";
+import axios from "axios";
 import { Types } from "mongoose";
 import { pipeline } from "stream";
 import { promisify } from "util";
@@ -89,7 +90,6 @@ export class DiseaseClassificationService {
     return diseaseC;
   }
 
-
   // Get affected body parts by icdCode
   async getAffectedBodyPartsByIcdCode(icdCode: string) {
     try {
@@ -116,8 +116,6 @@ export class DiseaseClassificationService {
       },
     }).lean();
   }
-
-
 
   // Get all disease classifications
   async getAllDiseaseClassifications(page: number, limit: number) {
@@ -312,4 +310,16 @@ export class DiseaseClassificationService {
       throw err;
     }
   }
+
+  async searchByDisease(terms: string) {
+  try {
+    const response = await axios.get(
+      `https://clinicaltables.nlm.nih.gov/api/icd10cm/v3/search?sf=code,name&terms=${terms}`
+    );
+    console.log("searchByDisease", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("getProperty - Error", error);
+  }
+}
 }

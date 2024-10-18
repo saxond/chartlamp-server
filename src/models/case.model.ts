@@ -26,6 +26,9 @@ export interface CaseWithDocuments {
 }
 
 class Report {
+  @prop({ type: () => [String], default: [] })
+  public icdCodes?: string[];
+
   @prop()
   public nameOfDisease?: string;
 
@@ -47,7 +50,6 @@ class Report {
   @prop()
   public dateOfClaim?: Date;
 }
-
 
 @index({ caseNumber: 1 })
 @index({ plaintiff: 1 })
@@ -85,6 +87,9 @@ export class Case {
   @prop({ ref: () => User, required: true })
   public user!: Ref<User>;
 
+  @prop({ required: false, default: 0 })
+  public viewCount!: number;
+
   @prop({ default: false })
   public isArchived?: boolean;
 
@@ -92,7 +97,7 @@ export class Case {
   public reports!: Report[];
 
   //Viewed on last date that the case was viewed
-  @prop({default: Date.now})
+  @prop({ default: Date.now })
   public lastViewed?: Date;
 
   // Timestamps will be automatically added by mongoose
