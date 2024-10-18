@@ -1,4 +1,4 @@
-import { Types } from "mongoose";
+import mongoose, { Types } from "mongoose";
 import { CaseModel } from "../models/case.model"; // Ensure this path is correct
 import { DocumentModel } from "../models/document.model";
 import { Organization } from "../models/organization.model";
@@ -8,11 +8,10 @@ import OpenAIService from "./openai.service";
 const MAX_TOKENS = 16385;
 
 export class CaseService {
-
   private openAiService: OpenAIService;
   constructor() {
     this.openAiService = new OpenAIService(
-      (process.env.OPENAI_API_KEY as string)
+      process.env.OPENAI_API_KEY as string
     );
   }
 
@@ -75,15 +74,17 @@ export class CaseService {
 
   // Get a case by ID
   async getCaseById(id: Types.ObjectId) {
-
-    const caseData = await CaseModel.findById(id)
-      .populate('user', 'email name role profilePicture')
-      .lean();
+    const caseData = await CaseModel.findById(id).populate(
+      "user",
+      "email name role profilePicture"
+    );
+    // .lean();
 
     if (!caseData) {
       return null;
     }
-
+    caseData.viewCount += 1;
+    await caseData.save();
     if (!caseData.reports?.length) {
       await this.populateReportFromCaseDocuments(id);
     }
@@ -97,35 +98,111 @@ export class CaseService {
     return CaseModel.find().sort({ createdAt: -1 }).lean();
   }
 
+  async getUserStats(userId: string) {
+    const response = await CaseModel.aggregate([
+      {
+        $match: {
+          user: new mongoose.Types.ObjectId(userId),
+        },
+      },
+      {
+        $facet: {
+          totalCases: [
+            {
+              $match: {
+                claimStatus: "New",
+              },
+            },
+            {
+              $count: "total",
+            },
+          ],
+          totalArchivedCases: [
+            {
+              $match: {
+                isArchived: true,
+              },
+            },
+            {
+              $count: "total",
+            },
+          ],
+          totalActiveCases: [
+            {
+              $match: {
+                $or: [
+                  { isArchived: false },
+                  { isArchived: null },
+                  { isArchived: { $exists: false } },
+                ],
+              },
+            },
+            {
+              $count: "total",
+            },
+          ],
+        },
+      },
+      {
+        // Use $project to ensure that if no count is found, we return 0
+        $project: {
+          totalCases: {
+            $ifNull: [{ $arrayElemAt: ["$totalCases.total", 0] }, 0], // Get the total count or default to 0
+          },
+          totalArchivedCases: {
+            $ifNull: [{ $arrayElemAt: ["$totalArchivedCases.total", 0] }, 0],
+          },
+          totalActiveCases: {
+            $ifNull: [{ $arrayElemAt: ["$totalActiveCases.total", 0] }, 0],
+          },
+        },
+      },
+    ]);
+    return response[0];
+  }
+
   //get user cases
   async getUserCases(userId: string) {
     return CaseModel.find({
       user: userId,
-      $or: [{ isArchived: false }, { isArchived: null }, { isArchived: { $exists: false } }]
-    }).sort({ createdAt: -1 }).lean();
+      $or: [
+        { isArchived: false },
+        { isArchived: null },
+        { isArchived: { $exists: false } },
+      ],
+    })
+      .sort({ createdAt: -1 })
+      .lean();
   }
 
   //get user archived cases
   async getArchivedCases(userId: string) {
-    return CaseModel.find({ user: userId, isArchived: true }).sort({ createdAt: -1 }).lean();
+    return CaseModel.find({ user: userId, isArchived: true })
+      .sort({ createdAt: -1 })
+      .lean();
   }
 
   // Update a case by ID
-  async updateCase(
-    id: Types.ObjectId,
-    updateData: Partial<typeof CaseModel>
-  ) {
+  async updateCase(id: Types.ObjectId, updateData: Partial<typeof CaseModel>) {
     return CaseModel.findByIdAndUpdate(id, updateData, { new: true }).lean();
   }
 
   //archive a case
   async archiveCase(id: Types.ObjectId) {
-    return CaseModel.findByIdAndUpdate(id, { isArchived: true }, { new: true }).lean();
+    return CaseModel.findByIdAndUpdate(
+      id,
+      { isArchived: true },
+      { new: true }
+    ).lean();
   }
 
   //unarchive a case
   async unarchiveCase(id: Types.ObjectId) {
-    return CaseModel.findByIdAndUpdate(id, { isArchived: false }, { new: true }).lean();
+    return CaseModel.findByIdAndUpdate(
+      id,
+      { isArchived: false },
+      { new: true }
+    ).lean();
   }
 
   // Delete a case by ID
@@ -133,13 +210,12 @@ export class CaseService {
     return CaseModel.findByIdAndDelete(id).lean();
   }
 
-
   // Split content into chunks
   private splitContent(content: string, maxTokens: number): string[] {
     const chunks = [];
-    let currentChunk = '';
+    let currentChunk = "";
 
-    for (const word of content.split(' ')) {
+    for (const word of content.split(" ")) {
       if ((currentChunk + word).length > maxTokens) {
         chunks.push(currentChunk);
         currentChunk = word;
@@ -157,7 +233,7 @@ export class CaseService {
 
   // Clean and parse the response from OpenAI
   private cleanResponse(response: string): any[] {
-    const jsonString = response.replace(/```json|```/g, '').trim();
+    const jsonString = response.replace(/```json|```/g, "").trim();
     return JSON.parse(jsonString);
   }
 
@@ -170,7 +246,7 @@ export class CaseService {
         throw new Error("No documents found for the case");
       }
 
-      const content = documents.map(doc => doc.content).join(' ');
+      const content = documents.map((doc) => doc.content).join(" ");
 
       //remove empty strings and check if content is empty
 
@@ -180,43 +256,194 @@ export class CaseService {
 
       const contentChunks = this.splitContent(content, MAX_TOKENS / 2); // Split content into smaller chunks
 
-      const results = await Promise.all(contentChunks.map(async (chunk) => {
-        const prompt = `Extract the following information from the document: Disease Name, Amount Spent, Provider Name, Doctor Name, Medical Note, Date of Claim in an array of object [{}] from the document content: ${chunk}`;
+      const results = await Promise.all(
+        contentChunks.map(async (chunk) => {
+          const prompt = `Extract the following information from the document: Disease Name, Amount Spent, Provider Name, Doctor Name, Medical Note, Date of Claim in an array of object [{}] from the document content: ${chunk}`;
 
-        const response = await this.openAiService.completeChat({
-          context: "Extract the patient report from the document",
-          prompt,
-          model: "gpt-3.5-turbo",
-          temperature: 0.4,
-        });
+          const response = await this.openAiService.completeChat({
+            context: "Extract the patient report from the document",
+            prompt,
+            model: "gpt-3.5-turbo",
+            temperature: 0.4,
+          });
 
-        return this.cleanResponse(response);
-
-      }));
+          return this.cleanResponse(response);
+        })
+      );
 
       // Flatten the array of arrays into a single array
       const flattenedResults = results.flat();
 
       if (flattenedResults.length) {
-
         //create report objects from flattened results
         const reportObjects = flattenedResults.map((result) => {
           return {
-            nameOfDisease: result['Disease Name'] || '',
-            amountSpent: result['Amount Spent'] || 0,
-            providerName: result['Provider Name'] || '',
-            doctorName: result['Doctor Name'] || '',
-            medicalNote: result['Medical Note'] || '',
-            dateOfClaim: new Date(result['Date of Claim'])
-          }
+            nameOfDisease: result["Disease Name"] || "",
+            amountSpent: result["Amount Spent"] || 0,
+            providerName: result["Provider Name"] || "",
+            doctorName: result["Doctor Name"] || "",
+            medicalNote: result["Medical Note"] || "",
+            dateOfClaim: new Date(result["Date of Claim"]),
+          };
         });
         //update case and add reports
-        await CaseModel.findOneAndUpdate({ _id: caseId }, { reports: reportObjects }, { new: true }).lean();
+        await CaseModel.findOneAndUpdate(
+          { _id: caseId },
+          { reports: reportObjects },
+          { new: true }
+        ).lean();
       }
       return flattenedResults;
-
     } catch (error) {
-      throw new Error('Failed to populate report from case documents');
+      throw new Error("Failed to populate report from case documents");
     }
   }
+
+  async getReportsByUser(userId: string) {
+    const reports = await CaseModel.aggregate([
+      {
+        $match: {
+          user: new Types.ObjectId(userId),
+        },
+      },
+      {
+        $project: {
+          reports: 1,
+        },
+      },
+      {
+        $unwind: "$reports",
+      },
+      {
+        $replaceRoot: { newRoot: "$reports" },
+      },
+    ]);
+
+    return reports;
+  }
+
+  // just return sample reports for now .. adjust later
+  async getClaimRelatedReports(userId: string) {
+    const reports = await CaseModel.aggregate([
+      {
+        $match: {
+          user: new Types.ObjectId(userId), // Match cases by user ID
+        },
+      },
+      {
+        $project: {
+          _id: 1, // Include the case ID in the projection
+          caseNumber: 1, // Include caseNumber in the projection
+          reports: 1, // Also include the reports array
+        },
+      },
+      {
+        $unwind: "$reports", // Unwind the reports array
+      },
+      {
+        $addFields: {
+          "reports.caseNumber": "$caseNumber", // Add the caseNumber to each report
+        },
+      },
+      {
+        $replaceRoot: { newRoot: "$reports" }, // Replace the root with the report object
+      },
+    ]);
+    return reports;
+  }
+
+  async getMostVisitedCasesByUser(userId: string) {
+    const mostVisitedCases = await CaseModel.aggregate([
+      {
+        $match: {
+          user: new Types.ObjectId(userId),
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "user",
+          foreignField: "_id",
+          as: "userDetails",
+        },
+      },
+      {
+        $unwind: "$userDetails",
+      },
+      {
+        $project: {
+          caseNumber: 1, // Project caseNumber
+          viewCount: 1, // Project viewCount for sorting
+          "userDetails.name": 1, // Project user details
+          "userDetails._id": 1,
+          "userDetails.profilePicture": 1,
+          reports: 1,
+        },
+      },
+      {
+        $sort: { viewCount: -1 }, // Sort by most visited (viewCount)
+      },
+      {
+        $limit: 3, // Get the most visited case
+      },
+      {
+        $project: {
+          _id: 0, // Exclude the case ID
+          userDetails: 1, // Return user details
+          reports: 1,
+          caseNumber: 1, // Return case number
+        },
+      },
+    ]);
+
+    return mostVisitedCases;
+  }
+
+  async getLastViewedCaseByUser(userId: string) {
+    const lastViewedCase = await CaseModel.aggregate([
+      {
+        $match: {
+          user: new Types.ObjectId(userId),
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "user",
+          foreignField: "_id",
+          as: "userDetails",
+        },
+      },
+      {
+        $unwind: "$userDetails",
+      },
+      {
+        $project: {
+          caseNumber: 1, // Project caseNumber
+          lastViewed: 1, // Project lastViewed for sorting
+          "userDetails.name": 1, // Project user details
+          "userDetails._id": 1,
+          "userDetails.profilePicture": 1,
+          reports: 1,
+        },
+      },
+      {
+        $sort: { lastViewed: -1 }, // Sort by last viewed
+      },
+      {
+        $limit: 1, // Get the last viewed case
+      },
+      {
+        $project: {
+          _id: 1, // Exclude the case ID
+          userDetails: 1, // Return user details
+          reports: 1,
+          caseNumber: 1, // Return case number
+        },
+      },
+    ]);
+
+    return lastViewedCase[0];
+  }
+
 }

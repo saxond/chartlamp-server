@@ -8,6 +8,18 @@ const caseController = new CaseController();
 // Case routes
 router.post('/', isAuthenticated, caseController.create);
 router.get('/', isAuthenticated, caseController.getAll);
+router.get("/stats", isAuthenticated, caseController.getUserStats);
+router.get("/reports/claim-related", isAuthenticated, caseController.getClaimRelatedReports);
+router.get(
+  "/most-visited",
+  isAuthenticated,
+  caseController.getMostVisitedCasesByUser
+);
+router.get(
+  "/last-viewed",
+  isAuthenticated,
+  caseController.getLastViewedCaseByUser
+);
 router.get('/user', isAuthenticated, caseController.getUserCases);
 router.get('/:id', isAuthenticated, caseController.getById);
 router.put('/:id', isAuthenticated, caseController.update);
