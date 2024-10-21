@@ -20,9 +20,15 @@ router.get(
   isAuthenticated,
   caseController.getLastViewedCaseByUser
 );
+router.get(
+  "/:id/detail",
+  isAuthenticated,
+  caseController.getCaseByIdWithBodyParts
+);
 router.get('/user', isAuthenticated, caseController.getUserCases);
 router.get('/:id', isAuthenticated, caseController.getById);
 router.put('/:id', isAuthenticated, caseController.update);
+router.patch("/:id/reports/:reportId", isAuthenticated, caseController.updateCaseReportTags);
 router.delete('/:id', isAuthenticated, caseController.delete);
 
 export default router;

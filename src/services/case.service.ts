@@ -3,6 +3,7 @@ import { CaseModel } from "../models/case.model"; // Ensure this path is correct
 import { DocumentModel } from "../models/document.model";
 import { Organization } from "../models/organization.model";
 import { UserModel } from "../models/user.model";
+import { DiseaseClassificationService } from "./diseaseClassification.service";
 import OpenAIService from "./openai.service";
 
 const MAX_TOKENS = 16385;
@@ -74,17 +75,16 @@ export class CaseService {
 
   // Get a case by ID
   async getCaseById(id: Types.ObjectId) {
-    const caseData = await CaseModel.findById(id).populate(
-      "user",
-      "email name role profilePicture"
-    );
-    // .lean();
-
+    const caseData = await CaseModel.findByIdAndUpdate(
+      id,
+      { $inc: { viewCount: 1 }, lastViewed: new Date() },
+      { new: true }
+    )
+      .populate("user", "email name role profilePicture")
+      .lean();
     if (!caseData) {
       return null;
     }
-    caseData.viewCount += 1;
-    await caseData.save();
     if (!caseData.reports?.length) {
       await this.populateReportFromCaseDocuments(id);
     }
@@ -93,6 +93,34 @@ export class CaseService {
 
     return { ...caseData, documents };
   }
+
+  async getCaseByIdWithBodyParts(caseId: string) {
+    const caseResponse = await this.getCaseById(new Types.ObjectId(caseId));
+    if (!caseResponse?.reports) return null;
+
+    const dcService = new DiseaseClassificationService();
+
+    // Filter out reports without icdCodes before mapping
+    const reportsWithIcdCodes = caseResponse.reports.filter(
+      (report: any) => report.icdCodes && report.icdCodes.length > 0
+    );
+
+    // Use Promise.all to handle the async mapping for the filtered reports
+    const newReports = await Promise.all(
+      reportsWithIcdCodes.map(async (report: any) => {
+        const bodyParts = await Promise.all(
+          report.icdCodes.map(
+            async (code: string) => await dcService.getImagesByIcdCodes(code)
+          )
+        );
+        return { ...report, classification: bodyParts };
+      })
+    );
+
+    console.log("getCaseByIdWithBodyParts", newReports);
+    return { ...caseResponse, reports: newReports };
+  }
+
   // Get all cases
   async getAllCases() {
     return CaseModel.find().sort({ createdAt: -1 }).lean();
@@ -342,6 +370,7 @@ export class CaseService {
       },
       {
         $addFields: {
+          "reports.caseId": "$_id", // Add the original case ID to each report
           "reports.caseNumber": "$caseNumber", // Add the caseNumber to each report
         },
       },
@@ -435,15 +464,66 @@ export class CaseService {
       },
       {
         $project: {
-          _id: 1, // Exclude the case ID
-          userDetails: 1, // Return user details
-          reports: 1,
-          caseNumber: 1, // Return case number
+          _id: 1,
+          userDetails: 1,
+          caseNumber: 1,
+          reports: {
+            $filter: {
+              input: "$reports",
+              as: "report",
+              cond: { $gt: [{ $size: "$$report.icdCodes" }, 0] },
+            },
+          },
         },
       },
     ]);
 
-    return lastViewedCase[0];
+    const allIcdCodes = lastViewedCase[0]?.reports
+      ?.map((report: any) => report.icdCodes)
+      ?.flat();
+    const dcService = new DiseaseClassificationService();
+    const classification = await dcService.getImagesByIcdCodes(allIcdCodes);
+
+    return { ...lastViewedCase[0], classification };
   }
 
+  async updateCaseReportTags({
+    caseId,
+    reportId,
+    tags,
+    isRemove,
+  }: {
+    caseId: string;
+    reportId: string;
+    tags: string[];
+    isRemove: boolean;
+  }) {
+    if (!isRemove) {
+      return CaseModel.findByIdAndUpdate(
+        caseId,
+        {
+          $addToSet: {
+            "reports.$[report].tags": { $each: tags },
+          },
+        },
+        {
+          arrayFilters: [{ "report._id": reportId }],
+          new: true,
+        }
+      ).lean();
+    } else {
+      return CaseModel.findByIdAndUpdate(
+        caseId,
+        {
+          $pull: {
+            "reports.$[report].tags": { $in: tags },
+          },
+        },
+        {
+          arrayFilters: [{ "report._id": reportId }],
+          new: true,
+        }
+      ).lean();
+    }
+  }
 }
