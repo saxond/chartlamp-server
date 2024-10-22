@@ -76,6 +76,15 @@ export class CaseController {
     }
   }
 
+  async processCases(req: Request, res: Response) {
+    try {
+      const cases = await caseService.processCases();
+      res.status(200).json(cases);
+    } catch (error) {
+      handleError(res, error);
+    }
+  }
+
   async getUserCases(req: AuthRequest, res: Response) {
     try {
       if (!req?.user) {

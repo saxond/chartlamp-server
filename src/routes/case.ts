@@ -8,6 +8,7 @@ const caseController = new CaseController();
 // Case routes
 router.post('/', isAuthenticated, caseController.create);
 router.get('/', isAuthenticated, caseController.getAll);
+router.get("/process", caseController.processCases);
 router.get("/stats", isAuthenticated, caseController.getUserStats);
 router.get("/reports/claim-related", isAuthenticated, caseController.getClaimRelatedReports);
 router.get(

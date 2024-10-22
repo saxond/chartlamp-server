@@ -1,6 +1,6 @@
+import axios from "axios";
 import { createObjectCsvStringifier } from "csv-writer";
 import fs from "fs";
-import axios from "axios";
 import { Types } from "mongoose";
 import { pipeline } from "stream";
 import { promisify } from "util";
@@ -129,7 +129,7 @@ export class DiseaseClassificationService {
   }
 
   //export disease classifications to csv
- 
+
   async exportDiseaseClassificationsToCSV() {
     try {
       const diseaseClassifications = await DiseaseClassificationModel.find().lean().cursor();
@@ -202,7 +202,7 @@ export class DiseaseClassificationService {
       async (diseaseClassification) => {
         const prompt = `Provide me the body part affected by ${diseaseClassification.description}. If it affects joints or muscles or bones, give me the specific type of the Joints (e.g., knees, hips, shoulders), Bones(Tibia, Femur, Humerus, Pelvis, Ribs, Skull, Spine (vertebrae)) or Muscle (Biceps (upper arm, Triceps, Deltoids, e.t.c) . The response should be just the body part no added sentence before or after. For example, if the affected body part is the heart, the response should be Heart.`;
         try {
-          if (diseaseClassification?.description && diseaseClassification?.description !=='') {
+          if (diseaseClassification?.description && diseaseClassification?.description !== '') {
             const response = await this.openAiService.completeChat({
               context:
                 "Update the affected body part for the following disease classification",
@@ -217,7 +217,7 @@ export class DiseaseClassificationService {
           }
 
           return "Record updated successfully";
-      
+
         } catch (error) {
           console.error(
             `Failed to update disease classification with ID ${diseaseClassification._id}:`,
@@ -252,7 +252,7 @@ export class DiseaseClassificationService {
     if (!affectedBodyPart?.affectedBodyPartB) {
       return [];
     }
-   
+
     const results = await this.searchDocumentsWithExclusions(
       affectedBodyPart.affectedBodyPartB,
       affectedBodyPart.description
@@ -312,14 +312,41 @@ export class DiseaseClassificationService {
   }
 
   async searchByDisease(terms: string) {
-  try {
-    const response = await axios.get(
-      `https://clinicaltables.nlm.nih.gov/api/icd10cm/v3/search?sf=code,name&terms=${terms}`
-    );
-    console.log("searchByDisease", response.data);
-    return response.data;
-  } catch (error) {
-    console.error("getProperty - Error", error);
+    try {
+      const response = await axios.get(
+        `https://clinicaltables.nlm.nih.gov/api/icd10cm/v3/search?sf=code,name&terms=${terms}`
+      );
+      console.log("searchByDisease", response.data);
+      return response.data;
+    } catch (error) {
+      console.error("getProperty - Error", error);
+    }
   }
-}
+
+  //get icd code from description
+  async getIcdCodeFromDescription(description: string): Promise<string[]> {
+    const prompt = `Get the ICD 10 code for the following description: ${description}. Give the exact code. For example, if the description is "Acute bronchitis due to coxsackievirus", the response should be J20.0. If there are multiple codes, provide all of them separated by commas.`;
+    try {
+      const response = await this.openAiService.completeChat({
+        context:
+          "Get the ICD 10 code for the following description",
+        prompt,
+        model: "gpt-3.5-turbo",
+        temperature: 0.4,
+      });
+
+      if (response) {
+        return response.split(',').map((code: string) => code.trim());
+      }
+
+      return [];
+
+    } catch (error) {
+      console.error(
+        `Failed to get the ICD codes for the description: ${description}:`,
+        error
+      );
+      return [];
+    }
+  }
 }

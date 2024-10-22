@@ -26,7 +26,6 @@ export class DocumentService {
             // Return content
             return content;
         } catch (error) {
-            console.error('Error extracting content from document:', error);
             throw new Error('Failed to extract content from document');
         }
     }
@@ -40,7 +39,7 @@ export class DocumentService {
             }).limit(limit).lean();
 
             if (!documents.length) {
-                throw new Error('No documents found');
+                return [];
             }
 
             // Extract content from each document
@@ -56,42 +55,39 @@ export class DocumentService {
             // Return updated documents
             return updatedDocuments;
         } catch (error) {
-            console.error('Error getting documents without content:', error);
             throw new Error('Failed to get documents without content');
         }
     }
 
-    async getDocumentWithoutContent(limit: number = 1): Promise<any> {
+    async extractCaseDocumentData(caseId: string): Promise<any[]> {
         try {
-            // Get document from the database that do not have content
+            // Get documents from the database that do not have content extracted
             const documents = await DocumentModel.find({
-                $or: [{ content: null }, { content: '' }],
-                extractedData: { $ne: '' }
-            }).limit(limit).lean();
+                $or: [{ extractedData: null }, { extractedData: '' }],
+                case: caseId
+            }).lean();
 
-            if (!documents?.length) {
-                throw new Error('No document found');
+            if (!documents.length) {
+                return [];
             }
 
             // Extract content from each document
             const updatePromises = documents.map(async (document) => {
-                const content = await this.getContentFromDocument(document.extractedData || '');
-                await DocumentModel.findByIdAndUpdate(document._id, { content: content });
-                return { ...document, content };
+                const content = await this.extractContentFromDocument(document.url);
+                await DocumentModel.findByIdAndUpdate(document._id, { extractedData: content });
+                return { ...document, extractedData: content };
             });
 
             // Wait for all updates to complete
             const updatedDocuments = await Promise.all(updatePromises);
 
+            console.log('extractCaseDocumentData');
             // Return updated documents
             return updatedDocuments;
-
         } catch (error) {
-            console.error('Error getting document without content:', error);
-            throw new Error('Failed to get document without content');
+            throw new Error('Failed to get documents without content');
         }
     }
-
 
     // Pass the extractedData from the document to get the content in the above structure
 
@@ -99,6 +95,7 @@ export class DocumentService {
         try {
           // Trim the extractedData and remove any empty strings
           extractedData = extractedData?.trim();
+
           if (!extractedData) {
             return '';
           }
@@ -139,8 +136,72 @@ export class DocumentService {
           // Return merged content
           return mergedResponse;
         } catch (error) {
-          console.error('Error getting content from document:', error);
           throw new Error('Failed to get content from document');
         }
       }
+
+    
+      async getDocumentWithoutContent(limit: number = 1): Promise<any> {
+        try {
+            // Get document from the database that do not have content
+            const documents = await DocumentModel.find({
+                $or: [{ content: null }, { content: '' }],
+                extractedData: { $ne: '' }
+            }).limit(limit).lean();
+
+            if (!documents?.length) {
+                return [];
+            }
+
+            // Extract content from each document
+            const updatePromises = documents.map(async (document) => {
+                const content = await this.getContentFromDocument(document.extractedData || '');
+                await DocumentModel.findByIdAndUpdate(document._id, { content: content });
+                return { ...document, content };
+            });
+
+            // Wait for all updates to complete
+            const updatedDocuments = await Promise.all(updatePromises);
+
+            // Return updated documents
+            return updatedDocuments;
+
+        } catch (error) {
+            throw new Error('Failed to get document without content');
+        }
+    }
+
+    async extractCaseDocumentWithoutContent(caseId: string): Promise<any> {
+        try {
+            // Get document from the database that do not have content
+            const documents = await DocumentModel.find({
+                $or: [{ content: null }, { content: '' }],
+                extractedData: { $ne: '' },
+                case: caseId
+            }).lean();
+
+            if (!documents?.length) {
+               return [];
+            }
+
+            // Extract content from each document
+            const updatePromises = documents.map(async (document) => {
+                const content = await this.getContentFromDocument(document.extractedData || '');
+                await DocumentModel.findByIdAndUpdate(document._id, { content: content });
+                return { ...document, content };
+            });
+
+            // Wait for all updates to complete
+            const updatedDocuments = await Promise.all(updatePromises);
+
+            console.log('extractCaseDocumentWithoutContent');
+            
+
+            // Return updated documents
+            return updatedDocuments;
+
+        } catch (error) {
+            throw new Error('Failed to get document without content');
+        }
+    }
 }
