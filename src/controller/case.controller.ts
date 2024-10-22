@@ -44,7 +44,7 @@ export class CaseController {
   async getById(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const caseData = await caseService.getCaseById(new Types.ObjectId(id));
+      const caseData = await caseService.getCaseById(id);
       if (!caseData) {
         return res.status(404).json({ message: "Case not found" });
       }
@@ -57,6 +57,15 @@ export class CaseController {
   async getAll(req: Request, res: Response) {
     try {
       const cases = await caseService.getAllCases();
+      res.status(200).json(cases);
+    } catch (error) {
+      handleError(res, error);
+    }
+  }
+
+  async processCases(req: Request, res: Response) {
+    try {
+      const cases = await caseService.processCases();
       res.status(200).json(cases);
     } catch (error) {
       handleError(res, error);

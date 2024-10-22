@@ -1,18 +1,24 @@
 import mongoose, { Types } from "mongoose";
-import { CaseModel } from "../models/case.model"; // Ensure this path is correct
+import { CaseModel, CronStatus } from "../models/case.model"; // Ensure this path is correct
 import { DocumentModel } from "../models/document.model";
 import { Organization } from "../models/organization.model";
 import { UserModel } from "../models/user.model";
+import { DiseaseClassificationService } from "./diseaseClassification.service";
+import { DocumentService } from "./document.service";
 import OpenAIService from "./openai.service";
 
 const MAX_TOKENS = 16385;
 
 export class CaseService {
   private openAiService: OpenAIService;
+  private documentService: DocumentService;
+  private diseaseClassificationService: DiseaseClassificationService;
   constructor() {
     this.openAiService = new OpenAIService(
       process.env.OPENAI_API_KEY as string
     );
+    this.documentService = new DocumentService();
+    this.diseaseClassificationService = new DiseaseClassificationService();
   }
 
   // Create a new case
@@ -73,26 +79,28 @@ export class CaseService {
   }
 
   // Get a case by ID
-  async getCaseById(id: Types.ObjectId) {
-    const caseData = await CaseModel.findById(id).populate(
-      "user",
-      "email name role profilePicture"
-    );
-    // .lean();
-
+  async getCaseById(id: string) {
+    const caseData = await CaseModel.findByIdAndUpdate(
+      id,
+      { $inc: { viewCount: 1 } },
+      { new: true }
+    )
+      .populate("user", "email name role profilePicture")
+      .lean();
+  
     if (!caseData) {
       return null;
     }
-    caseData.viewCount += 1;
-    await caseData.save();
+  
     if (!caseData.reports?.length) {
       await this.populateReportFromCaseDocuments(id);
     }
-
+  
     const documents = await DocumentModel.find({ case: id }).lean();
-
+  
     return { ...caseData, documents };
   }
+
   // Get all cases
   async getAllCases() {
     return CaseModel.find().sort({ createdAt: -1 }).lean();
@@ -161,6 +169,19 @@ export class CaseService {
     return response[0];
   }
 
+  // async getICD10Codes(description: string) promise<string[]> {
+
+  //   const prompt = `Get the ICD-10 codes as a comma seperated string for the following description: ${description}. do not include the description in the response. just give the codes. e.g A00.0, B00.1`;
+
+  //   const response = await this.openAiService.completeChat({
+  //     context: "Get ICD-10 codes from description",
+  //     prompt,
+  //     model: "gpt-3.5-turbo",
+  //     temperature: 0.4,
+  //   });
+
+  //   const jsonString = response.replace(/```json|```/g, "").trim();
+  // }
   //get user cases
   async getUserCases(userId: string) {
     return CaseModel.find({
@@ -238,12 +259,13 @@ export class CaseService {
   }
 
   // Populate report from case documents
-  async populateReportFromCaseDocuments(caseId: Types.ObjectId): Promise<any> {
+  async populateReportFromCaseDocuments(caseId: string): Promise<any> {
     try {
       const documents = await DocumentModel.find({ case: caseId }).lean();
 
       if (!documents.length) {
-        throw new Error("No documents found for the case");
+
+         return;
       }
 
       const content = documents.map((doc) => doc.content).join(" ");
@@ -276,14 +298,17 @@ export class CaseService {
 
       if (flattenedResults.length) {
         //create report objects from flattened results
-        const reportObjects = flattenedResults.map((result) => {
+        const reportObjects = flattenedResults.map(async(result) => {
           return {
+            icdCodes: await this.diseaseClassificationService.getIcdCodeFromDescription(
+              result["Disease Name"]
+            ),
             nameOfDisease: result["Disease Name"] || "",
             amountSpent: result["Amount Spent"] || 0,
             providerName: result["Provider Name"] || "",
             doctorName: result["Doctor Name"] || "",
             medicalNote: result["Medical Note"] || "",
-            dateOfClaim: new Date(result["Date of Claim"]),
+            dateOfClaim: result["Date of Claim"] || "",       
           };
         });
         //update case and add reports
@@ -295,7 +320,59 @@ export class CaseService {
       }
       return flattenedResults;
     } catch (error) {
+      console.log(error);
       throw new Error("Failed to populate report from case documents");
+    }
+  }
+
+  //process case 
+  async processCase(caseId: string) {
+    try {
+      await this.documentService.extractCaseDocumentData(caseId);
+      await this.documentService.extractCaseDocumentWithoutContent(caseId);
+      await this.populateReportFromCaseDocuments(caseId);
+    }catch (error) {
+      console.error("Error processing case:", error);
+    }
+  }
+
+  async processCases() {
+
+    const caseItem = await CaseModel.findOneAndUpdate(
+      {
+        $or: [
+          { cronStatus: CronStatus.Pending },
+          { cronStatus: "" },
+          { cronStatus: { $exists: false } } // Matches undefined (i.e., field does not exist)
+        ]
+      },
+      { cronStatus: CronStatus.Processing },
+      { new: true }
+    ).lean();
+    
+
+    if (!caseItem) {
+      return;
+    }
+
+    try {
+      // Process the case
+      await this.processCase(caseItem._id);
+
+      // Update to processed
+      await CaseModel.findByIdAndUpdate(
+        caseItem._id,
+        { cronStatus: CronStatus.Processed },
+        { new: true }
+      );
+    } catch (error) {
+      // Handle error and revert status to pending if needed
+      await CaseModel.findByIdAndUpdate(
+        caseItem._id,
+        { cronStatus: CronStatus.Pending },
+        { new: true }
+      );
+      console.error('Error processing case:', error);
     }
   }
 

@@ -258,7 +258,7 @@ export class UserController {
       if (isValid) {
         res.status(200).json(formatResponse(true, "2FA token verified"));
       } else {
-        res.status(401).json(formatResponse(false, "Invalid 2FA token"));
+        res.status(400).json(formatResponse(false, "Invalid 2FA token"));
       }
     } catch (error) {
       res.status(400).json(formatResponse(false, (error as Error).message));

@@ -14,7 +14,7 @@ router.use("/user", userRoutes);
 
 router.use("/openai", openAiRoutes);
 
-router.use('/invitations', invitationRoutes);
+router.use('/invitation', invitationRoutes);
 
 router.use('/dc', diseaseClassificationRoutes);
 

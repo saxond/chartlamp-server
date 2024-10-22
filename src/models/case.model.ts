@@ -48,8 +48,15 @@ class Report {
   public medicalNote?: string;
 
   @prop()
-  public dateOfClaim?: Date;
+  public dateOfClaim?: string;
 }
+
+export enum CronStatus {
+  Pending = "pending",
+  Processing = "processing",
+  Processed = "processed",
+}
+
 
 @index({ caseNumber: 1 })
 @index({ plaintiff: 1 })
@@ -63,6 +70,8 @@ class Report {
   },
 })
 export class Case {
+  public _id?: string;
+
   @prop({ required: true, unique: true })
   public caseNumber!: string;
 
@@ -99,6 +108,9 @@ export class Case {
   //Viewed on last date that the case was viewed
   @prop({ default: Date.now })
   public lastViewed?: Date;
+
+  @prop({ required: false, enum: CronStatus, default: CronStatus.Pending })
+  public cronStatus?: CronStatus;
 
   // Timestamps will be automatically added by mongoose
   public createdAt?: Date;
