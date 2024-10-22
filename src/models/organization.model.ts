@@ -9,6 +9,8 @@ import { getModelForClass, pre, prop } from "@typegoose/typegoose";
   next();
 })
 export class Organization {
+  public _id?: string;
+  
   @prop({ required: true })
   public name!: string;
 

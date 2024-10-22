@@ -7,17 +7,19 @@ import { Case } from "./case.model"; // Ensure this path is correct
   },
 })
 export class Document {
+  public _id?: string;
+  
   @prop({ ref: () => Case, required: true })
   public case!: Ref<Case>;
 
   @prop({ required: true })
   public url!: string;
 
-  @prop({ required: true })
-  public content!: string;
+  @prop({ default: null })
+  public content?: string;
 
-  @prop({ required: true })
-  public extractedData!: string;
+  @prop({ default: null })
+  public extractedData?: string;
 
   // Timestamps will be automatically added by mongoose
   public createdAt?: Date;

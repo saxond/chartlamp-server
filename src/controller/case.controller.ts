@@ -1,78 +1,238 @@
-import { Request, Response } from 'express';
-import { Types } from 'mongoose';
-import { AuthRequest } from '../middleware/isAuth';
-import { CaseService } from '../services/case.service'; // Ensure this path is correct
+import { Request, Response } from "express";
+import { Types } from "mongoose";
+import { AuthRequest } from "../middleware/isAuth";
+import { CaseService } from "../services/case.service"; // Ensure this path is correct
+
+const caseService = new CaseService();
+
+const handleError = (res: Response, error: any) => {
+  console.error("Error:", error);
+  res.status(500).json({ message: error.message });
+};
 
 export class CaseController {
-  static async create(req: AuthRequest, res: Response) {
+  async create(req: AuthRequest, res: Response) {
     try {
-    
       if (!req?.user) {
-        return res.status(401).json({ message: 'Unauthorized' });
+        return res.status(401).json({ message: "Unauthorized" });
       }
-      const data = req.body;
-      const newCase = await CaseService.createCase({
-        caseNumber: data.caseNumber,
-        plaintiff: data.plaintiff,
-        dateOfClaim: new Date(data.dateOfClaim),
-        claimStatus: data.claimStatus,
-        actionRequired: data.actionRequired,
-        targetCompletion: new Date(data.targetCompletion),
-        documents: data.documents,
-        user:  req?.user?.id,
+      const {
+        caseNumber,
+        plaintiff,
+        dateOfClaim,
+        claimStatus,
+        actionRequired,
+        targetCompletion,
+        documents,
+      } = req.body;
+      const newCase = await caseService.createCase({
+        caseNumber,
+        plaintiff,
+        dateOfClaim: new Date(dateOfClaim),
+        claimStatus,
+        actionRequired,
+        targetCompletion: new Date(targetCompletion),
+        documents,
+        user: req?.user?.id,
       });
       res.status(201).json(newCase);
     } catch (error) {
-      res.status(500).json({ message: (error as any).message });
+      handleError(res, error);
     }
   }
 
-  static async getById(req: Request, res: Response) {
+  async getById(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const caseData = await CaseService.getCaseById(new Types.ObjectId(id));
+      const caseData = await caseService.getCaseById(new Types.ObjectId(id));
       if (!caseData) {
-        return res.status(404).json({ message: 'Case not found' });
+        return res.status(404).json({ message: "Case not found" });
       }
       res.status(200).json(caseData);
     } catch (error) {
-      res.status(500).json({ message: (error as any).message });
+      handleError(res, error);
     }
   }
 
-  static async getAll(req: Request, res: Response) {
+  async getCaseByIdWithBodyParts(req: Request, res: Response) {
     try {
-      const cases = await CaseService.getAllCases();
+      const { id } = req.params;
+      const caseData = await caseService.getCaseByIdWithBodyParts(id);
+      if (!caseData) {
+        return res.status(404).json({ message: "Case not found" });
+      }
+      res.status(200).json(caseData);
+    } catch (error) {
+      handleError(res, error);
+    }
+  }
+
+  async getAll(req: Request, res: Response) {
+    try {
+      const cases = await caseService.getAllCases();
       res.status(200).json(cases);
     } catch (error) {
-      res.status(500).json({ message: (error as any).message });
+      handleError(res, error);
     }
   }
 
-  static async update(req: Request, res: Response) {
+  async processCases(req: Request, res: Response) {
+    try {
+      const cases = await caseService.processCases();
+      res.status(200).json(cases);
+    } catch (error) {
+      handleError(res, error);
+    }
+  }
+
+  async getUserCases(req: AuthRequest, res: Response) {
+    try {
+      if (!req?.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const cases = await caseService.getUserCases(req?.user?.id);
+      res.status(200).json(cases);
+    } catch (error) {
+      handleError(res, error);
+    }
+  }
+
+  async update(req: Request, res: Response) {
     try {
       const { id } = req.params;
       const updateData = req.body;
-      const updatedCase = await CaseService.updateCase(new Types.ObjectId(id), updateData);
+      const updatedCase = await caseService.updateCase(
+        new Types.ObjectId(id),
+        updateData
+      );
       if (!updatedCase) {
-        return res.status(404).json({ message: 'Case not found' });
+        return res.status(404).json({ message: "Case not found" });
       }
       res.status(200).json(updatedCase);
     } catch (error) {
-      res.status(500).json({ message: (error as any).message });
+      handleError(res, error);
     }
   }
 
-  static async delete(req: Request, res: Response) {
+  async delete(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const deletedCase = await CaseService.deleteCase(new Types.ObjectId(id));
+      const deletedCase = await caseService.deleteCase(new Types.ObjectId(id));
       if (!deletedCase) {
-        return res.status(404).json({ message: 'Case not found' });
+        return res.status(404).json({ message: "Case not found" });
       }
-      res.status(200).json({ message: 'Case deleted successfully' });
+      res.status(200).json({ message: "Case deleted successfully" });
     } catch (error) {
-      res.status(500).json({ message: (error as any).message });
+      handleError(res, error);
     }
   }
+
+  async getUserStats(req: AuthRequest, res: Response) {
+    try {
+      if (!req?.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const cases = await caseService.getUserStats(req?.user?.id);
+      res.status(200).json(cases);
+    } catch (error) {
+      handleError(res, error);
+    }
+  }
+
+  async getClaimRelatedReports(req: AuthRequest, res: Response) {
+    try {
+      if (!req?.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const cases = await caseService.getClaimRelatedReports(req?.user?.id);
+      res.status(200).json(cases);
+    } catch (error) {
+      handleError(res, error);
+    }
+  }
+
+  async getMostVisitedCasesByUser(req: AuthRequest, res: Response) {
+    try {
+      if (!req?.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const cases = await caseService.getMostVisitedCasesByUser(req?.user?.id);
+      res.status(200).json(cases);
+    } catch (error) {
+      handleError(res, error);
+    }
+  }
+
+  async getLastViewedCaseByUser(req: AuthRequest, res: Response) {
+    try {
+      if (!req?.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const lastViewed = await caseService.getLastViewedCaseByUser(
+        req?.user?.id
+      );
+      res.status(200).json(lastViewed);
+    } catch (error) {
+      handleError(res, error);
+    }
+  }
+
+  async updateCaseReportTags(req: AuthRequest, res: Response) {
+    try {
+      if (!req?.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const response = await caseService.updateCaseReportTags({
+        ...req.body,
+        caseId: req.params.id,
+        reportId: req.params.reportId,
+      });
+      res.status(200).json(response);
+    } catch (error) {
+      handleError(res, error);
+    }
+  }
+
+  async addComment(req: AuthRequest, res: Response) {
+    try {
+      if (!req?.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const response = await caseService.addComment({
+        ...req.body,
+        caseId: req.params.id,
+        reportId: req.params.reportId,
+        userId: req?.user?.id,
+      });
+      res.status(200).json(response);
+    } catch (error) {
+      handleError(res, error);
+    }
+  }
+
+  async getReportComments(req: AuthRequest, res: Response) {
+    try {
+      if (!req?.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const response = await caseService.getReportComments({
+        caseId: req.params.id,
+        reportId: req.params.reportId,
+        userId: req?.user?.id,
+      });
+      res.status(200).json(response);
+    } catch (error) {
+      handleError(res, error);
+    }
+  }
+
+  // async populateReportFromCaseDocuments(req: Request, res: Response) {
+  //   try {
+  //     const { caseId } = req.params;
+  //     const report = await caseService.populateReportFromCaseDocuments(caseId);
+  //     res.status(200).json(report);
+  //   } catch (error) {
+  //     handleError(res, error);
+  //   }
+  // }
 }

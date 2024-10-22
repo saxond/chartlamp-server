@@ -3,11 +3,43 @@ import { CaseController } from '../controller/case.controller'; // Ensure this p
 import { isAuthenticated } from '../middleware/isAuth';
 
 const router = express.Router();
+const caseController = new CaseController();
 
-router.post('/', isAuthenticated, CaseController.create);
-router.get('/:id', isAuthenticated, CaseController.getById);
-router.get('/', isAuthenticated, CaseController.getAll);
-router.put('/:id', isAuthenticated, CaseController.update);
-router.delete('/:id', isAuthenticated, CaseController.delete);
+// Case routes
+router.post('/', isAuthenticated, caseController.create);
+router.get('/', isAuthenticated, caseController.getAll);
+router.get("/process", caseController.processCases);
+router.get("/stats", isAuthenticated, caseController.getUserStats);
+router.get("/reports/claim-related", isAuthenticated, caseController.getClaimRelatedReports);
+router.get(
+  "/most-visited",
+  isAuthenticated,
+  caseController.getMostVisitedCasesByUser
+);
+router.get(
+  "/last-viewed",
+  isAuthenticated,
+  caseController.getLastViewedCaseByUser
+);
+router.get(
+  "/:id/detail",
+  isAuthenticated,
+  caseController.getCaseByIdWithBodyParts
+);
+router.get('/user', isAuthenticated, caseController.getUserCases);
+router.get('/:id', isAuthenticated, caseController.getById);
+router.put('/:id', isAuthenticated, caseController.update);
+router.patch("/:id/reports/:reportId", isAuthenticated, caseController.updateCaseReportTags);
+router.post(
+  "/:id/reports/:reportId/comment",
+  isAuthenticated,
+  caseController.addComment
+);
+router.get(
+  "/:id/reports/:reportId/comment",
+  isAuthenticated,
+  caseController.getReportComments
+);
+router.delete('/:id', isAuthenticated, caseController.delete);
 
 export default router;
