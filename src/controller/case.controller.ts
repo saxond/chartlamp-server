@@ -193,6 +193,39 @@ export class CaseController {
     }
   }
 
+  async addComment(req: AuthRequest, res: Response) {
+    try {
+      if (!req?.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const response = await caseService.addComment({
+        ...req.body,
+        caseId: req.params.id,
+        reportId: req.params.reportId,
+        userId: req?.user?.id,
+      });
+      res.status(200).json(response);
+    } catch (error) {
+      handleError(res, error);
+    }
+  }
+
+  async getReportComments(req: AuthRequest, res: Response) {
+    try {
+      if (!req?.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const response = await caseService.getReportComments({
+        caseId: req.params.id,
+        reportId: req.params.reportId,
+        userId: req?.user?.id,
+      });
+      res.status(200).json(response);
+    } catch (error) {
+      handleError(res, error);
+    }
+  }
+
   // async populateReportFromCaseDocuments(req: Request, res: Response) {
   //   try {
   //     const { caseId } = req.params;

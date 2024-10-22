@@ -30,6 +30,15 @@ export enum TagsType {
   NOT_DECIDED = "yet_to_be_decided",
 }
 
+class Comment {
+  @prop({ ref: () => User, required: true })
+  public user!: Ref<User>;
+
+  @prop()
+  public comment!: string;
+}
+
+
 class Report {
   @prop({ type: () => [String], default: [] })
   public icdCodes?: string[];
@@ -48,6 +57,9 @@ class Report {
 
   @prop()
   public doctorName?: string;
+
+  @prop()
+  public comments?: Comment[];
 
   @prop()
   public medicalNote?: string;

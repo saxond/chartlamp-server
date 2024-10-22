@@ -93,9 +93,9 @@ export class CaseService {
     if (!caseData.reports?.length) {
       await this.populateReportFromCaseDocuments(id.toString());
     }
-  
+
     const documents = await DocumentModel.find({ case: id }).lean();
-  
+
     return { ...caseData, documents };
   }
 
@@ -289,8 +289,7 @@ export class CaseService {
       const documents = await DocumentModel.find({ case: caseId }).lean();
 
       if (!documents.length) {
-
-         return;
+        return;
       }
 
       const content = documents.map((doc) => doc.content).join(" ");
@@ -323,17 +322,18 @@ export class CaseService {
 
       if (flattenedResults.length) {
         //create report objects from flattened results
-        const reportObjects = flattenedResults.map(async(result) => {
+        const reportObjects = flattenedResults.map(async (result) => {
           return {
-            icdCodes: await this.diseaseClassificationService.getIcdCodeFromDescription(
-              result["Disease Name"]
-            ),
+            icdCodes:
+              await this.diseaseClassificationService.getIcdCodeFromDescription(
+                result["Disease Name"]
+              ),
             nameOfDisease: result["Disease Name"] || "",
             amountSpent: result["Amount Spent"] || 0,
             providerName: result["Provider Name"] || "",
             doctorName: result["Doctor Name"] || "",
             medicalNote: result["Medical Note"] || "",
-            dateOfClaim: result["Date of Claim"] || "",       
+            dateOfClaim: result["Date of Claim"] || "",
           };
         });
         //update case and add reports
@@ -350,31 +350,29 @@ export class CaseService {
     }
   }
 
-  //process case 
+  //process case
   async processCase(caseId: string) {
     try {
       await this.documentService.extractCaseDocumentData(caseId);
       await this.documentService.extractCaseDocumentWithoutContent(caseId);
       await this.populateReportFromCaseDocuments(caseId);
-    }catch (error) {
+    } catch (error) {
       console.error("Error processing case:", error);
     }
   }
 
   async processCases() {
-
     const caseItem = await CaseModel.findOneAndUpdate(
       {
         $or: [
           { cronStatus: CronStatus.Pending },
           { cronStatus: "" },
-          { cronStatus: { $exists: false } } // Matches undefined (i.e., field does not exist)
-        ]
+          { cronStatus: { $exists: false } }, // Matches undefined (i.e., field does not exist)
+        ],
       },
       { cronStatus: CronStatus.Processing },
       { new: true }
     ).lean();
-    
 
     if (!caseItem) {
       return;
@@ -397,7 +395,7 @@ export class CaseService {
         { cronStatus: CronStatus.Pending },
         { new: true }
       );
-      console.error('Error processing case:', error);
+      console.error("Error processing case:", error);
     }
   }
 
@@ -599,5 +597,75 @@ export class CaseService {
         }
       ).lean();
     }
+  }
+
+  async addComment({
+    userId,
+    caseId,
+    reportId,
+    comment,
+  }: {
+    caseId: string;
+    reportId: string;
+    userId: string;
+    comment: string;
+  }) {
+    return CaseModel.findByIdAndUpdate(
+      caseId,
+      {
+        $push: {
+          "reports.$[report].comments": {
+            user: userId,
+            comment,
+          },
+        },
+      },
+      {
+        arrayFilters: [{ "report._id": reportId }],
+        new: true,
+      }
+    ).lean();
+  }
+
+  async getReportComments({
+    userId,
+    caseId,
+    reportId,
+  }: {
+    caseId: string;
+    reportId: string;
+    userId: string;
+  }) {
+    return CaseModel.aggregate([
+      {
+        $match: {
+          _id: new Types.ObjectId(caseId),
+        },
+      },
+      {
+        $project: {
+          reports: 1,
+        },
+      },
+      {
+        $unwind: "$reports",
+      },
+      {
+        $match: {
+          "reports._id": new Types.ObjectId(reportId),
+        },
+      },
+      {
+        $project: {
+          comments: {
+            $filter: {
+              input: "$reports.comments",
+              as: "comment",
+              cond: { $eq: ["$$comment.user", userId] },
+            },
+          },
+        },
+      },
+    ]);
   }
 }

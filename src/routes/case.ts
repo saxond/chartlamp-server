@@ -30,6 +30,16 @@ router.get('/user', isAuthenticated, caseController.getUserCases);
 router.get('/:id', isAuthenticated, caseController.getById);
 router.put('/:id', isAuthenticated, caseController.update);
 router.patch("/:id/reports/:reportId", isAuthenticated, caseController.updateCaseReportTags);
+router.post(
+  "/:id/reports/:reportId/comment",
+  isAuthenticated,
+  caseController.addComment
+);
+router.get(
+  "/:id/reports/:reportId/comment",
+  isAuthenticated,
+  caseController.getReportComments
+);
 router.delete('/:id', isAuthenticated, caseController.delete);
 
 export default router;
