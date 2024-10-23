@@ -24,6 +24,20 @@ export interface CaseWithDocuments {
   updatedAt?: Date;
   documents: any[];
 }
+export enum TagsType {
+  CLAIM_RELATED = "claim_related",
+  PRIVILEGED = "privileged",
+  NOT_DECIDED = "yet_to_be_decided",
+}
+
+class Comment {
+  @prop({ ref: () => User, required: true })
+  public user!: Ref<User>;
+
+  @prop()
+  public comment!: string;
+}
+
 
 class Report {
   @prop({ type: () => [String], default: [] })
@@ -45,10 +59,16 @@ class Report {
   public doctorName?: string;
 
   @prop()
+  public comments?: Comment[];
+
+  @prop()
   public medicalNote?: string;
 
   @prop()
-  public dateOfClaim?: string;
+  public dateOfClaim?: Date;
+
+  @prop({ default: [TagsType.NOT_DECIDED] })
+  public tags?: string[];
 }
 
 export enum CronStatus {
@@ -56,7 +76,6 @@ export enum CronStatus {
   Processing = "processing",
   Processed = "processed",
 }
-
 
 @index({ caseNumber: 1 })
 @index({ plaintiff: 1 })

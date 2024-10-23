@@ -44,7 +44,20 @@ export class CaseController {
   async getById(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const caseData = await caseService.getCaseById(id);
+      const caseData = await caseService.getCaseById(new Types.ObjectId(id));
+      if (!caseData) {
+        return res.status(404).json({ message: "Case not found" });
+      }
+      res.status(200).json(caseData);
+    } catch (error) {
+      handleError(res, error);
+    }
+  }
+
+  async getCaseByIdWithBodyParts(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const caseData = await caseService.getCaseByIdWithBodyParts(id);
       if (!caseData) {
         return res.status(404).json({ message: "Case not found" });
       }
@@ -155,8 +168,59 @@ export class CaseController {
       if (!req?.user) {
         return res.status(401).json({ message: "Unauthorized" });
       }
-      const lastViewed = await caseService.getLastViewedCaseByUser(req?.user?.id);
+      const lastViewed = await caseService.getLastViewedCaseByUser(
+        req?.user?.id
+      );
       res.status(200).json(lastViewed);
+    } catch (error) {
+      handleError(res, error);
+    }
+  }
+
+  async updateCaseReportTags(req: AuthRequest, res: Response) {
+    try {
+      if (!req?.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const response = await caseService.updateCaseReportTags({
+        ...req.body,
+        caseId: req.params.id,
+        reportId: req.params.reportId,
+      });
+      res.status(200).json(response);
+    } catch (error) {
+      handleError(res, error);
+    }
+  }
+
+  async addComment(req: AuthRequest, res: Response) {
+    try {
+      if (!req?.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const response = await caseService.addComment({
+        ...req.body,
+        caseId: req.params.id,
+        reportId: req.params.reportId,
+        userId: req?.user?.id,
+      });
+      res.status(200).json(response);
+    } catch (error) {
+      handleError(res, error);
+    }
+  }
+
+  async getReportComments(req: AuthRequest, res: Response) {
+    try {
+      if (!req?.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const response = await caseService.getReportComments({
+        caseId: req.params.id,
+        reportId: req.params.reportId,
+        userId: req?.user?.id,
+      });
+      res.status(200).json(response);
     } catch (error) {
       handleError(res, error);
     }

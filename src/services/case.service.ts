@@ -79,26 +79,51 @@ export class CaseService {
   }
 
   // Get a case by ID
-  async getCaseById(id: string) {
+  async getCaseById(id: Types.ObjectId) {
     const caseData = await CaseModel.findByIdAndUpdate(
       id,
-      { $inc: { viewCount: 1 } },
+      { $inc: { viewCount: 1 }, lastViewed: new Date() },
       { new: true }
     )
       .populate("user", "email name role profilePicture")
       .lean();
-  
     if (!caseData) {
       return null;
     }
-  
     if (!caseData.reports?.length) {
-      await this.populateReportFromCaseDocuments(id);
+      await this.populateReportFromCaseDocuments(id.toString());
     }
-  
+
     const documents = await DocumentModel.find({ case: id }).lean();
-  
+
     return { ...caseData, documents };
+  }
+
+  async getCaseByIdWithBodyParts(caseId: string) {
+    const caseResponse = await this.getCaseById(new Types.ObjectId(caseId));
+    if (!caseResponse?.reports) return null;
+
+    const dcService = new DiseaseClassificationService();
+
+    // Filter out reports without icdCodes before mapping
+    const reportsWithIcdCodes = caseResponse.reports.filter(
+      (report: any) => report.icdCodes && report.icdCodes.length > 0
+    );
+
+    // Use Promise.all to handle the async mapping for the filtered reports
+    const newReports = await Promise.all(
+      reportsWithIcdCodes.map(async (report: any) => {
+        const bodyParts = await Promise.all(
+          report.icdCodes.map(
+            async (code: string) => await dcService.getImagesByIcdCodes(code)
+          )
+        );
+        return { ...report, classification: bodyParts };
+      })
+    );
+
+    console.log("getCaseByIdWithBodyParts", newReports);
+    return { ...caseResponse, reports: newReports };
   }
 
   // Get all cases
@@ -264,8 +289,7 @@ export class CaseService {
       const documents = await DocumentModel.find({ case: caseId }).lean();
 
       if (!documents.length) {
-
-         return;
+        return;
       }
 
       const content = documents.map((doc) => doc.content).join(" ");
@@ -298,17 +322,18 @@ export class CaseService {
 
       if (flattenedResults.length) {
         //create report objects from flattened results
-        const reportObjects = flattenedResults.map(async(result) => {
+        const reportObjects = flattenedResults.map(async (result) => {
           return {
-            icdCodes: await this.diseaseClassificationService.getIcdCodeFromDescription(
-              result["Disease Name"]
-            ),
+            icdCodes:
+              await this.diseaseClassificationService.getIcdCodeFromDescription(
+                result["Disease Name"]
+              ),
             nameOfDisease: result["Disease Name"] || "",
             amountSpent: result["Amount Spent"] || 0,
             providerName: result["Provider Name"] || "",
             doctorName: result["Doctor Name"] || "",
             medicalNote: result["Medical Note"] || "",
-            dateOfClaim: result["Date of Claim"] || "",       
+            dateOfClaim: result["Date of Claim"] || "",
           };
         });
         //update case and add reports
@@ -325,31 +350,29 @@ export class CaseService {
     }
   }
 
-  //process case 
+  //process case
   async processCase(caseId: string) {
     try {
       await this.documentService.extractCaseDocumentData(caseId);
       await this.documentService.extractCaseDocumentWithoutContent(caseId);
       await this.populateReportFromCaseDocuments(caseId);
-    }catch (error) {
+    } catch (error) {
       console.error("Error processing case:", error);
     }
   }
 
   async processCases() {
-
     const caseItem = await CaseModel.findOneAndUpdate(
       {
         $or: [
           { cronStatus: CronStatus.Pending },
           { cronStatus: "" },
-          { cronStatus: { $exists: false } } // Matches undefined (i.e., field does not exist)
-        ]
+          { cronStatus: { $exists: false } }, // Matches undefined (i.e., field does not exist)
+        ],
       },
       { cronStatus: CronStatus.Processing },
       { new: true }
     ).lean();
-    
 
     if (!caseItem) {
       return;
@@ -372,7 +395,7 @@ export class CaseService {
         { cronStatus: CronStatus.Pending },
         { new: true }
       );
-      console.error('Error processing case:', error);
+      console.error("Error processing case:", error);
     }
   }
 
@@ -419,6 +442,7 @@ export class CaseService {
       },
       {
         $addFields: {
+          "reports.caseId": "$_id", // Add the original case ID to each report
           "reports.caseNumber": "$caseNumber", // Add the caseNumber to each report
         },
       },
@@ -512,15 +536,136 @@ export class CaseService {
       },
       {
         $project: {
-          _id: 1, // Exclude the case ID
-          userDetails: 1, // Return user details
-          reports: 1,
-          caseNumber: 1, // Return case number
+          _id: 1,
+          userDetails: 1,
+          caseNumber: 1,
+          reports: {
+            $filter: {
+              input: "$reports",
+              as: "report",
+              cond: { $gt: [{ $size: "$$report.icdCodes" }, 0] },
+            },
+          },
         },
       },
     ]);
 
-    return lastViewedCase[0];
+    const allIcdCodes = lastViewedCase[0]?.reports
+      ?.map((report: any) => report.icdCodes)
+      ?.flat();
+    const dcService = new DiseaseClassificationService();
+    const classification = await dcService.getImagesByIcdCodes(allIcdCodes);
+
+    return { ...lastViewedCase[0], classification };
   }
 
+  async updateCaseReportTags({
+    caseId,
+    reportId,
+    tags,
+    isRemove,
+  }: {
+    caseId: string;
+    reportId: string;
+    tags: string[];
+    isRemove: boolean;
+  }) {
+    if (!isRemove) {
+      return CaseModel.findByIdAndUpdate(
+        caseId,
+        {
+          $addToSet: {
+            "reports.$[report].tags": { $each: tags },
+          },
+        },
+        {
+          arrayFilters: [{ "report._id": reportId }],
+          new: true,
+        }
+      ).lean();
+    } else {
+      return CaseModel.findByIdAndUpdate(
+        caseId,
+        {
+          $pull: {
+            "reports.$[report].tags": { $in: tags },
+          },
+        },
+        {
+          arrayFilters: [{ "report._id": reportId }],
+          new: true,
+        }
+      ).lean();
+    }
+  }
+
+  async addComment({
+    userId,
+    caseId,
+    reportId,
+    comment,
+  }: {
+    caseId: string;
+    reportId: string;
+    userId: string;
+    comment: string;
+  }) {
+    return CaseModel.findByIdAndUpdate(
+      caseId,
+      {
+        $push: {
+          "reports.$[report].comments": {
+            user: userId,
+            comment,
+          },
+        },
+      },
+      {
+        arrayFilters: [{ "report._id": reportId }],
+        new: true,
+      }
+    ).lean();
+  }
+
+  async getReportComments({
+    userId,
+    caseId,
+    reportId,
+  }: {
+    caseId: string;
+    reportId: string;
+    userId: string;
+  }) {
+    return CaseModel.aggregate([
+      {
+        $match: {
+          _id: new Types.ObjectId(caseId),
+        },
+      },
+      {
+        $project: {
+          reports: 1,
+        },
+      },
+      {
+        $unwind: "$reports",
+      },
+      {
+        $match: {
+          "reports._id": new Types.ObjectId(reportId),
+        },
+      },
+      {
+        $project: {
+          comments: {
+            $filter: {
+              input: "$reports.comments",
+              as: "comment",
+              cond: { $eq: ["$$comment.user", userId] },
+            },
+          },
+        },
+      },
+    ]);
+  }
 }
