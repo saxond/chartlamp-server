@@ -392,7 +392,7 @@ export class CaseService {
       // Handle error and revert status to pending if needed
       await CaseModel.findByIdAndUpdate(
         caseItem._id,
-        { cronStatus: CronStatus.Pending },
+        { cronStatus: CronStatus.Processed },
         { new: true }
       );
       console.error("Error processing case:", error);

@@ -13,6 +13,7 @@ import notificationService from "./notification.service"; // Import the instance
 class UserService {
   private notificationService = notificationService;
 
+  // Register a new user
   async register(input: UserRegistrationInput) {
     const { name, email, password, organization } = input;
 
@@ -37,16 +38,18 @@ class UserService {
     });
 
     await user.save();
-    //subscribe user to 2fac
+    // Subscribe user to 2FA
     await this.generateTwoFactorSecret(user, "email");
 
     return user;
   }
 
+  // Get user by ID
   async getUserById(id: string) {
     return await UserModel.findById(id).lean();
   }
 
+  // User login
   async login(email: string, password: string) {
     const user = await UserModel.findOne({ email })
       .populate("twoFactorAuth")
@@ -67,6 +70,7 @@ class UserService {
       const token = speakeasy.totp({
         secret: user2Fa.secret!,
         encoding: "base32",
+        step: 300, // 5 minutes
       });
 
       await this.sendTwoFactorToken(user, token);
@@ -92,6 +96,7 @@ class UserService {
     return { user, twoFactorRequired: false };
   }
 
+  // Send password reset email
   async sendResetEmail(email: string) {
     const user = await UserModel.findOne({ email });
 
@@ -121,6 +126,7 @@ class UserService {
     return user.resetPasswordToken;
   }
 
+  // Reset password
   static async resetPassword(token: string, newPassword: string) {
     const user = await UserModel.findOne({
       resetPasswordToken: token,
@@ -138,6 +144,7 @@ class UserService {
     await user.save();
   }
 
+  // Generate two-factor authentication secret
   async generateTwoFactorSecret(
     user: User,
     method: string,
@@ -170,6 +177,7 @@ class UserService {
     return secret.base32;
   }
 
+  // Get current user details
   async me(id: string) {
     const user = await UserModel.findById(id)
       .populate("twoFactorAuth")
@@ -196,9 +204,9 @@ class UserService {
     };
   }
 
-  //get team members
+  // Get team members
   async getTeamMembers(userId: string) {
-    //get user organization
+    // Get user organization
     const user = await UserModel.findById(userId)
       .populate("organization")
       .lean();
@@ -211,6 +219,7 @@ class UserService {
     }).lean();
   }
 
+  // Generate app two-factor response
   private async generateAppTwoFactorResponse(
     secret: speakeasy.GeneratedSecret,
     email: string
@@ -226,6 +235,7 @@ class UserService {
     return { qrCode, otpauthUrl };
   }
 
+  // Send two-factor token
   async sendTwoFactorToken(user: User, token: string) {
     const twoFactorAuth = await TwoFactorAuthModel.findById(user.twoFactorAuth);
     if (!twoFactorAuth) throw new Error("TwoFactorAuth not found");
@@ -259,6 +269,7 @@ class UserService {
     }
   }
 
+  // Verify two-factor token
   async verifyTwoFactorToken(user: User, token: string): Promise<boolean> {
     const twoFactorAuth = await TwoFactorAuthModel.findById(user.twoFactorAuth);
     if (!twoFactorAuth) throw new Error("TwoFactorAuth not found");
@@ -267,10 +278,11 @@ class UserService {
       secret: twoFactorAuth.secret!,
       encoding: "base32",
       token,
+      step: 300, // Ensure the step value matches the generation step
       window: 1, // Allow a window of 1 time step before and after
     });
 
-    //update user 2fa status
+    // Update user 2FA status
     if (verified) {
       await TwoFactorAuthModel.findByIdAndUpdate(user.twoFactorAuth, {
         isEnabled: true,
@@ -284,16 +296,19 @@ class UserService {
     return verified;
   }
 
+  // Disable two-factor authentication
   async disableTwoFactorAuth(user: User) {
     await TwoFactorAuthModel.findByIdAndDelete(user.twoFactorAuth);
     await UserModel.findByIdAndUpdate(user._id, { twoFactorAuth: null });
   }
 
+  // Regenerate two-factor secret
   async regenerateTwoFactorSecret(user: User, method: string) {
     await this.disableTwoFactorAuth(user);
     return this.generateTwoFactorSecret(user, method);
   }
 
+  // Validate two-factor method
   private validateTwoFactorMethod(method: string) {
     const validMethods = ["email", "sms", "phone", "app"];
     if (!validMethods.includes(method)) {
@@ -301,6 +316,7 @@ class UserService {
     }
   }
 
+  // Resend two-factor token
   async resendTwoFactorToken(user: User) {
     const twoFactorAuth = await TwoFactorAuthModel.findById(user.twoFactorAuth);
     if (!twoFactorAuth) throw new Error("TwoFactorAuth not found");
@@ -308,14 +324,15 @@ class UserService {
     const token = speakeasy.totp({
       secret: twoFactorAuth.secret!,
       encoding: "base32",
+      step: 300, // 5 minutes
     });
 
     await this.sendTwoFactorToken(user, token);
   }
 
+  // Get recently joined users
   async getRecentlyJoinedUsers(organizationId: string, userId: string) {
     return await UserModel.find({
-      // organization: organizationId
       _id: { $ne: userId },
     })
       .select("-password")

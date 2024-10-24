@@ -5,7 +5,7 @@ import { UserModel } from '../models/user.model'; // Ensure this path is correct
 
 export class InvitationService {
   // Create a new invitation
-   async createInvitation(userId:string, email: string, role: string) {
+  async createInvitation(userId: string, email: string, role: string) {
     const token = uuidv4();
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7); // Set expiration date to 7 days from now
@@ -31,12 +31,12 @@ export class InvitationService {
   }
 
   // Find an invitation by token
-   async findInvitationByToken(token: string) {
+  async findInvitationByToken(token: string) {
     return InvitationModel.findOne({ token });
   }
 
   // Accept an invitation
-   async acceptInvitation(token: string, password: string) {
+  async acceptInvitation(token: string, password: string) {
     const invitation = await InvitationModel.findOne({ token });
 
     if (!invitation || invitation.status !== 'pending' || invitation.expiresAt < new Date()) {
@@ -60,7 +60,7 @@ export class InvitationService {
   }
 
   // Decline an invitation
-   async declineInvitation(token: string) {
+  async declineInvitation(token: string) {
     const invitation = await InvitationModel.findOne({ token });
 
     if (!invitation || invitation.status !== 'pending') {
@@ -73,29 +73,31 @@ export class InvitationService {
     return invitation;
   }
 
-  //get users and pending invitations by organization
-   async getUsersAndInvitations(userId: string) {
+  // Get users and pending invitations by organization
+  async getUsersAndInvitations(userId: string) {
     const userWithOrganization = await UserModel.findById(userId)
-        .populate("organization")
-        .lean();
+      .populate("organization")
+      .lean();
 
-      if (!userWithOrganization) {
-        throw new Error("User not found");
-      }
+    if (!userWithOrganization) {
+      throw new Error("User not found");
+    }
 
-      if (!(userWithOrganization?.organization as Organization)?._id) {
-        throw new Error("User does not belong to any organization");
-      }
+    if (!(userWithOrganization?.organization as Organization)?._id) {
+      throw new Error("User does not belong to any organization");
+    }
 
-    const users = await UserModel.find({organization: (userWithOrganization.organization as Organization)._id}).select('name email role organization').lean();
+    const organizationId = (userWithOrganization.organization as Organization)._id;
 
-    console.log(userWithOrganization, "66d1b2ecd4a1b4f783aed630");
-    
-
-    const invitations = await InvitationModel.find({
-      organization: (userWithOrganization.organization as Organization)._id,
-      status: 'pending',
-    }).lean();
+    const [users, invitations] = await Promise.all([
+      UserModel.find({ organization: organizationId })
+        .select('name email role organization')
+        .lean(),
+      InvitationModel.find({
+        organization: organizationId,
+        status: 'pending',
+      }).lean(),
+    ]);
 
     return { users, invitations };
   }
