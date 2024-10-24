@@ -40,6 +40,9 @@ export class User {
   @prop({ required: false })
   public resetPasswordExpires?: Date;
 
+  public createdAt?: Date;
+  public updatedAt?: Date;
+
   // Method to generate password reset token
   public generatePasswordResetToken() {
     this.resetPasswordToken = uuidv4();

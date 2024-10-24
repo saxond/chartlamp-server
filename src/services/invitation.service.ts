@@ -91,7 +91,7 @@ export class InvitationService {
 
     const [users, invitations] = await Promise.all([
       UserModel.find({ organization: organizationId })
-        .select('name email role organization')
+        .select('name email role organization createdAt updatedAt')
         .lean(),
       InvitationModel.find({
         organization: organizationId,

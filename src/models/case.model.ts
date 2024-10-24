@@ -65,10 +65,14 @@ class Report {
   public medicalNote?: string;
 
   @prop()
-  public dateOfClaim?: Date;
+  public dateOfClaim?: string;
 
   @prop({ default: [TagsType.NOT_DECIDED] })
   public tags?: string[];
+
+  @prop()
+  public document?: string;
+
 }
 
 export enum CronStatus {
