@@ -19,7 +19,7 @@ export class DiseaseClassificationService {
   private openAiService: OpenAIService;
   constructor() {
     this.openAiService = new OpenAIService(
-      (process.env.OPENAI_API_KEY as string)
+      process.env.OPENAI_API_KEY as string
     );
   }
 
@@ -47,44 +47,55 @@ export class DiseaseClassificationService {
   // Extract affected body parts from CSV
   async extractAffectedBodyParts() {
     try {
-      const data = fs.readFileSync('ICDgraphicsSheet1.csv', 'utf-8');
-      const lines = data.trim().split('\n');
+      const data = fs.readFileSync("ICDgraphicsSheet1.csv", "utf-8");
+      const lines = data.trim().split("\n");
       const result: { [key: string]: string[] } = {};
 
-      lines.forEach(line => {
-        const [key, ...values] = line.split(',');
-        const trimmedValues = values.map(value => value.trim()).filter(value => value !== '');
-        result[key.trim()] = trimmedValues.length > 0 ? trimmedValues : [key.trim()];
+      lines.forEach((line) => {
+        const [key, ...values] = line.split(",");
+        const trimmedValues = values
+          .map((value) => value.trim())
+          .filter((value) => value !== "");
+        result[key.trim()] =
+          trimmedValues.length > 0 ? trimmedValues : [key.trim()];
       });
 
       return result;
     } catch (error) {
-      console.error('Error extracting affected body parts:', error);
-      throw new Error('Failed to extract affected body parts');
+      console.error("Error extracting affected body parts:", error);
+      throw new Error("Failed to extract affected body parts");
     }
   }
 
   //get a disease classification by icdCode
   async getDiseaseClassificationByIcdCode(icdCode: string) {
     // return DiseaseClassificationModel.findOne({ icdCode }).lean();
-    icdCode = icdCode.replace(/\./g, '').toUpperCase();
+    icdCode = icdCode.replace(/\./g, "").toUpperCase();
 
     let diseaseC = await DiseaseClassificationModel.findOne({ icdCode }).lean();
 
     if (!diseaseC) {
-      diseaseC = await DiseaseClassificationModel.findOne({ icdCode: new RegExp(`^${icdCode}`) }).lean();
+      diseaseC = await DiseaseClassificationModel.findOne({
+        icdCode: new RegExp(`^${icdCode}`),
+      }).lean();
     }
 
     if (!diseaseC) {
-      diseaseC = await DiseaseClassificationModel.findOne({ icdCode: new RegExp(`${icdCode}$`) }).lean();
+      diseaseC = await DiseaseClassificationModel.findOne({
+        icdCode: new RegExp(`${icdCode}$`),
+      }).lean();
     }
 
     if (!diseaseC) {
-      diseaseC = await DiseaseClassificationModel.findOne({ icdCode: icdCode.slice(0, -1) }).lean();
+      diseaseC = await DiseaseClassificationModel.findOne({
+        icdCode: icdCode.slice(0, -1),
+      }).lean();
     }
 
     if (!diseaseC) {
-      diseaseC = await DiseaseClassificationModel.findOne({ icdCode: icdCode.slice(0, -2) }).lean();
+      diseaseC = await DiseaseClassificationModel.findOne({
+        icdCode: icdCode.slice(0, -2),
+      }).lean();
     }
 
     return diseaseC;
@@ -93,18 +104,15 @@ export class DiseaseClassificationService {
   // Get affected body parts by icdCode
   async getAffectedBodyPartsByIcdCode(icdCode: string) {
     try {
-
       let diseaseC = await this.getDiseaseClassificationByIcdCode(icdCode);
 
       if (!diseaseC) {
-        throw new Error('Disease classification not found');
+        throw new Error("Disease classification not found");
       }
 
       return [diseaseC.affectedBodyPartB];
-
     } catch (error) {
-
-      throw new Error('Failed to get affected body parts');
+      throw new Error("Failed to get affected body parts");
     }
   }
 
@@ -132,16 +140,18 @@ export class DiseaseClassificationService {
 
   async exportDiseaseClassificationsToCSV() {
     try {
-      const diseaseClassifications = await DiseaseClassificationModel.find().lean().cursor();
+      const diseaseClassifications = await DiseaseClassificationModel.find()
+        .lean()
+        .cursor();
       const csvStringifier = createObjectCsvStringifier({
         header: [
-          { id: 'icdCode', title: 'ICD Code' },
-          { id: 'description', title: 'Description' },
-          { id: 'affectedBodyPart', title: 'Affected Body Part' },
+          { id: "icdCode", title: "ICD Code" },
+          { id: "description", title: "Description" },
+          { id: "affectedBodyPart", title: "Affected Body Part" },
         ],
       });
 
-      const writeStream = fs.createWriteStream('diseaseClassifications.csv');
+      const writeStream = fs.createWriteStream("diseaseClassifications.csv");
       writeStream.write(csvStringifier.getHeaderString());
 
       await pipelineAsync(
@@ -154,10 +164,10 @@ export class DiseaseClassificationService {
         writeStream
       );
 
-      return 'Disease classifications exported successfully';
+      return "Disease classifications exported successfully";
     } catch (error) {
-      console.error('Error exporting disease classifications to CSV:', error);
-      throw new Error('Failed to export disease classifications');
+      console.error("Error exporting disease classifications to CSV:", error);
+      throw new Error("Failed to export disease classifications");
     }
   }
 
@@ -202,7 +212,10 @@ export class DiseaseClassificationService {
       async (diseaseClassification) => {
         const prompt = `Provide me the body part affected by ${diseaseClassification.description}. If it affects joints or muscles or bones, give me the specific type of the Joints (e.g., knees, hips, shoulders), Bones(Tibia, Femur, Humerus, Pelvis, Ribs, Skull, Spine (vertebrae)) or Muscle (Biceps (upper arm, Triceps, Deltoids, e.t.c) . The response should be just the body part no added sentence before or after. For example, if the affected body part is the heart, the response should be Heart.`;
         try {
-          if (diseaseClassification?.description && diseaseClassification?.description !== '') {
+          if (
+            diseaseClassification?.description &&
+            diseaseClassification?.description !== ""
+          ) {
             const response = await this.openAiService.completeChat({
               context:
                 "Update the affected body part for the following disease classification",
@@ -217,7 +230,6 @@ export class DiseaseClassificationService {
           }
 
           return "Record updated successfully";
-
         } catch (error) {
           console.error(
             `Failed to update disease classification with ID ${diseaseClassification._id}:`,
@@ -246,8 +258,9 @@ export class DiseaseClassificationService {
   }
 
   async getImagesByIcdCode(icdCode: string) {
-
-    const affectedBodyPart = await this.getDiseaseClassificationByIcdCode(icdCode);
+    const affectedBodyPart = await this.getDiseaseClassificationByIcdCode(
+      icdCode
+    );
 
     if (!affectedBodyPart?.affectedBodyPartB) {
       return [];
@@ -258,11 +271,10 @@ export class DiseaseClassificationService {
       affectedBodyPart.description
     );
     return results;
-
   }
 
   async getImagesByIcdCodes(icdCodes: string) {
-
+    console.log("getImagesByIcdCodes", icdCodes);
     const diseaseClassification = await DiseaseClassificationModel.find({
       icdCode: {
         $in: icdCodes,
@@ -285,7 +297,10 @@ export class DiseaseClassificationService {
     }
   }
 
-  async searchDocumentsWithExclusions(searchString: string | string[], description?: string) {
+  async searchDocumentsWithExclusions(
+    searchString: string | string[],
+    description?: string
+  ) {
     try {
       // Create a text search string with exclusions
       const parsedSearchString = Array.isArray(searchString)
@@ -303,8 +318,7 @@ export class DiseaseClassificationService {
         images: results,
         bodyParts: searchString,
         description,
-      }
-
+      };
     } catch (err) {
       console.error("Error performing search:", err);
       throw err;
@@ -328,19 +342,17 @@ export class DiseaseClassificationService {
     const prompt = `Get the ICD 10 code for the following description: ${description}. Give the exact code no any added text after the ICD 10 code. For example, if the description is "Acute bronchitis due to coxsackievirus", the response should be J20.0. If there are multiple codes, provide all of them separated by commas.`;
     try {
       const response = await this.openAiService.completeChat({
-        context:
-          "Get the ICD 10 code for the following description",
+        context: "Get the ICD 10 code for the following description",
         prompt,
         model: "gpt-3.5-turbo",
         temperature: 0.4,
       });
 
       if (response) {
-        return response.split(',').map((code: string) => code.trim());
+        return response.split(",").map((code: string) => code.trim());
       }
 
       return [];
-
     } catch (error) {
       console.error(
         `Failed to get the ICD codes for the description: ${description}:`,
