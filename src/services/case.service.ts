@@ -331,10 +331,10 @@ export class CaseService {
               ),
               nameOfDisease: result["Disease Name"] || "",
               amountSpent: result["Amount Spent"] || 0,
-              providerName: result["Provider Name"] || "",
+              providerName: await this.diseaseClassificationService.validateAmount(result["Provider Name"] || ""),
               doctorName: result["Doctor Name"] || "",
               medicalNote: result["Medical Note"] || "",
-              dateOfClaim: result["Date"] || "",
+              dateOfClaim: await this.diseaseClassificationService.validateDateStr(result["Date"] || ""),
             };
           })
         );

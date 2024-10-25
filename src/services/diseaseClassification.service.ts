@@ -325,7 +325,7 @@ export class DiseaseClassificationService {
 
   //get icd code from description
   async getIcdCodeFromDescription(description: string): Promise<string[]> {
-    const prompt = `Get the ICD 10 code for the following description: ${description}. Give the exact code. For example, if the description is "Acute bronchitis due to coxsackievirus", the response should be J20.0. If there are multiple codes, provide all of them separated by commas.`;
+    const prompt = `Get the ICD 10 code for the following description: ${description}. Give the exact code no any added text after the ICD 10 code. For example, if the description is "Acute bronchitis due to coxsackievirus", the response should be J20.0. If there are multiple codes, provide all of them separated by commas.`;
     try {
       const response = await this.openAiService.completeChat({
         context:
@@ -348,5 +348,40 @@ export class DiseaseClassificationService {
       );
       return [];
     }
+  }
+
+  async validateAmount(amount: string): Promise<number> {
+    // If the string is empty, return 0
+    if (!amount.trim()) {
+      return 0;
+    }
+
+    // Extract the number from the string
+    const numberMatch = amount.match(/\d+/);
+
+    // If a number is found, return it
+    if (numberMatch) {
+      return Number(numberMatch[0]);
+    }
+
+    // If no number is found, return 0
+    return 0;
+  }
+
+  async validateDateStr(dateStr: string): Promise<Date | null> {
+    // If the string is empty, return null
+    if (!dateStr.trim()) {
+      return null;
+    }
+
+    // Attempt to parse the date string
+    const date = new Date(dateStr);
+
+    // If the date is invalid, return null
+    if (isNaN(date.getTime())) {
+      return null;
+    }
+
+    return date;
   }
 }
