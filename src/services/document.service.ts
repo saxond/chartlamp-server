@@ -1,10 +1,9 @@
-import axios from 'axios';
-import mongoose from 'mongoose';
-import pdf from 'pdf-parse';
-import { CaseModel } from '../models/case.model';
-import { Document, DocumentModel } from '../models/document.model';
-import OpenAIService from './openai.service';
-
+import axios from "axios";
+import mongoose from "mongoose";
+import pdf from "pdf-parse";
+import { CaseModel } from "../models/case.model";
+import { Document, DocumentModel } from "../models/document.model";
+import OpenAIService from "./openai.service";
 
 export class DocumentService {
   private openAiService: OpenAIService;
@@ -228,7 +227,7 @@ export class DocumentService {
   }
 
   //delete document and related reports
-   async deleteDocument(documentId: string): Promise<Document | null> {
+  async deleteDocument(documentId: string): Promise<Document | null> {
     const session = await mongoose.startSession();
     session.startTransaction();
 
@@ -275,24 +274,23 @@ export class DocumentService {
   //add document to case
   async addDocumentToCase(
     caseId: string,
-    doc: string
-  ): Promise<Document | null> {
+    docs: string[]
+  ) {
     const session = await mongoose.startSession();
     session.startTransaction();
 
     try {
-      // Create a new document
-      const newDocument = new DocumentModel({
-        url: doc,
-        case: caseId,
-      });
+      // Create a mutltiple document
 
-      await newDocument.save({ session });
+      const results = await DocumentModel.insertMany(
+        docs.map((doc) => ({ case: caseId, url: doc })),
+        { session }
+      );
 
       await session.commitTransaction();
       session.endSession();
 
-      return newDocument;
+      return results;
     } catch (error) {
       await session.abortTransaction();
       session.endSession();
