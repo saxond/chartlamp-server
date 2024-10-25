@@ -58,7 +58,7 @@ router.delete(
 );
 
 router.patch(
-  "/:id/add-document",
+  "/:caseId/add-document",
   isAuthenticated,
   caseController.addDocumentToCase
 );
