@@ -64,7 +64,7 @@ class Report {
   public medicalNote?: string;
 
   @prop()
-  public dateOfClaim?: string;
+  public dateOfClaim?: Date | null;
 
   @prop({ default: [TagsType.NOT_DECIDED] })
   public tags?: string[];
