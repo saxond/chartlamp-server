@@ -668,4 +668,8 @@ export class CaseService {
       },
     ]);
   }
+
+  async deleteReportFile(documentId: string) {
+    return DocumentModel.findByIdAndDelete(documentId).lean();
+  }
 }

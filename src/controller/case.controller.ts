@@ -226,6 +226,20 @@ export class CaseController {
     }
   }
 
+  async deleteReportFile(req: AuthRequest, res: Response) {
+    try {
+      if (!req?.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const response = await caseService.deleteReportFile(
+        req.params.documentId
+      );
+      res.status(200).json(response);
+    } catch (error) {
+      handleError(res, error);
+    }
+  }
+
   // async populateReportFromCaseDocuments(req: Request, res: Response) {
   //   try {
   //     const { caseId } = req.params;

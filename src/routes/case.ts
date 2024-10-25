@@ -40,6 +40,13 @@ router.get(
   isAuthenticated,
   caseController.getReportComments
 );
+
 router.delete('/:id', isAuthenticated, caseController.delete);
+
+router.delete(
+  "/document/:documentId",
+  isAuthenticated,
+  caseController.deleteReportFile
+);
 
 export default router;
