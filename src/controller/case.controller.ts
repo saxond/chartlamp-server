@@ -249,7 +249,7 @@ export class CaseController {
       }
       const response = await documentService.addDocumentToCase(
         req.params.caseId,
-        req.body.url
+        req.body
       );
       res.status(200).json(response);
     } catch (error) {
