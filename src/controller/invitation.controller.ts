@@ -10,7 +10,7 @@ export class InvitationController {
    async createInvitation(req: AuthRequest, res: Response) {
     try {
       const { email, role } = req.body;
-      const invitation = await invitationService.createInvitation(req?.user?.id, email, role);
+      const invitation = await invitationService.createInvitation(req?.user?.id as string, email, role);
       res.status(201).json(invitation);
     } catch (error) {
         res.status(400).json(formatResponse(false, (error as Error).message));

@@ -121,8 +121,6 @@ export class CaseService {
         return { ...report, classification: bodyParts };
       })
     );
-
-    console.log("getCaseByIdWithBodyParts", newReports);
     return { ...caseResponse, reports: newReports };
   }
 
@@ -284,65 +282,73 @@ export class CaseService {
   }
 
   // Populate report from case documents
-  async populateReportFromCaseDocuments(caseId: string): Promise<any> {
+   async populateReportFromCaseDocuments(caseId: string): Promise<any> {
     try {
       const documents = await DocumentModel.find({ case: caseId }).lean();
-
+  
       if (!documents.length) {
         return;
       }
-
-      const content = documents.map((doc) => doc.content).join(" ");
-
-      //remove empty strings and check if content is empty
-
-      if (!content?.trim()) {
-        return [];
-      }
-
-      const contentChunks = this.splitContent(content, MAX_TOKENS / 2); // Split content into smaller chunks
-
-      const results = await Promise.all(
-        contentChunks.map(async (chunk) => {
-          const prompt = `Extract the following information from the document: Disease Name, Amount Spent, Provider Name, Doctor Name, Medical Note, Date of Claim in an array of object [{}] from the document content: ${chunk}`;
-
-          const response = await this.openAiService.completeChat({
-            context: "Extract the patient report from the document",
-            prompt,
-            model: "gpt-3.5-turbo",
-            temperature: 0.4,
-          });
-
-          return this.cleanResponse(response);
-        })
-      );
-
-      // Flatten the array of arrays into a single array
-      const flattenedResults = results.flat();
-
+  
+      let flattenedResults: any[] = [];
+      let reportObjects: any[] = [];
+  
+      for (const doc of documents) {
+        const content = doc.content || '';
+        if (!content.trim()) {
+          continue; // Skip to the next document
+        }
+  
+        const contentChunks = this.splitContent(content, MAX_TOKENS / 2); // Split content into smaller chunks
+  
+        const results = await Promise.all(
+          contentChunks.map(async (chunk) => {
+            const prompt = `Extract the following information from the document: Disease Name, Amount Spent, Provider Name, Doctor Name, Medical Note, Date in an array of object [{}] from the document content: ${chunk}`;
+  
+            const response = await this.openAiService.completeChat({
+              context: "Extract the patient report from the document",
+              prompt,
+              model: "gpt-3.5-turbo",
+              temperature: 0.4,
+            });
+  
+            return this.cleanResponse(response);
+          })
+        );
+  
+        // Flatten the array of arrays into a single array
+        flattenedResults = [...flattenedResults, ...results.flat().map(result => ({ ...result, documentId: doc._id }))];
+      }  
+  
       if (flattenedResults.length) {
-        //create report objects from flattened results
-        const reportObjects = flattenedResults.map(async (result) => {
-          return {
-            icdCodes:
-              await this.diseaseClassificationService.getIcdCodeFromDescription(
+        // Create report objects from flattened results
+        reportObjects = await Promise.all(
+          flattenedResults.map(async (result) => {
+            return {
+              document: result.documentId,
+              icdCodes: await this.diseaseClassificationService.getIcdCodeFromDescription(
                 result["Disease Name"]
               ),
-            nameOfDisease: result["Disease Name"] || "",
-            amountSpent: result["Amount Spent"] || 0,
-            providerName: result["Provider Name"] || "",
-            doctorName: result["Doctor Name"] || "",
-            medicalNote: result["Medical Note"] || "",
-            dateOfClaim: result["Date of Claim"] || "",
-          };
-        });
-        //update case and add reports
+              nameOfDisease: result["Disease Name"] || "",
+              amountSpent: result["Amount Spent"] || 0,
+              providerName: await this.diseaseClassificationService.validateAmount(result["Provider Name"] || ""),
+              doctorName: result["Doctor Name"] || "",
+              medicalNote: result["Medical Note"] || "",
+              dateOfClaim: await this.diseaseClassificationService.validateDateStr(result["Date"] || ""),
+            };
+          })
+        );
+
+        console.log('reportObjects', reportObjects);
+        
+        // Update case and add reports
         await CaseModel.findOneAndUpdate(
           { _id: caseId },
           { reports: reportObjects },
           { new: true }
         ).lean();
       }
+  
       return flattenedResults;
     } catch (error) {
       console.log(error);
@@ -392,7 +398,7 @@ export class CaseService {
       // Handle error and revert status to pending if needed
       await CaseModel.findByIdAndUpdate(
         caseItem._id,
-        { cronStatus: CronStatus.Pending },
+        { cronStatus: CronStatus.Processed },
         { new: true }
       );
       console.error("Error processing case:", error);
