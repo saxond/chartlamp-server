@@ -115,7 +115,7 @@ export class CaseService {
       reportsWithIcdCodes.map(async (report: any) => {
         const bodyParts = await Promise.all(
           report.icdCodes.map(
-            async (code: string) => await dcService.getImagesByIcdCodes(code)
+            async (code: string) => await dcService.getImagesByIcdCode(code)
           )
         );
         return { ...report, classification: bodyParts };
@@ -673,5 +673,9 @@ export class CaseService {
         },
       },
     ]);
+  }
+
+  async deleteReportFile(documentId: string) {
+    return DocumentModel.findByIdAndDelete(documentId).lean();
   }
 }

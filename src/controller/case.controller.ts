@@ -2,8 +2,10 @@ import { Request, Response } from "express";
 import { Types } from "mongoose";
 import { AuthRequest } from "../middleware/isAuth";
 import { CaseService } from "../services/case.service"; // Ensure this path is correct
+import { DocumentService } from "../services/document.service";
 
 const caseService = new CaseService();
+const documentService = new DocumentService();
 
 const handleError = (res: Response, error: any) => {
   console.error("Error:", error);
@@ -220,6 +222,35 @@ export class CaseController {
         reportId: req.params.reportId,
         userId: req?.user?.id,
       });
+      res.status(200).json(response);
+    } catch (error) {
+      handleError(res, error);
+    }
+  }
+
+  async deleteReportFile(req: AuthRequest, res: Response) {
+    try {
+      if (!req?.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const response = await documentService.deleteDocument(
+        req.params.documentId
+      );
+      res.status(200).json(response);
+    } catch (error) {
+      handleError(res, error);
+    }
+  }
+
+  async addDocumentToCase(req: AuthRequest, res: Response) {
+    try {
+      if (!req?.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const response = await documentService.addDocumentToCase(
+        req.params.caseId,
+        req.body.url
+      );
       res.status(200).json(response);
     } catch (error) {
       handleError(res, error);
