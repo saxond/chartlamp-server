@@ -363,11 +363,20 @@ export class DiseaseClassificationService {
   }
 
   async validateAmount(amount: string): Promise<number> {
-    // If the string is empty, return 0
+    // If the string is empty, return 
+
     if (!amount.trim()) {
       return 0;
     }
 
+    // report.nameOfDisease !== 'Not provided' && report.nameOfDisease !== 'N/A'
+    if(amount.includes("Not provided") || amount.includes("N/A")){
+      return 0;
+    }
+
+    if(amount.includes("$")){
+      amount = amount.replace("$", "");
+    }
     // Extract the number from the string
     const numberMatch = amount.match(/\d+/);
 
