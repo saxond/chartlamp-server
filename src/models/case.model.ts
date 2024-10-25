@@ -38,7 +38,6 @@ class Comment {
   public comment!: string;
 }
 
-
 class Report {
   @prop({ type: () => [String], default: [] })
   public icdCodes?: string[];
