@@ -64,9 +64,8 @@ export class DiseaseClassificationController {
 
   static async getImagesByIcdCode(req: Request, res: Response) {
     try {
-  
       const { icdCode } = req.params;
-      
+
       const images = await diseaseClassificationService.getImagesByIcdCode(
         icdCode
       );
@@ -151,4 +150,5 @@ export class DiseaseClassificationController {
       res.status(400).json(formatResponse(false, (error as Error).message));
     }
   }
+
 }

@@ -38,7 +38,6 @@ class Comment {
   public comment!: string;
 }
 
-
 class Report {
   @prop({ type: () => [String], default: [] })
   public icdCodes?: string[];
@@ -65,10 +64,14 @@ class Report {
   public medicalNote?: string;
 
   @prop()
-  public dateOfClaim?: Date;
+  public dateOfClaim?: Date | null;
 
   @prop({ default: [TagsType.NOT_DECIDED] })
   public tags?: string[];
+
+  @prop()
+  public document?: string;
+
 }
 
 export enum CronStatus {
