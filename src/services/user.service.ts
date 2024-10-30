@@ -8,6 +8,7 @@ import {
   TwoFactorAuthModel,
 } from "../models/twoFactorAuth.model";
 import { User, UserModel } from "../models/user.model";
+import { signJwt } from "../utils/jwt";
 import notificationService from "./notification.service"; // Import the instance directly
 
 class UserService {
@@ -48,33 +49,35 @@ class UserService {
   async getUserById(id: string) {
     return await UserModel.findById(id).lean();
   }
-
+  
   // User login
   async login(email: string, password: string) {
     const user = await UserModel.findOne({ email })
       .populate("twoFactorAuth")
       .populate("organization")
       .lean();
-
+  
     if (!user || !(await bcrypt.compare(password, user.password))) {
       throw new Error("Invalid email or password");
     }
-
+  
+    const authToken = await signJwt({ id: user._id, email: user.email });
+  
     if (user.twoFactorAuth) {
       const user2Fa = await TwoFactorAuthModel.findByIdAndUpdate(
         (user.twoFactorAuth as TwoFactorAuth)._id,
         { isEnabled: false }
       );
       if (!user2Fa) throw new Error("TwoFactorAuth not found");
-
+  
       const token = speakeasy.totp({
         secret: user2Fa.secret!,
         encoding: "base32",
         step: 300, // 5 minutes
       });
-
+  
       await this.sendTwoFactorToken(user, token);
-
+  
       return {
         user: {
           _id: user._id,
@@ -90,12 +93,12 @@ class UserService {
               : null,
         },
         twoFactorRequired: true,
+        authToken,
       };
     }
-
-    return { user, twoFactorRequired: false };
+  
+    return { user, twoFactorRequired: false, authToken };
   }
-
   // Send password reset email
   async sendResetEmail(email: string) {
     const user = await UserModel.findOne({ email });
