@@ -1,11 +1,18 @@
 import { NextFunction, Request, Response } from 'express';
 import { Session } from 'express-session';
+import { formatResponse } from '../utils/helpers';
+import { verifyJwt } from '../utils/jwt';
 
 export interface CustomSession extends Session {
   user?: {
     id: string;
     email: string;
   };
+}
+
+export interface AuthUser {
+  id: string;
+  email: string;
 }
 
 export interface AuthRequest extends Request {
@@ -16,12 +23,25 @@ export interface AuthRequest extends Request {
 }
 
 export function isAuthenticated(req: AuthRequest, res: Response, next: NextFunction): void {
-  const sessionUser = (req.session as CustomSession).user;
-  if (sessionUser) {
-    //get user user information from db 
-    req.user = sessionUser;
-    return next();
-  } else {
-    res.status(401).json({ error: 'Unauthorized' });
+  try {
+    const authToken = req.cookies.authToken;
+
+    if (!authToken) {
+       res.status(401).json(formatResponse(false, 'User is not authenticated'));
+       return;
+    }
+
+    const user = verifyJwt<AuthUser>(authToken);
+    
+    if (user) {
+      req.user = user;
+      return next();
+    } else {
+      res.status(401).json(formatResponse(false, 'User is not authenticated'));
+      return;
+    }
+  } catch (error) {
+      res.status(500).json(formatResponse(false, 'Internal server error'));
+      return;
   }
 }

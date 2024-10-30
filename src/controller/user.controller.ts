@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { Session } from "express-session";
+import { AuthRequest, AuthUser } from "../middleware/isAuth";
 import { User } from "../models/user.model";
 import UserService from "../services/user.service";
 import { formatResponse } from "../utils/helpers";
@@ -18,8 +19,8 @@ export class UserController {
     this.userService = new UserService();
   }
 
-  private getSessionUser(req: Request): { id: string; email: string } | null {
-    return (req.session as CustomSession).user || null;
+  private getSessionUser(req: AuthRequest): { id: string; email: string } | null {
+    return req?.user as AuthUser;
   }
 
   private async handleUserNotFound(
@@ -62,33 +63,21 @@ export class UserController {
     }
   }
 
+  
   public async login(req: Request, res: Response): Promise<void> {
     try {
       const { email, password } = req.body;
-      const { user, twoFactorRequired } = await this.userService.login(
-        email,
-        password
-      );
-
-      // Set session user
-      (req.session as CustomSession).user = { id: user._id, email: user.email };
-
-      // Set session expiration to 30 minutes
-      req.session.cookie.maxAge = 24 * 60 * 60 * 1000; // 24 hours
-
-      // Set cookie with session ID
-      res.cookie("sessionId", req.sessionID, {
+      const { user, twoFactorRequired, authToken } = await this.userService.login(email, password);
+      // Set session expiration to 24 hours
+      // Set cookie with auth token
+      res.cookie("authToken", authToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production", // Ensure this matches your environment
         sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // Adjust based on your needs
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
       });
-
-      res
-        .status(200)
-        .json(
-          formatResponse(true, "Login successful", { user, twoFactorRequired })
-        );
+  
+      res.status(200).json(formatResponse(true, "Login successful", { user, twoFactorRequired }));
     } catch (error) {
       res.status(401).json(formatResponse(false, (error as Error).message));
     }
