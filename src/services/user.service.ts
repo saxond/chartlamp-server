@@ -81,6 +81,8 @@ class UserService {
           name: user.name,
           email: user.email,
           organization: user.organization,
+          profilePicture: user.profilePicture,
+          phone: user.phone,
           twoFactorAuth:
             typeof user.twoFactorAuth === "object"
               ? {
@@ -188,13 +190,23 @@ class UserService {
       return null;
     }
 
-    const { _id, name, email, organization, twoFactorAuth } = user;
+    const {
+      _id,
+      name,
+      email,
+      organization,
+      twoFactorAuth,
+      profilePicture,
+      phone,
+    } = user;
 
     return {
       _id,
       name,
       email,
       organization,
+      profilePicture,
+      phone,
       twoFactorAuth: twoFactorAuth
         ? {
             isEnabled: (twoFactorAuth as TwoFactorAuth).isEnabled,
@@ -339,6 +351,101 @@ class UserService {
       .sort({ createdAt: -1 })
       .limit(3)
       .lean();
+  }
+
+  async updateUser(input: {
+    userId: string;
+    name?: string;
+    email?: string;
+    profilePicture?: string;
+    phone?: string;
+  }) {
+    const { userId, ...fieldsToUpdate } = input;
+
+    const updateFields = Object.fromEntries(
+      Object.entries(fieldsToUpdate).filter(
+        ([_, value]) => value !== undefined && value !== ""
+      )
+    );
+
+    if (Object.keys(updateFields).length === 0) {
+      throw new Error("No fields to update");
+    }
+
+    const result = await UserModel.updateOne(
+      { _id: userId },
+      { $set: updateFields }
+    );
+
+    return result;
+  }
+
+  async updateUserPassword(input: {
+    userId: string;
+    currentPassword: string;
+    newPassword: string;
+  }) {
+    const { userId, currentPassword, newPassword } = input;
+
+    const user = await UserModel.findById(userId);
+    if (!user || !(await bcrypt.compare(currentPassword, user.password))) {
+      throw new Error("Invalid email or password");
+    }
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+    await user.save();
+    return user;
+  }
+
+  async updateUserTwo(input: {
+    userId: string;
+    currentPassword: string;
+    newPassword: string;
+  }) {
+    const { userId, currentPassword, newPassword } = input;
+
+    const user = await UserModel.findById(userId);
+    if (!user || !(await bcrypt.compare(currentPassword, user.password))) {
+      throw new Error("Invalid email or password");
+    }
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+    await user.save();
+    return user;
+  }
+
+  async toggleUser2FA(input: { userId: string; isEnabled: boolean }) {
+    const { userId, isEnabled } = input;
+    const user = await UserModel.findById(userId).populate("twoFactorAuth");
+    if (!user) throw new Error("User not found");
+    if (isEnabled && user.twoFactorAuth) {
+      throw new Error("2FA is already enabled");
+    }
+    if (!isEnabled && !user.twoFactorAuth) {
+      throw new Error("2FA is already disabled");
+    }
+    if (isEnabled) {
+      return this.generateTwoFactorSecret(user, "email");
+    } else {
+      await this.disableTwoFactorAuth(user);
+      return "2FA disabled";
+    }
+  }
+
+  async update2faPhoneNumber(input: {
+    userId: string;
+    phoneNumber: string;
+    howToGetCode: string;
+  }) {
+    const { userId, phoneNumber, howToGetCode } = input;
+    const user = await UserModel.findById(userId);
+    if (!user) throw new Error("User not found");
+    if (!user.twoFactorAuth) throw new Error("2FA is not enabled");
+    await TwoFactorAuthModel.findByIdAndUpdate(user.twoFactorAuth, {
+      phoneNumber,
+      method: howToGetCode,
+    });
+    return "Phone number updated";
   }
 }
 

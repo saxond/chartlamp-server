@@ -11,7 +11,7 @@ export class TwoFactorAuth {
   @prop()
   public secret?: string;
 
-  @prop({ default: false })
+  @prop({ default: true })
   public isEnabled?: boolean;
 
   @prop({ enum: ["email", "sms", "phone", "app"], default: "email" })

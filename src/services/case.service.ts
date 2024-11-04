@@ -1,11 +1,17 @@
 import mongoose, { Types } from "mongoose";
-import { CaseModel, CronStatus } from "../models/case.model"; // Ensure this path is correct
+import {
+  CaseInvitationModel,
+  CaseInvitationStatus,
+  CaseModel,
+  CronStatus,
+} from "../models/case.model"; // Ensure this path is correct
 import { DocumentModel } from "../models/document.model";
 import { Organization } from "../models/organization.model";
 import { UserModel } from "../models/user.model";
 import { DiseaseClassificationService } from "./diseaseClassification.service";
 import { DocumentService } from "./document.service";
 import OpenAIService from "./openai.service";
+import notificationService from "./notification.service";
 
 const MAX_TOKENS = 16385;
 
@@ -13,6 +19,7 @@ export class CaseService {
   private openAiService: OpenAIService;
   private documentService: DocumentService;
   private diseaseClassificationService: DiseaseClassificationService;
+  private notificationService = notificationService;
   constructor() {
     this.openAiService = new OpenAIService(
       process.env.OPENAI_API_KEY as string
@@ -206,17 +213,36 @@ export class CaseService {
   //   const jsonString = response.replace(/```json|```/g, "").trim();
   // }
   //get user cases
-  async getUserCases(userId: string) {
-    return CaseModel.find({
-      user: userId,
-      $or: [
-        { isArchived: false },
-        { isArchived: null },
-        { isArchived: { $exists: false } },
+  async getUserCases({
+    userId,
+    query,
+  }: {
+    userId: string;
+    query?: {
+      claimStatus?: string;
+    };
+  }) {
+    const invitedCases = await CaseInvitationModel.find({
+      invitedUser: userId,
+      // status: CaseInvitationStatus.ACCEPTED,
+    }).lean();
+    let invitedCaseIds = invitedCases.map((inv) => inv.case);
+    const casesQuery: mongoose.FilterQuery<any> = {
+      $and: [
+        {
+          $or: [{ user: userId }, { _id: { $in: invitedCaseIds } }],
+        },
+        {
+          $or: [{ isArchived: false }, { isArchived: { $exists: false } }],
+        },
       ],
-    })
-      .sort({ createdAt: -1 })
-      .lean();
+    };
+
+    if (query?.claimStatus) {
+      casesQuery["claimStatus"] = query.claimStatus;
+    }
+
+    return CaseModel.find(casesQuery).sort({ createdAt: -1 }).lean();
   }
 
   //get user archived cases
@@ -283,10 +309,14 @@ export class CaseService {
 
   // Helper function to check if a report is valid
   private async isValidReport(report: any): Promise<boolean> {
-    const hasValidDisease = report.nameOfDisease !== 'Not provided' && report.nameOfDisease !== 'N/A';
-    const hasValidAmount = report.amountSpent !== 'Not provided' && !isNaN(Number(report.amountSpent)) && Number(report.amountSpent) > 0;
+    const hasValidDisease =
+      report.nameOfDisease !== "Not provided" && report.nameOfDisease !== "N/A";
+    const hasValidAmount =
+      report.amountSpent !== "Not provided" &&
+      !isNaN(Number(report.amountSpent)) &&
+      Number(report.amountSpent) > 0;
 
-    return hasValidDisease || hasValidAmount;  // Keep if either disease or amount is valid
+    return hasValidDisease || hasValidAmount; // Keep if either disease or amount is valid
   }
 
   async combineDocumentAndRemoveDuplicates(data: any) {
@@ -316,29 +346,47 @@ export class CaseService {
       }
 
       // Merge multiple reports
-      const mergedReport = reports.reduce((acc: any, report: any) => {
-        // ICD Codes - merge unique codes
-        acc.icdCodes = Array.from(new Set([...(acc.icdCodes || []), ...(report.icdCodes || [])]));
+      const mergedReport = reports.reduce(
+        (acc: any, report: any) => {
+          // ICD Codes - merge unique codes
+          acc.icdCodes = Array.from(
+            new Set([...(acc.icdCodes || []), ...(report.icdCodes || [])])
+          );
 
-        // Merge non-specified fields with specified ones from other records
-        acc.nameOfDisease = acc.nameOfDisease !== 'Not specified' ? acc.nameOfDisease : report.nameOfDisease;
-        acc.amountSpent = acc.amountSpent !== 'Not specified' ? acc.amountSpent : report.amountSpent;
-        acc.providerName = acc.providerName !== 0 ? acc.providerName : report.providerName;
-        acc.doctorName = acc.doctorName !== 'Not specified' ? acc.doctorName : report.doctorName;
-        acc.medicalNote = acc.medicalNote !== 'Not specified' ? acc.medicalNote : report.medicalNote;
-        acc.dateOfClaim = acc.dateOfClaim || report.dateOfClaim;  // Date is already the same in this group
+          // Merge non-specified fields with specified ones from other records
+          acc.nameOfDisease =
+            acc.nameOfDisease !== "Not specified"
+              ? acc.nameOfDisease
+              : report.nameOfDisease;
+          acc.amountSpent =
+            acc.amountSpent !== "Not specified"
+              ? acc.amountSpent
+              : report.amountSpent;
+          acc.providerName =
+            acc.providerName !== 0 ? acc.providerName : report.providerName;
+          acc.doctorName =
+            acc.doctorName !== "Not specified"
+              ? acc.doctorName
+              : report.doctorName;
+          acc.medicalNote =
+            acc.medicalNote !== "Not specified"
+              ? acc.medicalNote
+              : report.medicalNote;
+          acc.dateOfClaim = acc.dateOfClaim || report.dateOfClaim; // Date is already the same in this group
 
-        return acc;
-      }, {
-        document: reports[0].document,
-        icdCodes: [],
-        nameOfDisease: 'Not specified',
-        amountSpent: 'Not specified',
-        providerName: 0,
-        doctorName: 'Not specified',
-        medicalNote: 'Not specified',
-        dateOfClaim: reports[0].dateOfClaim,
-      });
+          return acc;
+        },
+        {
+          document: reports[0].document,
+          icdCodes: [],
+          nameOfDisease: "Not specified",
+          amountSpent: "Not specified",
+          providerName: 0,
+          doctorName: "Not specified",
+          medicalNote: "Not specified",
+          dateOfClaim: reports[0].dateOfClaim,
+        }
+      );
 
       // Only add merged report if it is valid
       const isValidReport = await this.isValidReport(mergedReport);
@@ -349,7 +397,6 @@ export class CaseService {
 
     return combinedReports;
   }
-
 
   // async combineDocumentAndRemoveDuplicates(data: any) {
 
@@ -663,7 +710,7 @@ export class CaseService {
       let reportObjects: any[] = [];
 
       for (const doc of documents) {
-        const content = doc.content || '';
+        const content = doc.content || "";
         if (!content.trim()) {
           continue; // Skip to the next document
         }
@@ -686,7 +733,12 @@ export class CaseService {
         );
 
         // Flatten the array of arrays into a single array
-        flattenedResults = [...flattenedResults, ...results.flat().map(result => ({ ...result, documentId: doc._id as string }))];
+        flattenedResults = [
+          ...flattenedResults,
+          ...results
+            .flat()
+            .map((result) => ({ ...result, documentId: doc._id as string })),
+        ];
       }
 
       if (flattenedResults.length) {
@@ -695,24 +747,33 @@ export class CaseService {
           flattenedResults.map(async (result) => {
             return {
               document: result.documentId,
-              icdCodes: await this.diseaseClassificationService.getIcdCodeFromDescription(
-                result["Disease Name"]
-              ),
+              icdCodes:
+                await this.diseaseClassificationService.getIcdCodeFromDescription(
+                  result["Disease Name"]
+                ),
               nameOfDisease: result["Disease Name"] || "",
-              amountSpent: await this.diseaseClassificationService.validateAmount(result["Amount Spent"] || "") || 0,
+              amountSpent:
+                (await this.diseaseClassificationService.validateAmount(
+                  result["Amount Spent"] || ""
+                )) || 0,
               providerName: result["Provider Name"] || "",
               doctorName: result["Doctor Name"] || "",
               medicalNote: result["Medical Note"] || "",
-              dateOfClaim: await this.diseaseClassificationService.validateDateStr(result["Date"] || ""),
+              dateOfClaim:
+                await this.diseaseClassificationService.validateDateStr(
+                  result["Date"] || ""
+                ),
             };
           })
         );
 
-        console.log('reportObjects', reportObjects);
+        console.log("reportObjects", reportObjects);
 
-        const noDuplicates = await this.combineDocumentAndRemoveDuplicates(reportObjects);
+        const noDuplicates = await this.combineDocumentAndRemoveDuplicates(
+          reportObjects
+        );
 
-        console.log('noDuplicates', noDuplicates);
+        console.log("noDuplicates", noDuplicates);
 
         // Update case and add reports
         await CaseModel.findOneAndUpdate(
@@ -1050,5 +1111,53 @@ export class CaseService {
 
   async deleteReportFile(documentId: string) {
     return DocumentModel.findByIdAndDelete(documentId).lean();
+  }
+
+  async shareCaseWithUsers({
+    caseId,
+    userIds,
+  }: {
+    caseId: string;
+    userIds: string[];
+  }) {
+    const users = await UserModel.find({ _id: { $in: userIds } }).lean();
+    const caseItem = await CaseModel.findById(caseId).lean();
+    if (!caseItem) {
+      throw new Error("Case not found");
+    }
+
+    for (const user of users) {
+      const invitedAlready = await CaseInvitationModel.findOne({
+        case: caseId,
+        user: user._id,
+      }).lean();
+      if (!invitedAlready) {
+        await CaseInvitationModel.create({
+          case: caseId,
+          invitedUser: user._id,
+          caseNumber: caseItem.caseNumber,
+        });
+      } else {
+        // if (invitedAlready.status !== CaseInvitationStatus.Accepted) {
+        await CaseInvitationModel.findByIdAndUpdate(invitedAlready._id, {
+          status: CaseInvitationStatus.Pending,
+        });
+        // } else continue;
+      }
+      const url = `${process.env.FRONTEND_URL}/dashboard/case/${caseId}/medicalHistory?view=detailsView`;
+      await this.notificationService.sendEmail(
+        user.email,
+        "You have been invited to a case",
+        "tht",
+        `
+  <p>Dear ${user.name},</p>
+  <p>You have been invited to participate in a case with case number: <strong>${caseItem.caseNumber}</strong>.</p>
+  <p>To view the case details and accept the invitation, please click the link below:</p>
+  <p><a href="${url}" style="color: #007bff; text-decoration: none;">View Case</a></p>
+  <p>Thank you,</p>
+  <p>Chartlamp</p>
+  `
+      );
+    }
   }
 }

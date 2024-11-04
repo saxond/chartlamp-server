@@ -287,4 +287,115 @@ export class UserController {
       res.status(400).json(formatResponse(false, (error as Error).message));
     }
   }
+
+  public async updateUser(req: Request, res: Response): Promise<void> {
+    try {
+      const user = this.getSessionUser(req);
+      if (!user) {
+        res.status(401).json(formatResponse(false, "Unauthorized"));
+        return;
+      }
+      const appUser = await this.handleUserNotFound(res, user.id);
+      if (!appUser) {
+        res.status(404).json(formatResponse(false, "User not found"));
+      }
+
+      if (req.params.id !== appUser?._id?.toString()) {
+        res.status(401).json(formatResponse(false, "Unauthorized"));
+        return;
+      }
+
+      const updatedUser = await this.userService.updateUser({
+        userId: appUser?._id || "",
+        ...req.body,
+      });
+      res.status(200).json(updatedUser);
+    } catch (error) {
+      res.status(400).json(formatResponse(false, (error as Error).message));
+    }
+  }
+
+  public async updateUserPassword(req: Request, res: Response): Promise<void> {
+    try {
+      const user = this.getSessionUser(req);
+      if (!user) {
+        res.status(401).json(formatResponse(false, "Unauthorized"));
+        return;
+      }
+      const appUser = await this.handleUserNotFound(res, user.id);
+      if (!appUser) {
+        res.status(404).json(formatResponse(false, "User not found"));
+      }
+
+      if (req.params.id !== appUser?._id?.toString()) {
+        res.status(401).json(formatResponse(false, "Unauthorized"));
+        return;
+      }
+
+      const updatedUser = await this.userService.updateUserPassword({
+        userId: appUser?._id || "",
+        ...req.body,
+      });
+      res.status(200).json(updatedUser);
+    } catch (error) {
+      res.status(400).json(formatResponse(false, (error as Error).message));
+    }
+  }
+
+  public async toggleUser2FA(req: Request, res: Response): Promise<void> {
+    try {
+      const user = this.getSessionUser(req);
+      if (!user) {
+        res.status(401).json(formatResponse(false, "Unauthorized"));
+        return;
+      }
+      const appUser = await this.handleUserNotFound(res, user.id);
+      if (!appUser) {
+        res.status(404).json(formatResponse(false, "User not found"));
+      }
+
+      if (req.params.id !== appUser?._id?.toString()) {
+        res.status(401).json(formatResponse(false, "Unauthorized"));
+        return;
+      }
+
+      const updatedUser = await this.userService.toggleUser2FA({
+        userId: appUser?._id || "",
+        ...req.body,
+      });
+      res.status(200).json(updatedUser);
+    } catch (error) {
+      res.status(400).json(formatResponse(false, (error as Error).message));
+    }
+  }
+
+  public async update2faPhoneNumber(
+    req: Request,
+    res: Response
+  ): Promise<void> {
+    try {
+      const user = this.getSessionUser(req);
+      if (!user) {
+        res.status(401).json(formatResponse(false, "Unauthorized"));
+        return;
+      }
+      const appUser = await this.handleUserNotFound(res, user.id);
+      if (!appUser) {
+        res.status(404).json(formatResponse(false, "User not found"));
+      }
+
+      if (req.params.id !== appUser?._id?.toString()) {
+        res.status(401).json(formatResponse(false, "Unauthorized"));
+        return;
+      }
+
+      const updatedUser = await this.userService.update2faPhoneNumber({
+        userId: appUser?._id || "",
+        ...req.body,
+      });
+      res.status(200).json(updatedUser);
+    } catch (error) {
+      res.status(400).json(formatResponse(false, (error as Error).message));
+    }
+  }
 }

@@ -16,6 +16,26 @@ router.post("/logout", isAuthenticated, (req, res) =>
 );
 router.get("/me", isAuthenticated, (req, res) => userController.me(req, res));
 
+router.patch("/:id", isAuthenticated, (req, res) =>
+  userController.updateUser(req, res)
+);
+
+router.get("/team-members", isAuthenticated, (req, res) =>
+  userController.getTeamMembers(req, res)
+);
+
+router.patch("/:id/password", isAuthenticated, (req, res) =>
+  userController.updateUserPassword(req, res)
+);
+
+router.patch("/:id/2fa-toggle", isAuthenticated, (req, res) =>
+  userController.toggleUser2FA(req, res)
+);
+
+router.patch("/:id/2fa-update", isAuthenticated, (req, res) =>
+  userController.update2faPhoneNumber(req, res)
+);
+
 // Define routes for two-factor authentication
 router.post("/enable-2fa", isAuthenticated, (req, res) =>
   userController.enableTwoFactorAuth(req, res)
