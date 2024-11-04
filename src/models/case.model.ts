@@ -71,7 +71,6 @@ class Report {
 
   @prop()
   public document?: string;
-
 }
 
 export enum CronStatus {
@@ -140,3 +139,43 @@ export class Case {
 }
 
 export const CaseModel = getModelForClass(Case);
+
+export enum CaseInvitationStatus {
+  Pending = "pending",
+  Accepted = "accepted",
+  Declined = "declined",
+}
+
+@modelOptions({
+  schemaOptions: {
+    timestamps: true,
+  },
+})
+export class CaseInvitation {
+  public _id?: string;
+
+  @prop({ ref: () => Case, required: true })
+  public case!: Ref<Case>;
+
+  @prop({ ref: () => User, required: true })
+  public invitedUser!: Ref<User>;
+
+  @prop({ required: true })
+  public caseNumber!: string;
+
+  // @prop({
+  //   required: true,
+  //   enum: [
+  //     CaseInvitationStatus.Pending,
+  //     CaseInvitationStatus.Accepted,
+  //     CaseInvitationStatus.Declined,
+  //   ],
+  //   default: CaseInvitationStatus.Pending,
+  // })
+  // public status!: string;
+
+  public createdAt?: Date;
+  public updatedAt?: Date;
+}
+
+export const CaseInvitationModel = getModelForClass(CaseInvitation);
