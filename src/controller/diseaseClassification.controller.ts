@@ -144,7 +144,10 @@ export class DiseaseClassificationController {
   //seed data from csv
   static async seedData(req: Request, res: Response) {
     try {
-      await diseaseClassificationService.seedData();
+
+      // await diseaseClassificationService.seedData();
+       await diseaseClassificationService.getDiseaseClassificationMappingByExtractedBodyParts();
+      //log 10 affected body parts
       res.status(200).json({ message: "Data seeded successfully" });
     } catch (error) {
       res.status(400).json(formatResponse(false, (error as Error).message));
