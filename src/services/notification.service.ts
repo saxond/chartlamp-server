@@ -17,19 +17,26 @@ class NotificationService {
     return NotificationService.instance;
   }
 
-  public async sendEmail(to: string, subject: string, text: string): Promise<void> {
+  public async sendEmail(
+    to: string,
+    subject: string,
+    text: string,
+    html?: string
+  ): Promise<void> {
     const msg = {
       to,
       from: config.fromEmail,
       subject,
       text,
+      // ...(text && { text }),
+      ...(html && { html }),
     };
 
     try {
       await sgMail.send(msg);
-    } catch (error) {
-      console.error('Error sending email:', error);
-      throw new Error('Failed to send email');
+    } catch (error: any) {
+      console.error("Error sending email:", error.response.body.errors);
+      throw new Error("Failed to send email");
     }
   }
 
@@ -41,8 +48,8 @@ class NotificationService {
         to,
       });
     } catch (error) {
-      console.error('Error sending SMS:', error);
-      throw new Error('Failed to send SMS');
+      console.error("Error sending SMS:", error);
+      throw new Error("Failed to send SMS");
     }
   }
 
@@ -54,8 +61,8 @@ class NotificationService {
         to,
       });
     } catch (error) {
-      console.error('Error making phone call:', error);
-      throw new Error('Failed to make phone call');
+      console.error("Error making phone call:", error);
+      throw new Error("Failed to make phone call");
     }
   }
 }

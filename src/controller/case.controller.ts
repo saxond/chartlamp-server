@@ -92,7 +92,10 @@ export class CaseController {
       if (!req?.user) {
         return res.status(401).json({ message: "Unauthorized" });
       }
-      const cases = await caseService.getUserCases(req?.user?.id);
+      const cases = await caseService.getUserCases({
+        userId: req?.user?.id,
+        query: req.query,
+      });
       res.status(200).json(cases);
     } catch (error) {
       handleError(res, error);
@@ -250,6 +253,23 @@ export class CaseController {
       const response = await documentService.addDocumentToCase(
         req.params.caseId,
         req.body
+      );
+      res.status(200).json(response);
+    } catch (error) {
+      handleError(res, error);
+    }
+  }
+
+  async shareCaseWithUsers(req: AuthRequest, res: Response) {
+    try {
+      if (!req?.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const response = await caseService.shareCaseWithUsers(
+        {
+          caseId: req.params.id,
+          userIds: req.body.userIds,
+        }
       );
       res.status(200).json(response);
     } catch (error) {

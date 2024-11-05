@@ -25,6 +25,10 @@ export class User {
   @prop({ required: false })
   public profilePicture?: string;
 
+  //optional profile picture
+  @prop({ required: false })
+  public phone?: string;
+
   @prop({ required: true, enum: ["admin", "user", "guest"], default: "admin" })
   public role!: string;
 
