@@ -47,19 +47,19 @@ export class DiseaseClassificationService {
   // Extract affected body parts from CSV
   async extractAffectedBodyParts() {
     try {
-      const data = fs.readFileSync("ICDgraphicsSheet1.csv", "utf-8");
+      const data = fs.readFileSync("ICDbodypartsmapping.csv", "utf-8");
       const lines = data.trim().split("\n");
       const result: { [key: string]: string[] } = {};
-
+  
       lines.forEach((line) => {
         const [key, ...values] = line.split(",");
-        const trimmedValues = values
-          .map((value) => value.trim())
+        const cleanedKey = key.replace(/[^a-zA-Z0-9\s]/g, "").trim();
+        const cleanedValues = values
+          .map((value) => value.replace(/[^a-zA-Z0-9\s]/g, "").trim())
           .filter((value) => value !== "");
-        result[key.trim()] =
-          trimmedValues.length > 0 ? trimmedValues : [key.trim()];
+        result[cleanedKey] = cleanedValues.length > 0 ? cleanedValues : [cleanedKey];
       });
-
+  
       return result;
     } catch (error) {
       console.error("Error extracting affected body parts:", error);
@@ -67,6 +67,57 @@ export class DiseaseClassificationService {
     }
   }
 
+  
+  async getDiseaseClassificationMappingByExtractedBodyParts() {
+    try {
+      // Get all disease classifications
+      const diseaseClassifications = await DiseaseClassificationModel.find().lean();
+  
+      // Extract affected body parts
+      const affectedBodyParts = await this.extractAffectedBodyParts();
+  
+      // Map disease classifications to affected body parts
+      const result = diseaseClassifications.map((diseaseClassification) => {
+        const affectedBodyPart = diseaseClassification.affectedBodyPart;
+        const affectedBodyPartB = diseaseClassification.affectedBodyPartB;
+        const affectedBodyPartMapping = affectedBodyPartB ? affectedBodyParts[affectedBodyPartB] || [] : [];
+  
+        return {
+          ...diseaseClassification,
+          affectedBodyPartMapping,
+          affectedBodyPartB,
+        };
+      });
+  
+      // Save result to CSV
+      const csvStringifier = createObjectCsvStringifier({
+        header: [
+          { id: "icdCode", title: "ICD Code" },
+          { id: "description", title: "Description" },
+          { id: "affectedBodyPart", title: "Affected Body Part" },
+          { id: "affectedBodyPartB", title: "Affected Body Part B" },
+          { id: "affectedBodyPartMapping", title: "Affected Body Part Mapping" },
+        ],
+      });
+  
+      const writeStream = fs.createWriteStream("diseaseClassificationMapping.csv");
+      writeStream.write(csvStringifier.getHeaderString());
+  
+      await pipelineAsync(
+        async function* () {
+          for (const diseaseClassification of result) {
+            yield csvStringifier.stringifyRecords([diseaseClassification]);
+          }
+        },
+        writeStream
+      );
+  
+      return result;
+    } catch (error) {
+      console.error("Error extracting disease classification mapping:", error);
+      throw new Error("Failed to extract disease classification mapping");
+    }
+  }
   //get a disease classification by icdCode
   async getDiseaseClassificationByIcdCode(icdCode: string) {
     // return DiseaseClassificationModel.findOne({ icdCode }).lean();

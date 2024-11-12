@@ -1,9 +1,24 @@
+import { FeatureType, GetDocumentAnalysisCommand, StartDocumentAnalysisCommand, TextractClient } from '@aws-sdk/client-textract';
 import axios from "axios";
 import mongoose from "mongoose";
 import pdf from "pdf-parse";
 import { CaseModel } from "../models/case.model";
 import { Document, DocumentModel } from "../models/document.model";
 import OpenAIService from "./openai.service";
+
+// AWS_ACCESS_KEY_ID = "AKIAZ4JCCD46ATB2SB2V"
+// AWS_SECRET="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"
+// AWS_REGION="us-east-1"
+// AWS_BUCKET_NAME="chartlamp"
+
+
+const textractClient = new TextractClient({
+  region: process.env.AWS_REGION as string || "us-east-1",
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID as string || "AKIAZ4JCCD46ATB2SB2V",
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY as string || "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",
+  },
+});
 
 export class DocumentService {
   private openAiService: OpenAIService;
@@ -13,8 +28,88 @@ export class DocumentService {
       process.env.OPENAI_API_KEY as string
     );
   }
+
+
+  async getBase64FromUrl(url: string): Promise<string> {
+    try {
+      // Download PDF from URL
+      const response = await axios.get(url, {
+        responseType: "arraybuffer",
+      });
+
+      // Convert PDF buffer to Base64
+      const base64 = Buffer.from(response.data).toString('base64');
+
+      return base64;
+    } catch (error) {
+      console.error("Error converting PDF to Base64:", error);
+      throw new Error("Failed to convert PDF to Base64");
+    }
+  }
+
+
+  async extractContentFromDocumentUsingTextract(documentUrl: string): Promise<string> {
+    try {
+      // Ensure the documentUrl is the S3 object key, not the full URL
+      const s3ObjectKey = documentUrl.split('/').pop();
+
+      // Call Amazon Textract to extract text from the PDF
+      const params = {
+        DocumentLocation: {
+          S3Object: {
+            Bucket: process.env.AWS_BUCKET_NAME as string || "chartlamp",
+            Name: s3ObjectKey!,
+          },
+        },
+        FeatureTypes: [FeatureType.TABLES, FeatureType.FORMS, FeatureType.SIGNATURES],
+      };
+
+      //start document analysis
+      const startDocumentAnalysisCommand = new StartDocumentAnalysisCommand(params);
+
+      const { JobId } = await textractClient.send(startDocumentAnalysisCommand);
+
+      return JobId || '';
+
+    } catch (error) {
+      // Log more detailed error information for debugging
+      console.error("Textract error details:", JSON.stringify(error, null, 2));
+
+      // Handle specific Textract exceptions
+      if ((error as any).__type === 'UnsupportedDocumentException') {
+        console.error("Unsupported document type:", error);
+        throw new Error("Unsupported document type");
+      } else {
+        console.error("Error extracting content from document using Textract:", error);
+        throw new Error("Failed to extract content from document using Textract");
+      }
+    }
+  }
+
+  //get document analysis output 
+  async getDocumentAnalysisOutput(jobId: string, nextToken?: string): Promise<any> {
+    try {
+      const params = {
+        JobId: jobId,
+        MaxResults: 1000,
+        NextToken: nextToken,
+      };
+
+      //get document analysis output
+      const startDocumentAnalysisCommand = new GetDocumentAnalysisCommand(params);
+
+      const response = await textractClient.send(startDocumentAnalysisCommand);
+
+      return response;
+
+    } catch (error) {
+      console.error("Error getting document analysis output:", error);
+      throw new Error("Failed to get document analysis output");
+    }
+  }
+
   // Extract content from the document that is in PDF format
-  async extractContentFromDocument(documentUrl: string): Promise<string> {
+  async extractContentFromDocument(documentUrl: string, documentId?: string): Promise<string> {
     try {
       // Download PDF from URL (S3 URL)
       const response = await axios.get(documentUrl, {
@@ -24,12 +119,70 @@ export class DocumentService {
 
       // Extract content from PDF
       const data = await pdf(pdfBuffer);
-      const content = data.text;
+      let content = data.text;
+
+      //remove empty lines and trim
+      content = content
+        .split("\n")
+        .map((line) => line.trim())
+        .filter((line) => line)
+        .join("\n");
+
+      //if the content is empty, try to extract using Textract
+      if (!content) {
+        content = await this.extractContentFromDocumentUsingTextract(documentUrl);
+        // if documentId is provided, update the document with the jobId
+        if (documentId) {
+          await DocumentModel.findByIdAndUpdate(documentId, {
+            jobId: content,
+          });
+
+          content = "";
+        }
+      }
 
       // Return content
       return content;
     } catch (error) {
-      throw new Error("Failed to extract content from document");
+      console.log("Error extracting content from document:", error);
+      let content = await this.extractContentFromDocumentUsingTextract(documentUrl) || "";
+      // if documentId is provided, update the document with the jobId
+      if (documentId) {
+        await DocumentModel.findByIdAndUpdate(documentId, {
+          jobId: content,
+        });
+
+        content = "";
+      }
+      return content;
+    }
+  }
+
+  //get combine document content using jobId
+  async getCombinedDocumentContent(jobId: string): Promise<string> {
+    try {
+      let nextToken;
+      let combinedContent = '';
+
+      do {
+        const response = await this.getDocumentAnalysisOutput(jobId, nextToken);
+        const blocks = response.Blocks;
+
+        if (blocks) {
+          for (const block of blocks) {
+            if (block.BlockType === 'LINE') {
+              combinedContent += block.Text + '\n';
+            }
+          }
+        }
+
+        nextToken = response.NextToken;
+      } while (nextToken);
+
+      return combinedContent;
+    } catch (error) {
+      console.error("Error getting combined document content:", error);
+      throw new Error("Failed to get combined document content");
     }
   }
 
@@ -49,7 +202,7 @@ export class DocumentService {
 
       // Extract content from each document
       const updatePromises = documents.map(async (document) => {
-        const content = await this.extractContentFromDocument(document.url);
+        const content = await this.extractContentFromDocument(document.url, document._id);
         await DocumentModel.findByIdAndUpdate(document._id, {
           extractedData: content,
         });
@@ -217,8 +370,6 @@ export class DocumentService {
       // Wait for all updates to complete
       const updatedDocuments = await Promise.all(updatePromises);
 
-      console.log("extractCaseDocumentWithoutContent");
-
       // Return updated documents
       return updatedDocuments;
     } catch (error) {
@@ -298,4 +449,6 @@ export class DocumentService {
       throw new Error("Failed to add document to case");
     }
   }
+
+
 }
