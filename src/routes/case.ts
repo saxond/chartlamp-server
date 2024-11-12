@@ -9,6 +9,8 @@ const caseController = new CaseController();
 router.post("/", isAuthenticated, caseController.create);
 router.get("/", isAuthenticated, caseController.getAll);
 router.get("/process", caseController.processCases);
+//ocr runOcrDocumentExtraction
+router.get("/ocr", caseController.runOcrDocumentExtraction);
 router.get("/stats", isAuthenticated, caseController.getUserStats);
 router.get(
   "/reports/claim-related",

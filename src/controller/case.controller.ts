@@ -276,14 +276,15 @@ export class CaseController {
       handleError(res, error);
     }
   }
+  
+  //runOcrDocumentExtraction
+  async runOcrDocumentExtraction(req: Request, res: Response) {
+    try {
+      const response = await caseService.runOcrDocumentExtraction();
+      res.status(200).json(response);
+    } catch (error) {
+      handleError(res, error);
+    }
+  }
 
-  // async populateReportFromCaseDocuments(req: Request, res: Response) {
-  //   try {
-  //     const { caseId } = req.params;
-  //     const report = await caseService.populateReportFromCaseDocuments(caseId);
-  //     res.status(200).json(report);
-  //   } catch (error) {
-  //     handleError(res, error);
-  //   }
-  // }
 }

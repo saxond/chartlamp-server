@@ -2,12 +2,11 @@ import { Request, Response } from "express";
 import { Types } from "mongoose";
 import { DiseaseClassificationService } from "../services/diseaseClassification.service"; // Ensure this path is correct
 // import { DocumentService } from "../services/document.service";
-import { CaseService } from "../services/case.service";
+import { DocumentService } from "../services/document.service";
 import { formatResponse } from "../utils/helpers";
 
 const diseaseClassificationService = new DiseaseClassificationService();
-// const documentService = new DocumentService();
-const caseService = new CaseService();
+const documentService = new DocumentService();
 
 export class DiseaseClassificationController {
   static async create(req: Request, res: Response) {
@@ -146,7 +145,11 @@ export class DiseaseClassificationController {
     try {
 
       // await diseaseClassificationService.seedData();
-       await diseaseClassificationService.getDiseaseClassificationMappingByExtractedBodyParts();
+      //  await diseaseClassificationService.getDiseaseClassificationMappingByExtractedBodyParts();
+      // const data = await documentService.extractContentFromDocumentUsingTextract('https://chartlamp.s3.amazonaws.com/1731146601160-Mejia, Oscar SX Liens.pdf');
+      const data = await documentService.getCombinedDocumentContent('f5e4b3ec2e57c091fa47f159fc5eace4fe2cfe29d17527e1cbb3f26883832a79');
+      console.log(data);
+      
       //log 10 affected body parts
       res.status(200).json({ message: "Data seeded successfully" });
     } catch (error) {
