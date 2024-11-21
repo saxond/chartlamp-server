@@ -79,7 +79,6 @@ export enum CronStatus {
   Processed = "processed",
 }
 
-@index({ caseNumber: 1 })
 @index({ plaintiff: 1 })
 @index({ dateOfClaim: 1 })
 @index({ claimStatus: 1 })
@@ -93,7 +92,7 @@ export enum CronStatus {
 export class Case {
   public _id?: string;
 
-  @prop({ required: true, unique: true })
+  @prop({ required: true })
   public caseNumber!: string;
 
   @prop({ required: true })
