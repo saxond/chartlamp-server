@@ -448,7 +448,7 @@ export class CaseService {
             document: result.documentId,
             icdCodes:
               await this.diseaseClassificationService.getIcdCodeFromDescription(
-                result["Disease Name"]
+                result["Disease Name"] + " " + result["Medical Note"]
               ),
             nameOfDisease: result["Disease Name"] || "",
             amountSpent:
@@ -466,16 +466,16 @@ export class CaseService {
         })
       );
 
-      const noDuplicates = await this.combineDocumentAndRemoveDuplicates(
-        reportObjects
-      );
+      // const noDuplicates = await this.combineDocumentAndRemoveDuplicates(
+      //   reportObjects
+      // );
 
       // Fetch existing reports
       const caseData = await CaseModel.findById(caseId).lean();
       const existingReports = caseData?.reports || [];
 
       // Combine existing reports with new reports
-      const combinedReports = [...existingReports, ...noDuplicates];
+      const combinedReports = [...existingReports, ...reportObjects];
 
       // Update case and add reports
       await CaseModel.findOneAndUpdate(
