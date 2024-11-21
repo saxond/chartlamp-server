@@ -6,12 +6,6 @@ import { CaseModel } from "../models/case.model";
 import { Document, DocumentModel } from "../models/document.model";
 import OpenAIService from "./openai.service";
 
-// AWS_ACCESS_KEY_ID = "AKIAZ4JCCD46ATB2SB2V"
-// AWS_SECRET="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"
-// AWS_REGION="us-east-1"
-// AWS_BUCKET_NAME="chartlamp"
-
-
 const textractClient = new TextractClient({
   region: process.env.AWS_REGION as string || "us-east-1",
   credentials: {
