@@ -417,7 +417,7 @@ export class CaseService {
 
     const results = await Promise.all(
       contentChunks.map(async (chunk) => {
-        const prompt = `Extract the following information from the document: Disease Name, Amount Spent, Provider Name, Doctor Name, Medical Note, Date in an array of object [{}] from the document content: ${chunk}`;
+        const prompt = `Here's the extracted document of a patient's medical record:  ${chunk} I want you to process this text and provide me the information mentioned below: Disease Name, Amount Spent, Provider Name, Doctor Name, Medical Note, Date in an array of object [{}]`;
 
         const response = await this.openAiService.completeChat({
           context: "Extract the patient report from the document",
