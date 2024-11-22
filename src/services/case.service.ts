@@ -309,8 +309,7 @@ export class CaseService {
       return JSON.parse(jsonString);
      
     } catch (error) {
-      console.log("Error parsing response:", error);
-      
+
       return [];
     }
   }
@@ -429,7 +428,7 @@ export class CaseService {
         return this.cleanResponse(response);
       })
     );
-
+    
     // Flatten the array of arrays into a single array
     return results
       .flat()
@@ -470,6 +469,8 @@ export class CaseService {
       //   reportObjects
       // );
 
+      console.log("reportObjects", reportObjects);
+
       // Fetch existing reports
       const caseData = await CaseModel.findById(caseId).lean();
       const existingReports = caseData?.reports || [];
@@ -509,8 +510,11 @@ export class CaseService {
         // Flatten the array of arrays into a single array
       }
 
-      await this.updateCaseReports(caseId, flattenedResults);
+      console.log("flattenedResults", flattenedResults);
+      
 
+      await this.updateCaseReports(caseId, flattenedResults);
+      
       return flattenedResults;
 
     } catch (error) {
