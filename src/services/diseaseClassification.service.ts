@@ -270,7 +270,7 @@ export class DiseaseClassificationService {
               context:
                 "Update the affected body part for the following disease classification",
               prompt,
-              model: "gpt-3.5-turbo",
+              model: "gpt-4o",
               temperature: 0.4,
             });
             await DiseaseClassificationModel.findByIdAndUpdate(
@@ -402,7 +402,7 @@ export class DiseaseClassificationService {
       const response = await this.openAiService.completeChat({
         context: "Get the ICD 10 code for the following description",
         prompt,
-        model: "gpt-3.5-turbo",
+        model: "gpt-4o",
         temperature: 0.4,
       });
 

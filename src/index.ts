@@ -1,14 +1,13 @@
 import dotenv from 'dotenv-safe';
 dotenv.config(); // Ensure this is the first line
-
-import axios from 'axios';
+// import axios from 'axios';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express, { Request, Response } from "express";
 import helmet from 'helmet';
 import morgan from 'morgan';
-import cron from 'node-cron';
+// import cron from 'node-cron';
 import swaggerUi from 'swagger-ui-express';
 import errorHandlerMiddleware from './middleware/errors/errorHandler';
 import notFoundMiddleware from './middleware/errors/notFound';
@@ -38,28 +37,29 @@ app.use('/api/v1', api);
 app.use(notFoundMiddleware);
 app.use(errorHandlerMiddleware);
 
-console.log('Scheduling cron job...');
+// console.log('Scheduling cron job...');
 
-cron.schedule('*/2 * * * *', async() => {
-  console.log('Running a task every minute');
-  const ocr = await axios.get(`${process.env.SERVER_URL as string}/api/v1/case/ocr`,{
-    headers: {
-      'api-key': `${process.env.API_KEY}`
-    }
-  });
-  console.log(ocr?.data);
-  const result = await axios.get(`${process.env.SERVER_URL as string}/api/v1/case/process`,{
-    headers: {
-      'api-key': `${process.env.API_KEY}`
-    }
-  });
+// cron.schedule('* * * * *', async () => {
 
-  console.log(result?.data);
-  // Add your task logic here
-});
+//   console.log('Running a task every minute');
+//   const ocr = await axios.get(`${process.env.SERVER_URL as string}/api/v1/case/ocr`,{
+//     headers: {
+//       'api-key': `${process.env.API_KEY}`
+//     }
+//   });
+//   console.log(ocr?.data);
+//   const result = await axios.get(`${process.env.SERVER_URL as string}/api/v1/case/process`,{
+//     headers: {
+//       'api-key': `${process.env.API_KEY}`
+//     }
+//   });
+
+//   console.log(result?.data);
+//   // Add your task logic here
+// });
 
 
-console.log('Cron job scheduled.');
+// console.log('Cron job scheduled.');
 
 const start = async (): Promise<void> => {
   try {
