@@ -285,7 +285,7 @@ export class DocumentService {
             context:
               "Extract the patient details, encounters, and claims from the document below:",
             prompt,
-            model: "gpt-3.5-turbo",
+            model: "gpt-4o",
             temperature: 0.4,
           });
           return response;

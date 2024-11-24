@@ -206,7 +206,7 @@ export class CaseService {
   //   const response = await this.openAiService.completeChat({
   //     context: "Get ICD-10 codes from description",
   //     prompt,
-  //     model: "gpt-3.5-turbo",
+  //     model: "gpt-4o",
   //     temperature: 0.4,
   //   });
 
@@ -421,7 +421,7 @@ export class CaseService {
         const response = await this.openAiService.completeChat({
           context: "Extract the patient report from the document",
           prompt,
-          model: "gpt-3.5-turbo",
+          model: "gpt-4o",
           temperature: 0.4,
         });
 
@@ -550,11 +550,11 @@ export class CaseService {
       { new: true }
     ).lean();
 
-    console.log(`Processing case: ${caseItem?._id}`);
-
     if (!caseItem) {
       return;
     }
+
+    console.log(`Processing case: ${caseItem?._id}`);
 
     try {
       // Process the case
@@ -573,7 +573,7 @@ export class CaseService {
         { cronStatus: CronStatus.Processed },
         { new: true }
       );
-      console.error("Error processing case:", error);
+      console.log("Error processing case:", error);
     }
   }
 

@@ -1,7 +1,7 @@
 export const modelsMapping = {
-    "coverLetter": "ft:gpt-3.5-turbo-0125:construction-check::9nkaCtuv",
-    "purposeSection": "ft:gpt-3.5-turbo-0125:construction-check::9njVk7Ne",
-    "projectTaskDescription": "ft:gpt-3.5-turbo-0125:construction-check::9npKxmxl"
+    "coverLetter": "ft:gpt-4o-0125:construction-check::9nkaCtuv",
+    "purposeSection": "ft:gpt-4o-0125:construction-check::9njVk7Ne",
+    "projectTaskDescription": "ft:gpt-4o-0125:construction-check::9npKxmxl"
 }
 
 
