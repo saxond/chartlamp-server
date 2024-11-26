@@ -1,14 +1,14 @@
+import axios from 'axios';
 import dotenv from 'dotenv-safe';
+import cron from 'node-cron';
 dotenv.config(); // Ensure this is the first line
 
-import axios from 'axios';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express, { Request, Response } from "express";
 import helmet from 'helmet';
 import morgan from 'morgan';
-import cron from 'node-cron';
 import swaggerUi from 'swagger-ui-express';
 import errorHandlerMiddleware from './middleware/errors/errorHandler';
 import notFoundMiddleware from './middleware/errors/notFound';

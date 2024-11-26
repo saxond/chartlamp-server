@@ -419,47 +419,4 @@ export class DiseaseClassificationService {
       return [];
     }
   }
-
-  async validateAmount(amount: string): Promise<number> {
-    // If the string is empty, return 0
-    if (!amount?.trim()) {
-      return 0;
-    }
-  
-    // If the amount contains "Not provided" or "N/A", return 0
-    if (amount.includes("Not provided") || amount.includes("N/A")) {
-      return 0;
-    }
-  
-    // Remove currency symbols and commas
-    amount = amount.replace(/[$,]/g, "");
-  
-    // Extract the number from the string
-    const numberMatch = amount.match(/\d+(\.\d+)?/);
-  
-    // If a number is found, return it
-    if (numberMatch) {
-      return Number(numberMatch[0]);
-    }
-  
-    // If no number is found, return 0
-    return 0;
-  }
-
-  async validateDateStr(dateStr: string): Promise<Date | null> {
-    // If the string is empty, return null
-    if (!dateStr?.trim()) {
-      return null;
-    }
-
-    // Attempt to parse the date string
-    const date = new Date(dateStr);
-
-    // If the date is invalid, return null
-    if (isNaN(date.getTime())) {
-      return null;
-    }
-
-    return date;
-  }
 }

@@ -54,6 +54,9 @@ export class DocumentService {
   }
 
   async validateAmount(amount: string): Promise<number> {
+
+    console.log("Amount:", amount);
+
     // If the string is empty, return 0
     if (!amount?.trim()) {
       return 0;
@@ -677,17 +680,8 @@ export class DocumentService {
         throw new Error("No content extracted from document");
 
       }
-
-      // Split content into smaller chunks
-      const contentChunks = this.splitContent(contentExtracts, MAX_TOKENS / 2);
-
-      // Process content chunks
-      const results = await Promise.all(
-        contentChunks.map((chunk) => this.processContentChunk(chunk))
-      );
-
       // Flatten the array of arrays into a single array
-      return results.flat();
+      return await this.processDocumentContent(contentExtracts);
     } catch (error) {
       console.error("Error extracting report from document:", error);
       throw new Error("Failed to extract report from document");
