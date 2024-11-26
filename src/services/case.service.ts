@@ -5,27 +5,18 @@ import {
   CaseModel,
   CronStatus,
 } from "../models/case.model"; // Ensure this path is correct
-import { Document, DocumentModel, ExtractionStatus } from "../models/document.model";
+import { DocumentModel, ExtractionStatus } from "../models/document.model";
 import { Organization } from "../models/organization.model";
 import { UserModel } from "../models/user.model";
 import { DiseaseClassificationService } from "./diseaseClassification.service";
 import { DocumentService } from "./document.service";
 import notificationService from "./notification.service";
-import OpenAIService from "./openai.service";
-
-const MAX_TOKENS = 16385;
 
 export class CaseService {
-  private openAiService: OpenAIService;
   private documentService: DocumentService;
-  private diseaseClassificationService: DiseaseClassificationService;
   private notificationService = notificationService;
   constructor() {
-    this.openAiService = new OpenAIService(
-      process.env.OPENAI_API_KEY as string
-    );
     this.documentService = new DocumentService();
-    this.diseaseClassificationService = new DiseaseClassificationService();
   }
 
   // Create a new case
@@ -199,20 +190,6 @@ export class CaseService {
     return response[0];
   }
 
-  // async getICD10Codes(description: string) promise<string[]> {
-
-  //   const prompt = `Get the ICD-10 codes as a comma seperated string for the following description: ${description}. do not include the description in the response. just give the codes. e.g A00.0, B00.1`;
-
-  //   const response = await this.openAiService.completeChat({
-  //     context: "Get ICD-10 codes from description",
-  //     prompt,
-  //     model: "gpt-4o",
-  //     temperature: 0.4,
-  //   });
-
-  //   const jsonString = response.replace(/```json|```/g, "").trim();
-  // }
-  //get user cases
   async getUserCases({
     userId,
     query,
@@ -279,41 +256,6 @@ export class CaseService {
   async deleteCase(id: Types.ObjectId) {
     return CaseModel.findByIdAndDelete(id).lean();
   }
-
-  // Split content into chunks
-  private splitContent(content: string, maxTokens: number): string[] {
-    const chunks = [];
-    let currentChunk = "";
-
-    for (const word of content.split(" ")) {
-      if ((currentChunk + word).length > maxTokens) {
-        chunks.push(currentChunk);
-        currentChunk = word;
-      } else {
-        currentChunk += ` ${word}`;
-      }
-    }
-
-    if (currentChunk) {
-      chunks.push(currentChunk);
-    }
-
-    return chunks;
-  }
-
-  // Clean and parse the response from OpenAI
-  private cleanResponse(response: string): any[] {
-    try {
-      const jsonString = response.replace(/```json|```/g, "").trim();
-      // IS THIS A VALID JSON STRING?
-      return JSON.parse(jsonString);
-     
-    } catch (error) {
-
-      return [];
-    }
-  }
-
 
   // Helper function to check if a report is valid
   private async isValidReport(report: any): Promise<boolean> {
@@ -405,78 +347,17 @@ export class CaseService {
 
     return combinedReports;
   }
-  //create report from document 
-  async generateReportForDocument(doc: Document) {
-    const content = doc.content || "";
-    if (!content.trim()) {
-      return []; // Skip to the next document
-    }
-
-    const contentChunks = this.splitContent(content, MAX_TOKENS / 2); // Split content into smaller chunks
-
-    const results = await Promise.all(
-      contentChunks.map(async (chunk) => {
-        const prompt = `Here's the extracted document of a patient's medical record:  ${chunk} I want you to process this text and provide me the information mentioned below: Disease Name, Amount Spent, Provider Name, Doctor Name, Medical Note, Date in an array of object [{}]`;
-
-        const response = await this.openAiService.completeChat({
-          context: "Extract the patient report from the document",
-          prompt,
-          model: "gpt-4o",
-          temperature: 0.4,
-        });
-
-        return this.cleanResponse(response);
-      })
-    );
-    
-    // Flatten the array of arrays into a single array
-    return results
-      .flat()
-      .map((result) => ({ ...result, documentId: doc._id as string }))
-
-  }
 
   // Update case reports
   async updateCaseReports(caseId: string, flattenedResults: any[]) {
-    let reportObjects: any[] = [];
+
     if (flattenedResults.length) {
-      // Create report objects from flattened results
-      reportObjects = await Promise.all(
-        flattenedResults.map(async (result) => {
-          return {
-            document: result.documentId,
-            icdCodes:
-              await this.diseaseClassificationService.getIcdCodeFromDescription(
-                result["Disease Name"] + " " + result["Medical Note"]
-              ),
-            nameOfDisease: result["Disease Name"] || "",
-            amountSpent:
-              (await this.diseaseClassificationService.validateAmount(
-                result["Amount Spent"] || ""
-              )) || 0,
-            providerName: result["Provider Name"] || "",
-            doctorName: result["Doctor Name"] || "",
-            medicalNote: result["Medical Note"] || "",
-            dateOfClaim:
-              await this.diseaseClassificationService.validateDateStr(
-                result["Date"] || ""
-              ),
-          };
-        })
-      );
-
-      // const noDuplicates = await this.combineDocumentAndRemoveDuplicates(
-      //   reportObjects
-      // );
-
-      console.log("reportObjects", reportObjects);
-
-      // Fetch existing reports
+     // Fetch existing reports
       const caseData = await CaseModel.findById(caseId).lean();
       const existingReports = caseData?.reports || [];
 
       // Combine existing reports with new reports
-      const combinedReports = [...existingReports, ...reportObjects];
+      const combinedReports = [...existingReports, ...flattenedResults];
 
       // Update case and add reports
       await CaseModel.findOneAndUpdate(
@@ -488,37 +369,27 @@ export class CaseService {
   }
 
   // Populate report from case documents
-  async populateReportFromCaseDocuments(caseId: string): Promise<any> {
+   async populateReportFromCaseDocuments(caseId: string): Promise<any> {
     try {
       const documents = await DocumentModel.find({ case: caseId }).lean();
-
+  
       if (!documents.length) {
-        return;
+        return [];
       }
-
-      let flattenedResults: any[] = [];
-
-      for (const doc of documents) {
-        const results = await this.generateReportForDocument(doc);
-
-        if (results.length) {
-          flattenedResults = [
-            ...flattenedResults,
-            ...results
-          ];
-        }
-        // Flatten the array of arrays into a single array
+  
+      const flattenedResults = (
+        await Promise.all(
+          documents.map((doc) => this.documentService.generateReportForDocument(doc))
+        )
+      ).flat();
+  
+      if (flattenedResults.length) {
+        await this.updateCaseReports(caseId, flattenedResults);
       }
-
-      console.log("flattenedResults", flattenedResults);
-      
-
-      await this.updateCaseReports(caseId, flattenedResults);
-      
+  
       return flattenedResults;
-
     } catch (error) {
-      console.log(error);
+      console.error("Error populating report from case documents:", error);
       throw new Error("Failed to populate report from case documents");
     }
   }
@@ -570,7 +441,7 @@ export class CaseService {
       // Handle error and revert status to pending if needed
       await CaseModel.findByIdAndUpdate(
         caseItem._id,
-        { cronStatus: CronStatus.Processed },
+        { cronStatus: CronStatus.Pending },
         { new: true }
       );
       console.log("Error processing case:", error);
@@ -900,33 +771,35 @@ export class CaseService {
   }
 
   //run ocr document extraction
-  async runOcrDocumentExtraction() {
+   async runOcrDocumentExtraction() {
     try {
       // Find document with jobId and status PENDING
       const document = await DocumentModel.findOne({
         jobId: { $ne: null },
         status: ExtractionStatus.PENDING,
       }).lean();
-
+  
       if (!document) {
+        console.log("No document found for OCR extraction");
         return [];
       }
 
+      console.log("Running OCR document extraction for document:", document._id);
+  
       // Extract content from the document
       const content = await this.documentService.getCombinedDocumentContent(document.jobId!);
-
+  
       // Update document with extracted content and status
       await DocumentModel.findByIdAndUpdate(document._id, {
         content,
         status: ExtractionStatus.SUCCESS,
       });
+  
+      // Generate report for the document and update case reports
+      const results = await this.documentService.generateReportForDocument(document);
 
-      // Generate report for the document
-      const results = await this.generateReportForDocument(document);
-
-      // Update case reports with the generated results
       await this.updateCaseReports(document.case as string, results);
-
+  
       return results;
     } catch (error) {
       console.error("Error running OCR document extraction:", error);

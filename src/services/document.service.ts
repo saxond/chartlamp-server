@@ -1,18 +1,13 @@
-import { FeatureType, GetDocumentAnalysisCommand, StartDocumentAnalysisCommand, TextractClient } from '@aws-sdk/client-textract';
+import { FeatureType, GetDocumentAnalysisCommand, StartDocumentAnalysisCommand } from '@aws-sdk/client-textract';
 import axios from "axios";
 import mongoose from "mongoose";
 import pdf from "pdf-parse";
 import { CaseModel } from "../models/case.model";
 import { Document, DocumentModel } from "../models/document.model";
+import { textractClient } from '../utils/textract';
 import OpenAIService from "./openai.service";
 
-const textractClient = new TextractClient({
-  region: process.env.AWS_REGION as string || "us-east-1",
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID as string || "AKIAZ4JCCD46ATB2SB2V",
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY as string || "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",
-  },
-});
+const MAX_TOKENS = 16385;
 
 export class DocumentService {
   private openAiService: OpenAIService;
@@ -21,6 +16,84 @@ export class DocumentService {
     this.openAiService = new OpenAIService(
       process.env.OPENAI_API_KEY as string
     );
+  }
+
+
+  // Split content into chunks
+  private splitContent(content: string, maxTokens: number): string[] {
+    const chunks = [];
+    let currentChunk = "";
+
+    for (const word of content.split(" ")) {
+      if ((currentChunk + word).length > maxTokens) {
+        chunks.push(currentChunk);
+        currentChunk = word;
+      } else {
+        currentChunk += ` ${word}`;
+      }
+    }
+
+    if (currentChunk) {
+      chunks.push(currentChunk);
+    }
+
+    return chunks;
+  }
+
+  // Clean and parse the response from OpenAI
+  private cleanResponse(response: string): any[] {
+    try {
+      const jsonString = response.replace(/```json|```/g, "").trim();
+      // IS THIS A VALID JSON STRING?
+      return JSON.parse(jsonString);
+
+    } catch (error) {
+
+      return [];
+    }
+  }
+
+  async validateAmount(amount: string): Promise<number> {
+    // If the string is empty, return 0
+    if (!amount?.trim()) {
+      return 0;
+    }
+
+    // If the amount contains "Not provided" or "N/A", return 0
+    if (amount.includes("Not provided") || amount.includes("N/A")) {
+      return 0;
+    }
+
+    // Remove currency symbols and commas
+    amount = amount.replace(/[$,]/g, "");
+
+    // Extract the number from the string
+    const numberMatch = amount.match(/\d+(\.\d+)?/);
+
+    // If a number is found, return it
+    if (numberMatch) {
+      return Number(numberMatch[0]);
+    }
+
+    // If no number is found, return 0
+    return 0;
+  }
+
+  async validateDateStr(dateStr: string): Promise<Date | null> {
+    // If the string is empty, return null
+    if (!dateStr?.trim()) {
+      return null;
+    }
+
+    // Attempt to parse the date string
+    const date = new Date(dateStr);
+
+    // If the date is invalid, return null
+    if (isNaN(date.getTime())) {
+      return null;
+    }
+
+    return date;
   }
 
 
@@ -38,6 +111,124 @@ export class DocumentService {
     } catch (error) {
       console.error("Error converting PDF to Base64:", error);
       throw new Error("Failed to convert PDF to Base64");
+    }
+  }
+
+  // Get ICD code from description
+  async getIcdCodeFromDescription(description: string): Promise<string[]> {
+    const prompt = `Get the ICD 10 code for the following description: ${description}. Give the exact code no any added text after the ICD 10 code. For example, if the description is "Acute bronchitis due to coxsackievirus", the response should be J20.0. If there are multiple codes, provide all of them separated by commas. Do not fabricate the codes, only provide the exact codes. if none return empty string.`;
+
+    // If the description contains the word "not provided" or "N/A", return an empty array
+    if (
+      description.toLowerCase().includes("not provided") ||
+      description.toLowerCase().includes("n/a")
+    ) {
+      return [];
+    }
+
+    try {
+      const response = await this.openAiService.completeChat({
+        context: "Get the ICD 10 code for the following description",
+        prompt,
+        model: "gpt-4o",
+        temperature: 0.4,
+      });
+
+      if (response) {
+        return Array.from(
+          new Set(
+            response
+              .split(",")
+              .map((code: string) => code.trim())
+              .filter((code: string) => code)
+          )
+        );
+      }
+
+      return [];
+    } catch (error) {
+      console.log(
+        `Failed to get the ICD codes for the description: ${description}:`,
+        error
+      );
+      return [];
+    }
+  }
+
+
+  private async processContentChunk(chunk: string): Promise<any[]> {
+    const prompt = `Here's the extracted document of a patient's medical record: ${chunk} I want you to process this text and provide me the information mentioned below: Disease Name, Amount Spent, Provider Name, Doctor Name, Medical Note, Date in an array of object [{}]`;
+
+    const response = await this.openAiService.completeChat({
+      context: "Extract the patient report from the document",
+      prompt,
+      model: "gpt-4o",
+      temperature: 0.4,
+    });
+
+    return this.cleanResponse(response);
+  }
+
+  async processDocumentContent(content: string): Promise<any[]> {
+    try {
+      // Split content into smaller chunks
+      const contentChunks = this.splitContent(content, MAX_TOKENS / 2);
+
+      // Process content chunks
+      const results = await Promise.all(
+        contentChunks.map((chunk) => this.processContentChunk(chunk))
+      );   
+
+      // Flatten the array of arrays into a single array
+      const flattenedResults = results.flat();   
+      
+
+      // Create report objects from flattened results
+      const reportObjects = await Promise.all(
+        flattenedResults.map(async (result) => {
+          const amountSpent = await this.validateAmount(result["Amount Spent"] || "");
+          const dateOfClaim = await this.validateDateStr(result["Date"] || "");
+          const nameOfDisease = typeof result["Disease Name"] === "string" ? result["Disease Name"] : Array.isArray(result["Disease Name"]) ? result["Disease Name"].join(",") : typeof result["Disease Name"] === "object" ? result["Disease Name"].join(",") : "";
+          const icdCodes = await this.getIcdCodeFromDescription(
+            nameOfDisease + " " + result["Medical Note"]
+          );
+
+          //check to make sure 
+
+          return {
+            icdCodes,
+            nameOfDisease: nameOfDisease || "",
+            amountSpent: amountSpent || 0,
+            providerName: result["Provider Name"] || "",
+            doctorName: result["Doctor Name"] || "",
+            medicalNote: result["Medical Note"] || "",
+            dateOfClaim,
+          };
+        })
+      );
+
+      return reportObjects;
+    } catch (error) {
+      console.log("Error processing document content:", error);
+        return [];
+    }
+  }
+
+  // Create report from document
+  async generateReportForDocument(doc: Document): Promise<any[]> {
+    try {
+      const content = doc.content?.trim();
+      if (!content) {
+        return []; // Skip to the next document
+      }
+  
+      const results = await this.processDocumentContent(content);
+  
+      // Add document ID to each result
+      return results.map((result) => ({ ...result, document: doc._id as string }));
+    } catch (error) {
+      console.log("Error generating report for document:", error);
+       return [];
     }
   }
 
@@ -103,49 +294,48 @@ export class DocumentService {
   }
 
   // Extract content from the document that is in PDF format
-  async extractContentFromDocument(documentUrl: string, documentId?: string): Promise<string> {
+   async extractContentFromDocument(documentUrl: string, documentId?: string): Promise<string> {
     try {
       // Download PDF from URL (S3 URL)
       const response = await axios.get(documentUrl, {
         responseType: "arraybuffer",
       });
       const pdfBuffer = response.data;
-
+  
       // Extract content from PDF
       const data = await pdf(pdfBuffer);
       let content = data.text;
-
-      //remove empty lines and trim
+  
+      // Remove empty lines and trim
       content = content
         .split("\n")
         .map((line) => line.trim())
         .filter((line) => line)
         .join("\n");
-
-      //if the content is empty, try to extract using Textract
+  
+      // If the content is empty, try to extract using Textract
       if (!content) {
         content = await this.extractContentFromDocumentUsingTextract(documentUrl);
-        // if documentId is provided, update the document with the jobId
+        console.log("Content from Textract:", content);
+        // If documentId is provided, update the document with the jobId
         if (documentId) {
           await DocumentModel.findByIdAndUpdate(documentId, {
             jobId: content,
           });
-
           content = "";
         }
       }
-
+  
       // Return content
       return content;
     } catch (error) {
-      console.log("Error extracting content from document:", error);
+      console.error("Error extracting content from document:", error);
       let content = await this.extractContentFromDocumentUsingTextract(documentUrl) || "";
-      // if documentId is provided, update the document with the jobId
+      // If documentId is provided, update the document with the jobId
       if (documentId) {
         await DocumentModel.findByIdAndUpdate(documentId, {
           jobId: content,
         });
-
         content = "";
       }
       return content;
@@ -227,7 +417,7 @@ export class DocumentService {
 
       // Extract content from each document
       const updatePromises = documents.map(async (document) => {
-        const content = await this.extractContentFromDocument(document.url);
+        const content = await this.extractContentFromDocument(document.url, document._id);
         await DocumentModel.findByIdAndUpdate(document._id, {
           extractedData: content,
         });
@@ -236,8 +426,6 @@ export class DocumentService {
 
       // Wait for all updates to complete
       const updatedDocuments = await Promise.all(updatePromises);
-
-      console.log("extractCaseDocumentData");
       // Return updated documents
       return updatedDocuments;
     } catch (error) {
@@ -367,7 +555,8 @@ export class DocumentService {
       // Return updated documents
       return updatedDocuments;
     } catch (error) {
-      throw new Error("Failed to get document without content");
+      console.log("Error extracting case document without content:", error);
+      return [];
     }
   }
 
@@ -444,5 +633,64 @@ export class DocumentService {
     }
   }
 
+  async extractReportFromDocumentOCRJobId(jobId: string) {
+    try {
+      // Get combined document content
+      const content = await this.getCombinedDocumentContent(jobId);
 
+      if (!content) {
+        throw new Error("No content extracted from document");
+
+      }
+
+      // Clean content with keywords
+      const contentExtracts = await this.getContentFromDocument(content);
+
+      if (!contentExtracts) {
+        throw new Error("No content extracted from document");
+
+      }
+
+      return await this.processDocumentContent(contentExtracts);
+
+    } catch (error) {
+      console.log("Error extracting report from document:", error);
+       return [];
+    }
+  }
+
+  //extract report from document using document url
+  async extractReportFromDocument(docUrl: string) {
+    try {
+      // Content of the document
+      const content = await this.extractContentFromDocument(docUrl);
+
+      if (!content) {
+        throw new Error("No content extracted from document");
+
+      }
+
+      // Clean content with keywords
+      const contentExtracts = await this.getContentFromDocument(content);
+
+      if (!contentExtracts) {
+        throw new Error("No content extracted from document");
+
+      }
+
+      // Split content into smaller chunks
+      const contentChunks = this.splitContent(contentExtracts, MAX_TOKENS / 2);
+
+      // Process content chunks
+      const results = await Promise.all(
+        contentChunks.map((chunk) => this.processContentChunk(chunk))
+      );
+
+      // Flatten the array of arrays into a single array
+      return results.flat();
+    } catch (error) {
+      console.error("Error extracting report from document:", error);
+      throw new Error("Failed to extract report from document");
+    }
+  }
 }
