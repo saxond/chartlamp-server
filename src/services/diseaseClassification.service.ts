@@ -9,7 +9,7 @@ import {
   DiseaseClassification,
   DiseaseClassificationModel,
 } from "../models/diseaseClassification.model"; // Ensure this path is correct
-import { bodyParts, excludeWords } from "../scripts/constants";
+import { bodyParts } from "../scripts/constants";
 import { parseDiseaseClassificationCSV } from "../utils/parseDiseaseClassificationCSV";
 import OpenAIService from "./openai.service";
 
@@ -50,16 +50,17 @@ export class DiseaseClassificationService {
       const data = fs.readFileSync("ICDbodypartsmapping.csv", "utf-8");
       const lines = data.trim().split("\n");
       const result: { [key: string]: string[] } = {};
-  
+
       lines.forEach((line) => {
         const [key, ...values] = line.split(",");
         const cleanedKey = key.replace(/[^a-zA-Z0-9\s]/g, "").trim();
         const cleanedValues = values
           .map((value) => value.replace(/[^a-zA-Z0-9\s]/g, "").trim())
           .filter((value) => value !== "");
-        result[cleanedKey] = cleanedValues.length > 0 ? cleanedValues : [cleanedKey];
+        result[cleanedKey] =
+          cleanedValues.length > 0 ? cleanedValues : [cleanedKey];
       });
-  
+
       return result;
     } catch (error) {
       console.error("Error extracting affected body parts:", error);
@@ -67,28 +68,30 @@ export class DiseaseClassificationService {
     }
   }
 
-  
   async getDiseaseClassificationMappingByExtractedBodyParts() {
     try {
       // Get all disease classifications
-      const diseaseClassifications = await DiseaseClassificationModel.find().lean();
-  
+      const diseaseClassifications =
+        await DiseaseClassificationModel.find().lean();
+
       // Extract affected body parts
       const affectedBodyParts = await this.extractAffectedBodyParts();
-  
+
       // Map disease classifications to affected body parts
       const result = diseaseClassifications.map((diseaseClassification) => {
         const affectedBodyPart = diseaseClassification.affectedBodyPart;
         const affectedBodyPartB = diseaseClassification.affectedBodyPartB;
-        const affectedBodyPartMapping = affectedBodyPartB ? affectedBodyParts[affectedBodyPartB] || [] : [];
-  
+        const affectedBodyPartMapping = affectedBodyPartB
+          ? affectedBodyParts[affectedBodyPartB] || []
+          : [];
+
         return {
           ...diseaseClassification,
           affectedBodyPartMapping,
           affectedBodyPartB,
         };
       });
-  
+
       // Save result to CSV
       const csvStringifier = createObjectCsvStringifier({
         header: [
@@ -96,22 +99,24 @@ export class DiseaseClassificationService {
           { id: "description", title: "Description" },
           { id: "affectedBodyPart", title: "Affected Body Part" },
           { id: "affectedBodyPartB", title: "Affected Body Part B" },
-          { id: "affectedBodyPartMapping", title: "Affected Body Part Mapping" },
+          {
+            id: "affectedBodyPartMapping",
+            title: "Affected Body Part Mapping",
+          },
         ],
       });
-  
-      const writeStream = fs.createWriteStream("diseaseClassificationMapping.csv");
-      writeStream.write(csvStringifier.getHeaderString());
-  
-      await pipelineAsync(
-        async function* () {
-          for (const diseaseClassification of result) {
-            yield csvStringifier.stringifyRecords([diseaseClassification]);
-          }
-        },
-        writeStream
+
+      const writeStream = fs.createWriteStream(
+        "diseaseClassificationMapping.csv"
       );
-  
+      writeStream.write(csvStringifier.getHeaderString());
+
+      await pipelineAsync(async function* () {
+        for (const diseaseClassification of result) {
+          yield csvStringifier.stringifyRecords([diseaseClassification]);
+        }
+      }, writeStream);
+
       return result;
     } catch (error) {
       console.error("Error extracting disease classification mapping:", error);
@@ -321,7 +326,7 @@ export class DiseaseClassificationService {
       affectedBodyPart.affectedBodyPartB,
       affectedBodyPart.description
     );
-    return results;
+    return { ...results, icdCode };
   }
 
   async getImagesByIcdCodes(icdCodes: string) {
@@ -337,8 +342,8 @@ export class DiseaseClassificationService {
     } else {
       const affectedBodyParts: string[] = [];
       diseaseClassification.map((disease) => {
-        if (disease.affectedBodyPart) {
-          affectedBodyParts.push(disease.affectedBodyPart);
+        if (disease.affectedBodyPartB) {
+          affectedBodyParts.push(disease.affectedBodyPartB);
         }
       });
       const results = await this.searchDocumentsWithExclusions(
@@ -353,17 +358,17 @@ export class DiseaseClassificationService {
     description?: string
   ) {
     try {
-      // Create a text search string with exclusions
-      const parsedSearchString = Array.isArray(searchString)
-        ? searchString.join(" ")
-        : searchString;
-      const excludeString = excludeWords.map((word) => `-${word}`).join(" ");
-      const textSearchQuery = `${parsedSearchString} ${excludeString}`.trim();
+      console.log("searchDocumentsWithExclusions", searchString);
 
-      const results = await BodyPartToImageModel.find(
-        { $text: { $search: textSearchQuery } },
-        { score: { $meta: "textScore" } }
-      ).sort({ score: { $meta: "textScore" } });
+      const searchArray = Array.isArray(searchString)
+        ? searchString.map((str) => str.toLowerCase())
+        : [searchString.toLowerCase()];
+
+      const results = await BodyPartToImageModel.find({
+        $expr: {
+          $in: [{ $toLower: "$fileName" }, searchArray],
+        },
+      });
 
       return {
         images: results,
@@ -414,18 +419,18 @@ export class DiseaseClassificationService {
   }
 
   async validateAmount(amount: string): Promise<number> {
-    // If the string is empty, return 
+    // If the string is empty, return
 
     if (!amount.trim()) {
       return 0;
     }
 
     // report.nameOfDisease !== 'Not provided' && report.nameOfDisease !== 'N/A'
-    if(amount.includes("Not provided") || amount.includes("N/A")){
+    if (amount.includes("Not provided") || amount.includes("N/A")) {
       return 0;
     }
 
-    if(amount.includes("$")){
+    if (amount.includes("$")) {
       amount = amount.replace("$", "");
     }
     // Extract the number from the string

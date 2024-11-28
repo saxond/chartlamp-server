@@ -117,17 +117,35 @@ export class CaseService {
       (report: any) => report.icdCodes && report.icdCodes.length > 0
     );
 
+    console.log("reportsWithIcdCodes 1", reportsWithIcdCodes.length);
+
     // Use Promise.all to handle the async mapping for the filtered reports
     const newReports = await Promise.all(
       reportsWithIcdCodes.map(async (report: any) => {
         const bodyParts = await Promise.all(
-          report.icdCodes.map(
-            async (code: string) => await dcService.getImagesByIcdCode(code)
-          )
+          report.icdCodes.map(async (code: string) => {
+            try {
+              return await dcService.getImagesByIcdCode(code);
+            } catch (error) {
+              console.error(
+                `Error fetching images for ICD code ${code}:`,
+                error
+              );
+              return []; // Return an empty array on failure
+            }
+          })
         );
-        return { ...report, classification: bodyParts };
+
+        // Flatten the array if needed, and ensure we keep the structure
+        return {
+          ...report,
+          classification: bodyParts.flat(), // Flatten to avoid nested arrays
+        };
       })
     );
+
+    console.log("reportsWithIcdCodes 2", newReports.length);
+
     return { ...caseResponse, reports: newReports };
   }
 
@@ -307,14 +325,12 @@ export class CaseService {
       const jsonString = response.replace(/```json|```/g, "").trim();
       // IS THIS A VALID JSON STRING?
       return JSON.parse(jsonString);
-     
     } catch (error) {
       console.log("Error parsing response:", error);
-      
+
       return [];
     }
   }
-
 
   // Helper function to check if a report is valid
   private async isValidReport(report: any): Promise<boolean> {
@@ -406,7 +422,7 @@ export class CaseService {
 
     return combinedReports;
   }
-  //create report from document 
+  //create report from document
   async generateReportForDocument(doc: Document) {
     const content = doc.content || "";
     if (!content.trim()) {
@@ -433,8 +449,7 @@ export class CaseService {
     // Flatten the array of arrays into a single array
     return results
       .flat()
-      .map((result) => ({ ...result, documentId: doc._id as string }))
-
+      .map((result) => ({ ...result, documentId: doc._id as string }));
   }
 
   // Update case reports
@@ -501,10 +516,7 @@ export class CaseService {
         const results = await this.generateReportForDocument(doc);
 
         if (results.length) {
-          flattenedResults = [
-            ...flattenedResults,
-            ...results
-          ];
+          flattenedResults = [...flattenedResults, ...results];
         }
         // Flatten the array of arrays into a single array
       }
@@ -512,7 +524,6 @@ export class CaseService {
       await this.updateCaseReports(caseId, flattenedResults);
 
       return flattenedResults;
-
     } catch (error) {
       console.log(error);
       throw new Error("Failed to populate report from case documents");
@@ -522,12 +533,21 @@ export class CaseService {
   //process case
   async processCase(caseId: string) {
     try {
-      const extractCaseDocumentData =  await this.documentService.extractCaseDocumentData(caseId);
+      const extractCaseDocumentData =
+        await this.documentService.extractCaseDocumentData(caseId);
       console.log("extractCaseDocumentData", extractCaseDocumentData);
-      const extractCaseDocumentWithoutContent = await this.documentService.extractCaseDocumentWithoutContent(caseId);
-      console.log("extractCaseDocumentWithoutContent", extractCaseDocumentWithoutContent);
-      const populateReportFromCaseDocuments = await this.populateReportFromCaseDocuments(caseId);
-      console.log("populateReportFromCaseDocuments", populateReportFromCaseDocuments);
+      const extractCaseDocumentWithoutContent =
+        await this.documentService.extractCaseDocumentWithoutContent(caseId);
+      console.log(
+        "extractCaseDocumentWithoutContent",
+        extractCaseDocumentWithoutContent
+      );
+      const populateReportFromCaseDocuments =
+        await this.populateReportFromCaseDocuments(caseId);
+      console.log(
+        "populateReportFromCaseDocuments",
+        populateReportFromCaseDocuments
+      );
     } catch (error) {
       console.error("Error processing case:", error);
     }
@@ -909,7 +929,9 @@ export class CaseService {
       }
 
       // Extract content from the document
-      const content = await this.documentService.getCombinedDocumentContent(document.jobId!);
+      const content = await this.documentService.getCombinedDocumentContent(
+        document.jobId!
+      );
 
       // Update document with extracted content and status
       await DocumentModel.findByIdAndUpdate(document._id, {
