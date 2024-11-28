@@ -146,8 +146,8 @@ export class DiseaseClassificationController {
 
       // await diseaseClassificationService.seedData();
       //  await diseaseClassificationService.getDiseaseClassificationMappingByExtractedBodyParts();
-      // const data = await documentService.extractContentFromDocumentUsingTextract('https://chartlamp.s3.amazonaws.com/1731146601160-Mejia, Oscar SX Liens.pdf');
-      const data = await documentService.getCombinedDocumentContent('f5e4b3ec2e57c091fa47f159fc5eace4fe2cfe29d17527e1cbb3f26883832a79');
+      const data = await documentService.extractContentFromDocumentUsingTextract('https://chartlamp.s3.amazonaws.com/1732300016420-11%20med%20-%20Oscar%20Mejia.pdf');
+      // const data = await documentService.getCombinedDocumentContent('68c4a092b10997ecc21cea4ebc82700bf403a5fb77fb752c24188c42cf939dd7');
       console.log(data);
       
       //log 10 affected body parts

@@ -79,7 +79,6 @@ export class DiseaseClassificationService {
 
       // Map disease classifications to affected body parts
       const result = diseaseClassifications.map((diseaseClassification) => {
-        const affectedBodyPart = diseaseClassification.affectedBodyPart;
         const affectedBodyPartB = diseaseClassification.affectedBodyPartB;
         const affectedBodyPartMapping = affectedBodyPartB
           ? affectedBodyParts[affectedBodyPartB] || []
@@ -276,7 +275,7 @@ export class DiseaseClassificationService {
               context:
                 "Update the affected body part for the following disease classification",
               prompt,
-              model: "gpt-3.5-turbo",
+              model: "gpt-4o",
               temperature: 0.4,
             });
             await DiseaseClassificationModel.findByIdAndUpdate(
@@ -395,17 +394,25 @@ export class DiseaseClassificationService {
 
   //get icd code from description
   async getIcdCodeFromDescription(description: string): Promise<string[]> {
-    const prompt = `Get the ICD 10 code for the following description: ${description}. Give the exact code no any added text after the ICD 10 code. For example, if the description is "Acute bronchitis due to coxsackievirus", the response should be J20.0. If there are multiple codes, provide all of them separated by commas.`;
+    const prompt = `Get the ICD 10 code for the following description: ${description}. Give the exact code no any added text after the ICD 10 code. For example, if the description is "Acute bronchitis due to coxsackievirus", the response should be J20.0. If there are multiple codes, provide all of them separated by commas. Do not fabricate the codes, only provide the exact codes. if none return empty string.`;
     try {
+      //if the description contains the word "not provided" or "N/A", return an empty array make everything lowercase before checking
+      if (
+        description.toLowerCase().includes("not provided") ||
+        description.toLowerCase().includes("n/a")
+      ) {
+        return [];
+      }
+      
       const response = await this.openAiService.completeChat({
         context: "Get the ICD 10 code for the following description",
         prompt,
-        model: "gpt-3.5-turbo",
+        model: "gpt-4o",
         temperature: 0.4,
       });
 
       if (response) {
-        return response.split(",").map((code: string) => code.trim());
+          return Array.from(new Set(response.split(",").map((code: string) => code.trim()).filter((code: string) => code))) || [];
       }
 
       return [];
@@ -419,35 +426,34 @@ export class DiseaseClassificationService {
   }
 
   async validateAmount(amount: string): Promise<number> {
-    // If the string is empty, return
-
-    if (!amount.trim()) {
+    // If the string is empty, return 0
+    if (!amount?.trim()) {
       return 0;
     }
-
-    // report.nameOfDisease !== 'Not provided' && report.nameOfDisease !== 'N/A'
+  
+    // If the amount contains "Not provided" or "N/A", return 0
     if (amount.includes("Not provided") || amount.includes("N/A")) {
       return 0;
     }
-
-    if (amount.includes("$")) {
-      amount = amount.replace("$", "");
-    }
+  
+    // Remove currency symbols and commas
+    amount = amount.replace(/[$,]/g, "");
+  
     // Extract the number from the string
-    const numberMatch = amount.match(/\d+/);
-
+    const numberMatch = amount.match(/\d+(\.\d+)?/);
+  
     // If a number is found, return it
     if (numberMatch) {
       return Number(numberMatch[0]);
     }
-
+  
     // If no number is found, return 0
     return 0;
   }
 
   async validateDateStr(dateStr: string): Promise<Date | null> {
     // If the string is empty, return null
-    if (!dateStr.trim()) {
+    if (!dateStr?.trim()) {
       return null;
     }
 

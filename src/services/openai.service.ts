@@ -55,7 +55,7 @@ class OpenAIService {
             fs.writeFileSync('mydata.jsonl', combinedData.map((data) => JSON.stringify(data)).join('\n'));
             const response = await this.openai.files.create({ file: fs.createReadStream('mydata.jsonl'), purpose: 'fine-tune' });
             if (response?.id) {
-               await this.trainModel(response?.id, baseModel || 'gpt-3.5-turbo')                
+               await this.trainModel(response?.id, baseModel || 'gpt-4o')                
             }
             return response?.status || 'uploaded'
         } catch (err) {
