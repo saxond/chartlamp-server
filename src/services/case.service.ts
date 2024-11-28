@@ -108,17 +108,35 @@ export class CaseService {
       (report: any) => report.icdCodes && report.icdCodes.length > 0
     );
 
+    console.log("reportsWithIcdCodes 1", reportsWithIcdCodes.length);
+
     // Use Promise.all to handle the async mapping for the filtered reports
     const newReports = await Promise.all(
       reportsWithIcdCodes.map(async (report: any) => {
         const bodyParts = await Promise.all(
-          report.icdCodes.map(
-            async (code: string) => await dcService.getImagesByIcdCode(code)
-          )
+          report.icdCodes.map(async (code: string) => {
+            try {
+              return await dcService.getImagesByIcdCode(code);
+            } catch (error) {
+              console.error(
+                `Error fetching images for ICD code ${code}:`,
+                error
+              );
+              return []; // Return an empty array on failure
+            }
+          })
         );
-        return { ...report, classification: bodyParts };
+
+        // Flatten the array if needed, and ensure we keep the structure
+        return {
+          ...report,
+          classification: bodyParts.flat(), // Flatten to avoid nested arrays
+        };
       })
     );
+
+    console.log("reportsWithIcdCodes 2", newReports.length);
+
     return { ...caseResponse, reports: newReports };
   }
 
@@ -397,12 +415,21 @@ export class CaseService {
   //process case
   async processCase(caseId: string) {
     try {
-      const extractCaseDocumentData =  await this.documentService.extractCaseDocumentData(caseId);
+      const extractCaseDocumentData =
+        await this.documentService.extractCaseDocumentData(caseId);
       console.log("extractCaseDocumentData", extractCaseDocumentData);
-      const extractCaseDocumentWithoutContent = await this.documentService.extractCaseDocumentWithoutContent(caseId);
-      console.log("extractCaseDocumentWithoutContent", extractCaseDocumentWithoutContent);
-      const populateReportFromCaseDocuments = await this.populateReportFromCaseDocuments(caseId);
-      console.log("populateReportFromCaseDocuments", populateReportFromCaseDocuments);
+      const extractCaseDocumentWithoutContent =
+        await this.documentService.extractCaseDocumentWithoutContent(caseId);
+      console.log(
+        "extractCaseDocumentWithoutContent",
+        extractCaseDocumentWithoutContent
+      );
+      const populateReportFromCaseDocuments =
+        await this.populateReportFromCaseDocuments(caseId);
+      console.log(
+        "populateReportFromCaseDocuments",
+        populateReportFromCaseDocuments
+      );
     } catch (error) {
       console.error("Error processing case:", error);
     }
