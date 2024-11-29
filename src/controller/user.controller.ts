@@ -84,14 +84,8 @@ export class UserController {
   }
 
   public async logout(req: Request, res: Response): Promise<void> {
-    req.session.destroy((err) => {
-      if (err) {
-        res.status(400).json(formatResponse(false, "Failed to logout"));
-        return;
-      }
-      res.clearCookie("sessionId");
-      res.status(200).json(formatResponse(true, "Logout successful"));
-    });
+    res.clearCookie("authToken");
+    res.status(200).json(formatResponse(true, "Logout successful"));
   }
 
   public async me(req: Request, res: Response): Promise<void> {

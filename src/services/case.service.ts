@@ -269,9 +269,22 @@ export class CaseService {
     return hasValidDisease || hasValidAmount; // Keep if either disease or amount is valid
   }
 
+  //remove duplicates based on icdcodes and combine reports
+  async removeDuplicateReports(data: any) {
+    // If all the items in icdCodes are the same, then remove the duplicate
+    const uniqueReports = data.filter((report: any, index: number, self: any) => {
+      const icdCodes = report.icdCodes.sort().toString();
+      const foundIndex = self.findIndex(
+        (r: any) => r.icdCodes.sort().toString() === icdCodes
+      );
+      return foundIndex === index;
+    });
+
+    return uniqueReports;
+  }
+
   async combineDocumentAndRemoveDuplicates(data: any) {
     const combinedReports: any[] = [];
-
     // Group by document and dateOfClaim
     const groupedReports = data.reduce((acc: any, report: any) => {
       const key = `${report.document}-${report.dateOfClaim}`;
@@ -359,10 +372,14 @@ export class CaseService {
       // Combine existing reports with new reports
       const combinedReports = [...existingReports, ...flattenedResults];
 
+      const distinctReports = await this.removeDuplicateReports(
+        combinedReports
+      );
+
       // Update case and add reports
       await CaseModel.findOneAndUpdate(
         { _id: caseId },
-        { reports: combinedReports },
+        { reports: distinctReports },
         { new: true }
       ).lean();
     }
@@ -758,14 +775,13 @@ export class CaseService {
         user.email,
         "You have been invited to a case",
         "tht",
+        `<p>Dear ${user.name},</p>
+          <p>You have been invited to participate in a case with case number: <strong>${caseItem.caseNumber}</strong>.</p>
+          <p>To view the case details and accept the invitation, please click the link below:</p>
+          <p><a href="${url}" style="color: #007bff; text-decoration: none;">View Case</a></p>
+          <p>Thank you,</p>
+          <p>Chartlamp</p>
         `
-  <p>Dear ${user.name},</p>
-  <p>You have been invited to participate in a case with case number: <strong>${caseItem.caseNumber}</strong>.</p>
-  <p>To view the case details and accept the invitation, please click the link below:</p>
-  <p><a href="${url}" style="color: #007bff; text-decoration: none;">View Case</a></p>
-  <p>Thank you,</p>
-  <p>Chartlamp</p>
-  `
       );
     }
   }
