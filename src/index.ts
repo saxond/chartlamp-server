@@ -48,7 +48,9 @@ cron.schedule('* * * * *', async () => {
       'api-key': `${process.env.API_KEY}`
     }
   });
+
   console.log(ocr?.data);
+
   const result = await axios.get(`${process.env.SERVER_URL as string}/api/v1/case/process`,{
     headers: {
       'api-key': `${process.env.API_KEY}`

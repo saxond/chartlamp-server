@@ -14,9 +14,11 @@ import notificationService from "./notification.service";
 
 export class CaseService {
   private documentService: DocumentService;
+  private dcService:DiseaseClassificationService;
   private notificationService = notificationService;
   constructor() {
     this.documentService = new DocumentService();
+    this.dcService = new DiseaseClassificationService();
   }
 
   // Create a new case
@@ -101,14 +103,11 @@ export class CaseService {
     const caseResponse = await this.getCaseById(new Types.ObjectId(caseId));
     if (!caseResponse?.reports) return null;
 
-    const dcService = new DiseaseClassificationService();
 
     // Filter out reports without icdCodes before mapping
     const reportsWithIcdCodes = caseResponse.reports.filter(
       (report: any) => report.icdCodes && report.icdCodes.length > 0
     );
-
-    console.log("reportsWithIcdCodes 1", reportsWithIcdCodes.length);
 
     // Use Promise.all to handle the async mapping for the filtered reports
     const newReports = await Promise.all(
@@ -116,7 +115,7 @@ export class CaseService {
         const bodyParts = await Promise.all(
           report.icdCodes.map(async (code: string) => {
             try {
-              return await dcService.getImagesByIcdCode(code);
+              return await this.dcService.getImagesByIcdCode(code);
             } catch (error) {
               console.error(
                 `Error fetching images for ICD code ${code}:`,
@@ -134,8 +133,6 @@ export class CaseService {
         };
       })
     );
-
-    console.log("reportsWithIcdCodes 2", newReports.length);
 
     return { ...caseResponse, reports: newReports };
   }

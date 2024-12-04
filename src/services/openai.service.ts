@@ -19,10 +19,10 @@ class OpenAIService {
           model,
           temperature: temperature ?? undefined,
           messages: [
-            {
-              role: "system",
-              content: context,
-            },
+            // {
+            //   role: "system",
+            //   content: context,
+            // },
             {
               role: "user",
               content: prompt,
