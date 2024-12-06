@@ -145,10 +145,11 @@ export class DiseaseClassificationController {
     try {
 
       // await diseaseClassificationService.seedData();
-      //  await diseaseClassificationService.getDiseaseClassificationMappingByExtractedBodyParts();
-      const data = await documentService.extractContentFromDocumentUsingTextract('https://chartlamp.s3.amazonaws.com/1732300016420-11%20med%20-%20Oscar%20Mejia.pdf');
+      // await diseaseClassificationService.updateDiseaseClassificationRecords();
+       await diseaseClassificationService.exportDiseaseClassificationsToCSV();
+      // const data = await documentService.extractContentFromDocumentUsingTextract('https://chartlamp.s3.amazonaws.com/1732300016420-11%20med%20-%20Oscar%20Mejia.pdf');
       // const data = await documentService.getCombinedDocumentContent('68c4a092b10997ecc21cea4ebc82700bf403a5fb77fb752c24188c42cf939dd7');
-      console.log(data);
+      // console.log(data);
       
       //log 10 affected body parts
       res.status(200).json({ message: "Data seeded successfully" });

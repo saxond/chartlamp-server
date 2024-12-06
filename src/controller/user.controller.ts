@@ -19,7 +19,9 @@ export class UserController {
     this.userService = new UserService();
   }
 
-  private getSessionUser(req: AuthRequest): { id: string; email: string } | null {
+  private getSessionUser(
+    req: AuthRequest
+  ): { id: string; email: string } | null {
     return req?.user as AuthUser;
   }
 
@@ -63,11 +65,11 @@ export class UserController {
     }
   }
 
-  
   public async login(req: Request, res: Response): Promise<void> {
     try {
       const { email, password } = req.body;
-      const { user, twoFactorRequired, authToken } = await this.userService.login(email, password);
+      const { user, twoFactorRequired, authToken } =
+        await this.userService.login(email, password);
       // Set session expiration to 24 hours
       // Set cookie with auth token
       res.cookie("authToken", authToken, {
@@ -76,22 +78,20 @@ export class UserController {
         sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // Adjust based on your needs
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
       });
-  
-      res.status(200).json(formatResponse(true, "Login successful", { user, twoFactorRequired }));
+
+      res
+        .status(200)
+        .json(
+          formatResponse(true, "Login successful", { user, twoFactorRequired })
+        );
     } catch (error) {
       res.status(401).json(formatResponse(false, (error as Error).message));
     }
   }
 
   public async logout(req: Request, res: Response): Promise<void> {
-    req.session.destroy((err) => {
-      if (err) {
-        res.status(400).json(formatResponse(false, "Failed to logout"));
-        return;
-      }
-      res.clearCookie("sessionId");
-      res.status(200).json(formatResponse(true, "Logout successful"));
-    });
+    res.clearCookie("authToken");
+    res.status(200).json(formatResponse(true, "Logout successful"));
   }
 
   public async me(req: Request, res: Response): Promise<void> {
@@ -296,6 +296,65 @@ export class UserController {
 
       const updatedUser = await this.userService.updateUser({
         userId: appUser?._id || "",
+        ...req.body,
+      });
+      res.status(200).json(updatedUser);
+    } catch (error) {
+      res.status(400).json(formatResponse(false, (error as Error).message));
+    }
+  }
+
+  public async updateUserAccessLevel(
+    req: Request,
+    res: Response
+  ): Promise<void> {
+    try {
+      const user = this.getSessionUser(req);
+      if (!user) {
+        res.status(401).json(formatResponse(false, "Unauthorized"));
+        return;
+      }
+      const appUser = await this.handleUserNotFound(res, user.id);
+      if (!appUser) {
+        res.status(404).json(formatResponse(false, "User not found"));
+        return;
+      }
+
+      if (appUser.role !== "admin" || appUser.accessLevel !== "all_access") {
+        res.status(401).json(formatResponse(false, "Unauthorized"));
+        return;
+      }
+
+      const updatedUser = await this.userService.updateUserAccessLevel({
+        userId: req.params.id,
+        ...req.body,
+      });
+      res.status(200).json(updatedUser);
+    } catch (error) {
+      res.status(400).json(formatResponse(false, (error as Error).message));
+    }
+  }
+
+  public async deleteUser(req: Request, res: Response): Promise<void> {
+    try {
+      const user = this.getSessionUser(req);
+      if (!user) {
+        res.status(401).json(formatResponse(false, "Unauthorized"));
+        return;
+      }
+      const appUser = await this.handleUserNotFound(res, user.id);
+      if (!appUser) {
+        res.status(404).json(formatResponse(false, "User not found"));
+        return;
+      }
+
+      if (appUser.role !== "admin" || appUser.accessLevel !== "all_access") {
+        res.status(401).json(formatResponse(false, "Unauthorized"));
+        return;
+      }
+
+      const updatedUser = await this.userService.deleteUser({
+        userId: req.params.id,
         ...req.body,
       });
       res.status(200).json(updatedUser);

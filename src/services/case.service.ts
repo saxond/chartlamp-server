@@ -14,9 +14,11 @@ import notificationService from "./notification.service";
 
 export class CaseService {
   private documentService: DocumentService;
+  private dcService:DiseaseClassificationService;
   private notificationService = notificationService;
   constructor() {
     this.documentService = new DocumentService();
+    this.dcService = new DiseaseClassificationService();
   }
 
   // Create a new case
@@ -101,7 +103,6 @@ export class CaseService {
     const caseResponse = await this.getCaseById(new Types.ObjectId(caseId));
     if (!caseResponse?.reports) return null;
 
-    const dcService = new DiseaseClassificationService();
 
     // Filter out reports without icdCodes before mapping
     const reportsWithIcdCodes = caseResponse.reports.filter(
@@ -112,13 +113,27 @@ export class CaseService {
     const newReports = await Promise.all(
       reportsWithIcdCodes.map(async (report: any) => {
         const bodyParts = await Promise.all(
-          report.icdCodes.map(
-            async (code: string) => await dcService.getImagesByIcdCode(code)
-          )
+          report.icdCodes.map(async (code: string) => {
+            try {
+              return await this.dcService.getImagesByIcdCode(code);
+            } catch (error) {
+              console.error(
+                `Error fetching images for ICD code ${code}:`,
+                error
+              );
+              return []; // Return an empty array on failure
+            }
+          })
         );
-        return { ...report, classification: bodyParts };
+
+        // Flatten the array if needed, and ensure we keep the structure
+        return {
+          ...report,
+          classification: bodyParts.flat(), // Flatten to avoid nested arrays
+        };
       })
     );
+
     return { ...caseResponse, reports: newReports };
   }
 
@@ -269,9 +284,22 @@ export class CaseService {
     return hasValidDisease || hasValidAmount; // Keep if either disease or amount is valid
   }
 
+  //remove duplicates based on icdcodes and combine reports
+  async removeDuplicateReports(data: any) {
+    // If all the items in icdCodes are the same, then remove the duplicate
+    const uniqueReports = data.filter((report: any, index: number, self: any) => {
+      const icdCodes = report.icdCodes.sort().toString();
+      const foundIndex = self.findIndex(
+        (r: any) => r.icdCodes.sort().toString() === icdCodes
+      );
+      return foundIndex === index;
+    });
+
+    return uniqueReports;
+  }
+
   async combineDocumentAndRemoveDuplicates(data: any) {
     const combinedReports: any[] = [];
-
     // Group by document and dateOfClaim
     const groupedReports = data.reduce((acc: any, report: any) => {
       const key = `${report.document}-${report.dateOfClaim}`;
@@ -359,10 +387,14 @@ export class CaseService {
       // Combine existing reports with new reports
       const combinedReports = [...existingReports, ...flattenedResults];
 
+      const distinctReports = await this.removeDuplicateReports(
+        combinedReports
+      );
+
       // Update case and add reports
       await CaseModel.findOneAndUpdate(
         { _id: caseId },
-        { reports: combinedReports },
+        { reports: distinctReports },
         { new: true }
       ).lean();
     }
@@ -397,12 +429,21 @@ export class CaseService {
   //process case
   async processCase(caseId: string) {
     try {
-      const extractCaseDocumentData =  await this.documentService.extractCaseDocumentData(caseId);
+      const extractCaseDocumentData =
+        await this.documentService.extractCaseDocumentData(caseId);
       console.log("extractCaseDocumentData", extractCaseDocumentData);
-      const extractCaseDocumentWithoutContent = await this.documentService.extractCaseDocumentWithoutContent(caseId);
-      console.log("extractCaseDocumentWithoutContent", extractCaseDocumentWithoutContent);
-      const populateReportFromCaseDocuments = await this.populateReportFromCaseDocuments(caseId);
-      console.log("populateReportFromCaseDocuments", populateReportFromCaseDocuments);
+      const extractCaseDocumentWithoutContent =
+        await this.documentService.extractCaseDocumentWithoutContent(caseId);
+      console.log(
+        "extractCaseDocumentWithoutContent",
+        extractCaseDocumentWithoutContent
+      );
+      const populateReportFromCaseDocuments =
+        await this.populateReportFromCaseDocuments(caseId);
+      console.log(
+        "populateReportFromCaseDocuments",
+        populateReportFromCaseDocuments
+      );
     } catch (error) {
       console.error("Error processing case:", error);
     }
@@ -758,14 +799,13 @@ export class CaseService {
         user.email,
         "You have been invited to a case",
         "tht",
+        `<p>Dear ${user.name},</p>
+          <p>You have been invited to participate in a case with case number: <strong>${caseItem.caseNumber}</strong>.</p>
+          <p>To view the case details and accept the invitation, please click the link below:</p>
+          <p><a href="${url}" style="color: #007bff; text-decoration: none;">View Case</a></p>
+          <p>Thank you,</p>
+          <p>Chartlamp</p>
         `
-  <p>Dear ${user.name},</p>
-  <p>You have been invited to participate in a case with case number: <strong>${caseItem.caseNumber}</strong>.</p>
-  <p>To view the case details and accept the invitation, please click the link below:</p>
-  <p><a href="${url}" style="color: #007bff; text-decoration: none;">View Case</a></p>
-  <p>Thank you,</p>
-  <p>Chartlamp</p>
-  `
       );
     }
   }

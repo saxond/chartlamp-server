@@ -2,7 +2,7 @@ export interface ChatInput {
     context: string;
     prompt: string;
     model: string;
-    temperature: number;
+    temperature?: number;
 }
 
 export interface TrainingDataItem {

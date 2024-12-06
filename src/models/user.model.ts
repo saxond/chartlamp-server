@@ -29,6 +29,20 @@ export class User {
   @prop({ required: false })
   public phone?: string;
 
+  @prop({
+    required: true,
+    enum: ["all_access", "view_only"],
+    default: "all_access",
+  })
+  public accessLevel!: string;
+
+  @prop({
+    required: true,
+    enum: ["deleted", "active"],
+    default: "active",
+  })
+  public status!: string;
+
   @prop({ required: true, enum: ["admin", "user", "guest"], default: "admin" })
   public role!: string;
 

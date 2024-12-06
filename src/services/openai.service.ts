@@ -13,30 +13,29 @@ class OpenAIService {
     }
 
     async completeChat(input: ChatInput): Promise<string> {
-        const { context, prompt, model, temperature } = input;
-        try {
-          
-            const response = await this.openai.chat.completions.create({
-                model,
-                temperature,
-                messages: [
-                    {
-                        role: "system",
-                        content: context,
-                    },
-                    {
-                        role: "user",
-                        content: prompt,
-                    },
-                ],
-            });
-
-            const apiResponseData = response.choices[0];
-            return apiResponseData?.message?.content || '';
-        } catch (err) {
-            console.error(err);
-            throw new Error("Failed to complete chat");
-        }
+      const { context, prompt, model, temperature } = input;
+      try {
+        const response = await this.openai.chat.completions.create({
+          model,
+          temperature: temperature ?? undefined,
+          messages: [
+            // {
+            //   role: "system",
+            //   content: context,
+            // },
+            {
+              role: "user",
+              content: prompt,
+            },
+          ],
+        });
+    
+        const apiResponseData = response.choices[0];
+        return apiResponseData?.message?.content || '';
+      } catch (err) {
+        console.error(err);
+        throw new Error("Failed to complete chat");
+      }
     }
 
     async uploadFineTunedData(trainingData: TrainingDataItem[], baseModel: string): Promise<string> {

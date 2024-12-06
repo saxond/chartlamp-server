@@ -3,6 +3,7 @@ import qrcode from "qrcode";
 import speakeasy from "speakeasy";
 import { UserRegistrationInput } from "../interfaces/user";
 import { Organization, OrganizationModel } from "../models/organization.model";
+import fs from "fs";
 import {
   TwoFactorAuth,
   TwoFactorAuthModel,
@@ -10,6 +11,8 @@ import {
 import { User, UserModel } from "../models/user.model";
 import { signJwt } from "../utils/jwt";
 import notificationService from "./notification.service"; // Import the instance directly
+import { parse } from 'csv-parse/sync';
+import { DiseaseClassificationModel } from "../models/diseaseClassification.model";
 
 class UserService {
   private notificationService = notificationService;
@@ -49,35 +52,35 @@ class UserService {
   async getUserById(id: string) {
     return await UserModel.findById(id).lean();
   }
-  
+
   // User login
   async login(email: string, password: string) {
     const user = await UserModel.findOne({ email })
       .populate("twoFactorAuth")
       .populate("organization")
       .lean();
-  
+
     if (!user || !(await bcrypt.compare(password, user.password))) {
       throw new Error("Invalid email or password");
     }
-  
+
     const authToken = await signJwt({ id: user._id, email: user.email });
-  
+
     if (user.twoFactorAuth) {
       const user2Fa = await TwoFactorAuthModel.findByIdAndUpdate(
         (user.twoFactorAuth as TwoFactorAuth)._id,
         { isEnabled: false }
       );
       if (!user2Fa) throw new Error("TwoFactorAuth not found");
-  
+
       const token = speakeasy.totp({
         secret: user2Fa.secret!,
         encoding: "base32",
         step: 300, // 5 minutes
       });
-  
+
       await this.sendTwoFactorToken(user, token);
-  
+
       return {
         user: {
           _id: user._id,
@@ -98,7 +101,7 @@ class UserService {
         authToken,
       };
     }
-  
+
     return { user, twoFactorRequired: false, authToken };
   }
   // Send password reset email
@@ -449,6 +452,60 @@ class UserService {
       method: howToGetCode,
     });
     return "Phone number updated";
+  }
+
+  async updateUserAccessLevel(input: { userId: string; accessLevel: string }) {
+    const { userId, accessLevel } = input;
+    const user = await UserModel.findByIdAndUpdate(
+      userId,
+      {
+        accessLevel,
+      },
+      { new: true }
+    );
+    if (!user) throw new Error("User not found");
+    return user;
+  }
+
+  async seedTwo(input: { userId: string; accessLevel: string }) {
+    const csvData = fs.readFileSync("abiolaexcel.csv", "utf-8");
+    const records = parse(csvData, {
+      columns: false,
+      skip_empty_lines: true,
+      trim: true,
+    });
+    const data = records.slice(10000, 20000);
+    const res = await Promise.all(
+      data.map((item: any) => {
+        const code = item[0];
+        const part = item[4];
+        return DiseaseClassificationModel.findOneAndUpdate(
+          {
+            icdCode: code,
+          },
+          {
+            affectedBodyPartD: part,
+          }
+        );
+      })
+    );
+
+    console.log(res);
+
+    return null;
+  }
+
+  async deleteUser(input: { userId: string }) {
+    const { userId } = input;
+    const user = await UserModel.findByIdAndUpdate(
+      userId,
+      {
+        status: "deleted",
+      },
+      { new: true }
+    );
+    if (!user) throw new Error("User not found");
+    return user;
   }
 }
 

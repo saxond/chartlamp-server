@@ -4,12 +4,12 @@ import fs from "fs";
 import { Types } from "mongoose";
 import { pipeline } from "stream";
 import { promisify } from "util";
-import { BodyPartToImageModel } from "../models/bodyPartToImage.model";
+import { BodyPartToImage, BodyPartToImageModel } from "../models/bodyPartToImage.model";
 import {
   DiseaseClassification,
   DiseaseClassificationModel,
 } from "../models/diseaseClassification.model"; // Ensure this path is correct
-import { bodyParts, excludeWords } from "../scripts/constants";
+import { bodyParts } from "../scripts/constants";
 import { parseDiseaseClassificationCSV } from "../utils/parseDiseaseClassificationCSV";
 import OpenAIService from "./openai.service";
 
@@ -50,16 +50,17 @@ export class DiseaseClassificationService {
       const data = fs.readFileSync("ICDbodypartsmapping.csv", "utf-8");
       const lines = data.trim().split("\n");
       const result: { [key: string]: string[] } = {};
-  
+
       lines.forEach((line) => {
         const [key, ...values] = line.split(",");
         const cleanedKey = key.replace(/[^a-zA-Z0-9\s]/g, "").trim();
         const cleanedValues = values
           .map((value) => value.replace(/[^a-zA-Z0-9\s]/g, "").trim())
           .filter((value) => value !== "");
-        result[cleanedKey] = cleanedValues.length > 0 ? cleanedValues : [cleanedKey];
+        result[cleanedKey] =
+          cleanedValues.length > 0 ? cleanedValues : [cleanedKey];
       });
-  
+
       return result;
     } catch (error) {
       console.error("Error extracting affected body parts:", error);
@@ -67,27 +68,29 @@ export class DiseaseClassificationService {
     }
   }
 
-  
   async getDiseaseClassificationMappingByExtractedBodyParts() {
     try {
       // Get all disease classifications
-      const diseaseClassifications = await DiseaseClassificationModel.find().lean();
-  
+      const diseaseClassifications =
+        await DiseaseClassificationModel.find().lean();
+
       // Extract affected body parts
       const affectedBodyParts = await this.extractAffectedBodyParts();
-  
+
       // Map disease classifications to affected body parts
       const result = diseaseClassifications.map((diseaseClassification) => {
         const affectedBodyPartB = diseaseClassification.affectedBodyPartB;
-        const affectedBodyPartMapping = affectedBodyPartB ? affectedBodyParts[affectedBodyPartB] || [] : [];
-  
+        const affectedBodyPartMapping = affectedBodyPartB
+          ? affectedBodyParts[affectedBodyPartB] || []
+          : [];
+
         return {
           ...diseaseClassification,
           affectedBodyPartMapping,
           affectedBodyPartB,
         };
       });
-  
+
       // Save result to CSV
       const csvStringifier = createObjectCsvStringifier({
         header: [
@@ -95,28 +98,78 @@ export class DiseaseClassificationService {
           { id: "description", title: "Description" },
           { id: "affectedBodyPart", title: "Affected Body Part" },
           { id: "affectedBodyPartB", title: "Affected Body Part B" },
-          { id: "affectedBodyPartMapping", title: "Affected Body Part Mapping" },
+          {
+            id: "affectedBodyPartMapping",
+            title: "Affected Body Part Mapping",
+          },
         ],
       });
-  
-      const writeStream = fs.createWriteStream("diseaseClassificationMapping.csv");
-      writeStream.write(csvStringifier.getHeaderString());
-  
-      await pipelineAsync(
-        async function* () {
-          for (const diseaseClassification of result) {
-            yield csvStringifier.stringifyRecords([diseaseClassification]);
-          }
-        },
-        writeStream
+
+      const writeStream = fs.createWriteStream(
+        "diseaseClassificationMapping.csv"
       );
-  
+      writeStream.write(csvStringifier.getHeaderString());
+
+      await pipelineAsync(async function* () {
+        for (const diseaseClassification of result) {
+          yield csvStringifier.stringifyRecords([diseaseClassification]);
+        }
+      }, writeStream);
+
       return result;
     } catch (error) {
       console.error("Error extracting disease classification mapping:", error);
       throw new Error("Failed to extract disease classification mapping");
     }
   }
+
+
+   // Get affected body part by mapping and return the images
+  async getAffectedBodyPartByMapping(affectedBodyPart: string): Promise<BodyPartToImage[]> {
+    try {
+      if (!affectedBodyPart) {
+        return Promise.resolve([]);
+      }
+  
+      // Extract keywords from the affected body part
+      const keywords = affectedBodyPart
+        .toLowerCase()
+        .split(" ")
+        .filter((word) => word.length > 2); // Filter out short words
+  
+      // Search for images where the affected body part includes the file name
+      const results = await BodyPartToImageModel.find({
+        $or: keywords.map((keyword) => ({
+          fileName: { $regex: keyword, $options: "i" },
+        })),
+      });
+  
+      // Filter results to ensure the affected body part includes the file name
+      const filteredResults = results.filter((result) =>
+        affectedBodyPart.toLowerCase().includes(result.fileName.toLowerCase())
+      );
+  
+      // Remove duplicates based on the file name while retaining other information
+      const uniqueResults = filteredResults.reduce((acc: typeof filteredResults, current) => {
+        const x = acc.find(item => item.fileName === current.fileName);
+        if (!x) {
+          return acc.concat([current]);
+        } else {
+          return acc;
+        }
+      }, []);
+  
+      return uniqueResults;
+      //the filtered results should have unique file names
+      // const uniqueResults = Array.from(new Set(filteredResults.map((result) => result.fileName)));
+
+      // return uniqueResults;
+    } catch (error) {
+      console.error("Error getting affected body part by mapping:", error);
+      throw new Error("Failed to get affected body part by mapping");
+    }
+  }
+
   //get a disease classification by icdCode
   async getDiseaseClassificationByIcdCode(icdCode: string) {
     // return DiseaseClassificationModel.findOne({ icdCode }).lean();
@@ -147,7 +200,7 @@ export class DiseaseClassificationService {
         icdCode: icdCode.slice(0, -2),
       }).lean();
     }
-
+  
     return diseaseC;
   }
 
@@ -187,7 +240,6 @@ export class DiseaseClassificationService {
   }
 
   //export disease classifications to csv
-
   async exportDiseaseClassificationsToCSV() {
     try {
       const diseaseClassifications = await DiseaseClassificationModel.find()
@@ -198,10 +250,12 @@ export class DiseaseClassificationService {
           { id: "icdCode", title: "ICD Code" },
           { id: "description", title: "Description" },
           { id: "affectedBodyPart", title: "Affected Body Part" },
+          { id: "affectedBodyPartB", title: "Affected Body Part B" },
+          { id: "affectedBodyPartC", title: "Affected Body Part C" },
         ],
       });
 
-      const writeStream = fs.createWriteStream("diseaseClassifications.csv");
+      const writeStream = fs.createWriteStream("diseaseClassifications3.csv");
       writeStream.write(csvStringifier.getHeaderString());
 
       await pipelineAsync(
@@ -220,6 +274,76 @@ export class DiseaseClassificationService {
       throw new Error("Failed to export disease classifications");
     }
   }
+  
+  // async exportDiseaseClassificationsToCSV() {
+  //   try {
+  //     const diseaseClassifications = await DiseaseClassificationModel.find()
+  //       .lean()
+  //       .cursor();
+  //     const csvStringifier = createObjectCsvStringifier({
+  //       header: [
+  //         { id: "icdCode", title: "ICD Code" },
+  //         { id: "description", title: "Description" },
+  //         { id: "affectedBodyPart", title: "Affected Body Part" },
+  //         { id: "affectedBodyPartB", title: "Affected Body Part B" },
+  //         { id: "mappedImages", title: "Mapped Images" },
+  //       ],
+  //     });
+  
+  //     const writeStream = fs.createWriteStream("diseaseClassifications.csv");
+  //     writeStream.write(csvStringifier.getHeaderString());
+
+  //    async function getAffectedBodyPartByMappingB(affectedBodyPart: string): Promise<string[]> {
+  //       try {
+  //         if (!affectedBodyPart) {
+  //           return [];
+  //         }
+      
+  //         // Extract keywords from the affected body part
+  //         const keywords = affectedBodyPart
+  //           .toLowerCase()
+  //           .split(" ")
+  //           .filter((word) => word.length > 2); // Filter out short words
+      
+  //         // Search for images where the affected body part includes the file name
+  //         const results = await BodyPartToImageModel.find({
+  //           $or: keywords.map((keyword) => ({
+  //             fileName: { $regex: keyword, $options: "i" },
+  //           })),
+  //         });
+      
+  //         // Filter results to ensure the affected body part includes the file name
+  //         const filteredResults = results.filter((result) =>
+  //           affectedBodyPart.toLowerCase().includes(result.fileName.toLowerCase())
+  //         );
+  //         //the filtered results should have unique file names
+  //         const uniqueResults = Array.from(new Set(filteredResults.map((result) => result.fileName)));
+    
+  //         return uniqueResults;
+  //       } catch (error) {
+  //         console.error("Error getting affected body part by mapping:", error);
+  //         throw new Error("Failed to get affected body part by mapping");
+  //       }
+  //     }
+  
+  //     await pipelineAsync(
+  //       diseaseClassifications,
+  //       async function* (source: AsyncIterable<DiseaseClassification & { mappedImages?: string }>) {
+  //         for await (const diseaseClassification of source) {
+  //       const mappedImages: string[] = await getAffectedBodyPartByMappingB(diseaseClassification.affectedBodyPart || '');
+  //       diseaseClassification.mappedImages = mappedImages.join(", ");
+  //       yield csvStringifier.stringifyRecords([diseaseClassification]);
+  //         }
+  //       }.bind(this),
+  //       writeStream
+  //     );
+  
+  //     return "Disease classifications exported successfully";
+  //   } catch (error) {
+  //     console.error("Error exporting disease classifications to CSV:", error);
+  //     throw new Error("Failed to export disease classifications");
+  //   }
+  // }
 
   // Update a disease classification by ID
   async updateDiseaseClassification(
@@ -248,8 +372,9 @@ export class DiseaseClassificationService {
 
   //update disease classification records by using OpenAI
   async updateDiseaseClassificationRecords() {
+
     const diseaseClassifications = await DiseaseClassificationModel.find({
-      affectedBodyPartB: { $in: [null, ""] },
+      affectedBodyPartC: { $in: [null, ""] },
     })
       .limit(1000)
       .lean();
@@ -270,12 +395,14 @@ export class DiseaseClassificationService {
               context:
                 "Update the affected body part for the following disease classification",
               prompt,
-              model: "gpt-4o",
-              temperature: 0.4,
+              model: "o1-preview"
             });
+
+            console.log(`${diseaseClassification.icdCode} ${diseaseClassification.description}`,  response);
+            
             await DiseaseClassificationModel.findByIdAndUpdate(
               diseaseClassification._id,
-              { affectedBodyPartB: response }
+              { affectedBodyPartC: response || null }
             );
           }
 
@@ -312,15 +439,20 @@ export class DiseaseClassificationService {
       icdCode
     );
 
-    if (!affectedBodyPart?.affectedBodyPartB) {
+    const affectedBodyPartData = affectedBodyPart?.affectedBodyPartD || '';
+    // const affectedBodyPartData = affectedBodyPart?.affectedBodyPartC || affectedBodyPart?.affectedBodyPartB || affectedBodyPart?.affectedBodyPart || '';
+
+    if (!affectedBodyPartData) {
       return [];
     }
 
-    const results = await this.searchDocumentsWithExclusions(
-      affectedBodyPart.affectedBodyPartB,
-      affectedBodyPart.description
-    );
-    return results;
+    const images = await this.getAffectedBodyPartByMapping( affectedBodyPartData);
+
+    return { 
+      images,
+      bodyParts: affectedBodyPartData,
+      description: affectedBodyPart?.description || '',
+    icdCode };
   }
 
   async getImagesByIcdCodes(icdCodes: string) {
@@ -336,8 +468,8 @@ export class DiseaseClassificationService {
     } else {
       const affectedBodyParts: string[] = [];
       diseaseClassification.map((disease) => {
-        if (disease.affectedBodyPart) {
-          affectedBodyParts.push(disease.affectedBodyPart);
+        if (disease.affectedBodyPartB) {
+          affectedBodyParts.push(disease.affectedBodyPartB);
         }
       });
       const results = await this.searchDocumentsWithExclusions(
@@ -352,17 +484,16 @@ export class DiseaseClassificationService {
     description?: string
   ) {
     try {
-      // Create a text search string with exclusions
-      const parsedSearchString = Array.isArray(searchString)
-        ? searchString.join(" ")
-        : searchString;
-      const excludeString = excludeWords.map((word) => `-${word}`).join(" ");
-      const textSearchQuery = `${parsedSearchString} ${excludeString}`.trim();
+    
+      const searchArray = Array.isArray(searchString)
+        ? searchString.map((str) => str.toLowerCase())
+        : [searchString.toLowerCase()];
 
-      const results = await BodyPartToImageModel.find(
-        { $text: { $search: textSearchQuery } },
-        { score: { $meta: "textScore" } }
-      ).sort({ score: { $meta: "textScore" } });
+      const results = await BodyPartToImageModel.find({
+        $expr: {
+          $in: [{ $toLower: "$fileName" }, searchArray],
+        },
+      });
 
       return {
         images: results,
@@ -418,48 +549,5 @@ export class DiseaseClassificationService {
       );
       return [];
     }
-  }
-
-  async validateAmount(amount: string): Promise<number> {
-    // If the string is empty, return 0
-    if (!amount?.trim()) {
-      return 0;
-    }
-  
-    // If the amount contains "Not provided" or "N/A", return 0
-    if (amount.includes("Not provided") || amount.includes("N/A")) {
-      return 0;
-    }
-  
-    // Remove currency symbols and commas
-    amount = amount.replace(/[$,]/g, "");
-  
-    // Extract the number from the string
-    const numberMatch = amount.match(/\d+(\.\d+)?/);
-  
-    // If a number is found, return it
-    if (numberMatch) {
-      return Number(numberMatch[0]);
-    }
-  
-    // If no number is found, return 0
-    return 0;
-  }
-
-  async validateDateStr(dateStr: string): Promise<Date | null> {
-    // If the string is empty, return null
-    if (!dateStr?.trim()) {
-      return null;
-    }
-
-    // Attempt to parse the date string
-    const date = new Date(dateStr);
-
-    // If the date is invalid, return null
-    if (isNaN(date.getTime())) {
-      return null;
-    }
-
-    return date;
   }
 }

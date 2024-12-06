@@ -1,7 +1,7 @@
-import { v4 as uuidv4 } from 'uuid';
-import { InvitationModel } from '../models/invitation.model'; // Ensure this path is correct
-import { Organization } from '../models/organization.model';
-import { UserModel } from '../models/user.model'; // Ensure this path is correct
+import { v4 as uuidv4 } from "uuid";
+import { InvitationModel } from "../models/invitation.model"; // Ensure this path is correct
+import { Organization } from "../models/organization.model";
+import { UserModel } from "../models/user.model"; // Ensure this path is correct
 
 export class InvitationService {
   // Create a new invitation
@@ -10,10 +10,10 @@ export class InvitationService {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7); // Set expiration date to 7 days from now
 
-    const user = await UserModel.findById(userId).select('organization').lean();
+    const user = await UserModel.findById(userId).select("organization").lean();
 
     if (!user) {
-      throw new Error('User not found');
+      throw new Error("User not found");
     }
 
     const invitation = new InvitationModel({
@@ -23,7 +23,7 @@ export class InvitationService {
       role,
       token,
       expiresAt,
-      status: 'pending',
+      status: "pending",
     });
 
     await invitation.save();
@@ -39,12 +39,16 @@ export class InvitationService {
   async acceptInvitation(token: string, password: string) {
     const invitation = await InvitationModel.findOne({ token });
 
-    if (!invitation || invitation.status !== 'pending' || invitation.expiresAt < new Date()) {
-      throw new Error('Invalid or expired invitation');
+    if (
+      !invitation ||
+      invitation.status !== "pending" ||
+      invitation.expiresAt < new Date()
+    ) {
+      throw new Error("Invalid or expired invitation");
     }
 
     const user = new UserModel({
-      name: invitation.email.split('@')[0], // Default name from email
+      name: invitation.email.split("@")[0], // Default name from email
       email: invitation.email,
       password,
       role: invitation.role,
@@ -53,7 +57,7 @@ export class InvitationService {
 
     await user.save();
 
-    invitation.status = 'accepted';
+    invitation.status = "accepted";
     await invitation.save();
 
     return user;
@@ -63,11 +67,11 @@ export class InvitationService {
   async declineInvitation(token: string) {
     const invitation = await InvitationModel.findOne({ token });
 
-    if (!invitation || invitation.status !== 'pending') {
-      throw new Error('Invalid invitation');
+    if (!invitation || invitation.status !== "pending") {
+      throw new Error("Invalid invitation");
     }
 
-    invitation.status = 'declined';
+    invitation.status = "declined";
     await invitation.save();
 
     return invitation;
@@ -87,15 +91,19 @@ export class InvitationService {
       throw new Error("User does not belong to any organization");
     }
 
-    const organizationId = (userWithOrganization.organization as Organization)._id;
+    const organizationId = (userWithOrganization.organization as Organization)
+      ._id;
 
     const [users, invitations] = await Promise.all([
-      UserModel.find({ organization: organizationId })
-        .select('name email role organization createdAt updatedAt')
+      UserModel.find({
+        organization: organizationId,
+        $or: [{ status: "active" }, { status: { $exists: false } }],
+      })
+        .select("name email role accessLevel organization createdAt updatedAt")
         .lean(),
       InvitationModel.find({
         organization: organizationId,
-        status: 'pending',
+        status: "pending",
       }).lean(),
     ]);
 
