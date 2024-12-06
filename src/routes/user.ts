@@ -20,6 +20,14 @@ router.patch("/:id", isAuthenticated, (req, res) =>
   userController.updateUser(req, res)
 );
 
+router.patch("/:id/access-level", isAuthenticated, (req, res) =>
+  userController.updateUserAccessLevel(req, res)
+);
+
+router.patch("/:id/delete", isAuthenticated, (req, res) =>
+  userController.deleteUser(req, res)
+);
+
 router.get("/team-members", isAuthenticated, (req, res) =>
   userController.getTeamMembers(req, res)
 );

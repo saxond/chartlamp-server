@@ -439,7 +439,8 @@ export class DiseaseClassificationService {
       icdCode
     );
 
-    const affectedBodyPartData = affectedBodyPart?.affectedBodyPartC || affectedBodyPart?.affectedBodyPartB || affectedBodyPart?.affectedBodyPart || '';
+    const affectedBodyPartData = affectedBodyPart?.affectedBodyPartD || '';
+    // const affectedBodyPartData = affectedBodyPart?.affectedBodyPartC || affectedBodyPart?.affectedBodyPartB || affectedBodyPart?.affectedBodyPart || '';
 
     if (!affectedBodyPartData) {
       return [];
