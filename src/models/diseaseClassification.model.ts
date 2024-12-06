@@ -23,6 +23,8 @@ export class DiseaseClassification {
   public affectedBodyPartB?: string;
   @prop({ required: false })
   public affectedBodyPartC?: string;
+  @prop({ required: false })
+  public affectedBodyPartD?: string;
 }
 
 export const DiseaseClassificationModel = getModelForClass(DiseaseClassification);
