@@ -1,7 +1,9 @@
 import { FeatureType, GetDocumentAnalysisCommand, StartDocumentAnalysisCommand } from '@aws-sdk/client-textract';
 import axios from "axios";
 import mongoose from "mongoose";
+import { zodResponseFormat } from 'openai/helpers/zod';
 import pdf from "pdf-parse";
+import { z } from "zod";
 import { CaseModel } from "../models/case.model";
 import { Document, DocumentModel } from "../models/document.model";
 import { textractClient } from '../utils/textract';
@@ -160,16 +162,28 @@ export class DocumentService {
 
 
   private async processContentChunk(chunk: string): Promise<any[]> {
-    const prompt = `Here's the extracted document of a patient's medical record: ${chunk} I want you to process this text and provide me the information mentioned below: Disease Name, Amount Spent, Provider Name, Doctor Name, Medical Note, Date in an array of object [{}]`;
 
+    const MedicalRecord = z.object({
+      diseaseName: z.union([z.string(), z.array(z.string())]),
+      amountSpent: z.string(),
+      providerName: z.string(),
+      doctorName: z.string(),
+      medicalNote: z.string(),
+      date: z.string(),
+    });
+
+    const prompt = `Here's the extracted document of a patient's medical record: ${chunk} I want you to process this text and provide me the information`;
+    
     const response = await this.openAiService.completeChat({
       context: "Extract the patient report from the document",
       prompt,
       model: "gpt-4o",
       temperature: 0.4,
+      response_format: zodResponseFormat(MedicalRecord, "report"),
     });
 
-    return this.cleanResponse(response);
+
+    return response;
   }
 
   async processDocumentContent(content: string): Promise<any[]> {
@@ -181,19 +195,28 @@ export class DocumentService {
       const results = await Promise.all(
         contentChunks.map((chunk) => this.processContentChunk(chunk))
       );   
-
-      // Flatten the array of arrays into a single array
-      const flattenedResults = results.flat();   
       
+      // Define the type of result
+      type ResultType = {
+        amountSpent: string;
+        date: string;
+        diseaseName: string | string[];
+        providerName: string;
+        doctorName: string;
+        medicalNote: string;
+      };
+
+      // Flatten the results array
+      const flattenedResults = results.flat();
 
       // Create report objects from flattened results
       const reportObjects = await Promise.all(
-        flattenedResults.map(async (result) => {
-          const amountSpent = await this.validateAmount(result["Amount Spent"] || "");
-          const dateOfClaim = await this.validateDateStr(result["Date"] || "");
-          const nameOfDisease = typeof result["Disease Name"] === "string" ? result["Disease Name"] : Array.isArray(result["Disease Name"]) ? result["Disease Name"].join(",") : typeof result["Disease Name"] === "object" ? result["Disease Name"].join(",") : "";
+        flattenedResults.map(async (result: ResultType) => {
+          const amountSpent = await this.validateAmount(result.amountSpent || "");
+          const dateOfClaim = await this.validateDateStr(result.date || "");
+          const nameOfDisease = typeof result.diseaseName === "string" ? result.diseaseName : Array.isArray(result.diseaseName) ? result.diseaseName.join(",") : "";
           const icdCodes = await this.getIcdCodeFromDescription(
-            nameOfDisease + " " + result["Medical Note"]
+            nameOfDisease + " " + result.medicalNote
           );
 
           //check to make sure 
@@ -202,15 +225,16 @@ export class DocumentService {
             icdCodes,
             nameOfDisease: nameOfDisease || "",
             amountSpent: amountSpent || 0,
-            providerName: result["Provider Name"] || "",
-            doctorName: result["Doctor Name"] || "",
-            medicalNote: result["Medical Note"] || "",
+            providerName: result.providerName || "",
+            doctorName: result.doctorName || "",
+            medicalNote: result.medicalNote || "",
             dateOfClaim,
           };
         })
       );
 
       return reportObjects;
+
     } catch (error) {
       console.log("Error processing document content:", error);
         return [];
@@ -299,6 +323,9 @@ export class DocumentService {
   // Extract content from the document that is in PDF format
    async extractContentFromDocument(documentUrl: string, documentId?: string): Promise<string> {
     try {
+
+      console.log("Document URL:", documentUrl);
+      
       // Download PDF from URL (S3 URL)
       const response = await axios.get(documentUrl, {
         responseType: "arraybuffer",
@@ -319,7 +346,6 @@ export class DocumentService {
       // If the content is empty, try to extract using Textract
       if (!content) {
         content = await this.extractContentFromDocumentUsingTextract(documentUrl);
-        console.log("Content from Textract:", content);
         // If documentId is provided, update the document with the jobId
         if (documentId) {
           await DocumentModel.findByIdAndUpdate(documentId, {
@@ -438,7 +464,7 @@ export class DocumentService {
 
   // Pass the extractedData from the document to get the content in the above structure
 
-  async getContentFromDocument(extractedData: string): Promise<any> {
+  async getContentFromDocument(extractedData: string): Promise<string> {
     try {
       // Trim the extractedData and remove any empty strings
       extractedData = extractedData?.trim();
@@ -675,13 +701,19 @@ export class DocumentService {
 
       // Clean content with keywords
       const contentExtracts = await this.getContentFromDocument(content);
+      
 
       if (!contentExtracts) {
         throw new Error("No content extracted from document");
 
       }
+
+      const results =  await this.processDocumentContent(contentExtracts);
+
+      console.log(results);
+      
       // Flatten the array of arrays into a single array
-      return await this.processDocumentContent(contentExtracts);
+      return results;
     } catch (error) {
       console.error("Error extracting report from document:", error);
       throw new Error("Failed to extract report from document");
