@@ -12,12 +12,33 @@ class OpenAIService {
         this.openai = new OpenAI({ apiKey });
     }
 
-    async completeChat(input: ChatInput): Promise<string> {
-      const { context, prompt, model, temperature } = input;
+    async completeChat(input: ChatInput): Promise<any> {
+      const { context, prompt, model, temperature, response_format } = input;
       try {
+        if(response_format){
+            const response = await this.openai.beta.chat.completions.parse({
+                model,
+          temperature: temperature ?? undefined,
+          response_format: response_format ?? undefined,
+          messages: [
+            {
+              role: "system",
+              content: context,
+            },
+            {
+              role: "user",
+              content: prompt,
+            },
+          ],
+        });
+
+        return response.choices[0].message.parsed;
+
+        }
         const response = await this.openai.chat.completions.create({
           model,
           temperature: temperature ?? undefined,
+          response_format: response_format ?? undefined,
           messages: [
             // {
             //   role: "system",
@@ -31,6 +52,8 @@ class OpenAIService {
         });
     
         const apiResponseData = response.choices[0];
+        // console.log(apiResponseData);
+        
         return apiResponseData?.message?.content || '';
       } catch (err) {
         console.error(err);
