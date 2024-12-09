@@ -354,9 +354,13 @@ export class DocumentService {
           content = "";
         }
       }
+
+      console.log("Content:", content);
   
       // Return content
       return content;
+
+
     } catch (error) {
       console.error("Error extracting content from document:", error);
       let content = await this.extractContentFromDocumentUsingTextract(documentUrl) || "";
