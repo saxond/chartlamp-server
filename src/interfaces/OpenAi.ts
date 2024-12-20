@@ -3,6 +3,7 @@ export interface ChatInput {
     prompt: string;
     model: string;
     temperature?: number;
+    response_format?: any;
 }
 
 export interface TrainingDataItem {
