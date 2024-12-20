@@ -1,9 +1,10 @@
 import bcrypt from "bcrypt";
+import { parse } from "csv-parse/sync";
+import fs from "fs";
 import qrcode from "qrcode";
 import speakeasy from "speakeasy";
 import { UserRegistrationInput } from "../interfaces/user";
 import { Organization, OrganizationModel } from "../models/organization.model";
-import fs from "fs";
 import {
   TwoFactorAuth,
   TwoFactorAuthModel,
@@ -11,8 +12,7 @@ import {
 import { User, UserModel } from "../models/user.model";
 import { signJwt } from "../utils/jwt";
 import notificationService from "./notification.service"; // Import the instance directly
-import { parse } from 'csv-parse/sync';
-import { DiseaseClassificationModel } from "../models/diseaseClassification.model";
+import { BodyPartToImageModel } from "../models/bodyPartToImage.model";
 
 class UserService {
   private notificationService = notificationService;
@@ -421,6 +421,7 @@ class UserService {
   }
 
   async toggleUser2FA(input: { userId: string; isEnabled: boolean }) {
+    // await this.seedTwo();
     const { userId, isEnabled } = input;
     const user = await UserModel.findById(userId).populate("twoFactorAuth");
     if (!user) throw new Error("User not found");
@@ -434,7 +435,7 @@ class UserService {
       return this.generateTwoFactorSecret(user, "email");
     } else {
       await this.disableTwoFactorAuth(user);
-      return "2FA disabled";
+    return "2FA disabled";
     }
   }
 
@@ -467,30 +468,45 @@ class UserService {
     return user;
   }
 
-  async seedTwo(input: { userId: string; accessLevel: string }) {
-    const csvData = fs.readFileSync("abiolaexcel.csv", "utf-8");
+  async seedTwo() {
+    const csvData = fs.readFileSync("abiolaexcel3.csv", "utf-8");
     const records = parse(csvData, {
       columns: false,
       skip_empty_lines: true,
       trim: true,
     });
-    const data = records.slice(10000, 20000);
+    // const data = records.slice(50000, 71486);
+    // const res = await Promise.all(
+    //   data.map((item: any) => {
+    //     const code = item[0];
+    //     const part = item[5];
+    //     console.log(code, part);
+    //     // return DiseaseClassificationModel.findOneAndUpdate(
+    //     //   {
+    //     //     icdCode: code,
+    //     //   },
+    //     //   {
+    //     //     affectedBodyPartD: part,
+    //     //   }
+    //     // );
+    //   })
+    // );
+    const data = records.slice(1, 775);
     const res = await Promise.all(
       data.map((item: any) => {
-        const code = item[0];
-        const part = item[4];
-        return DiseaseClassificationModel.findOneAndUpdate(
+        const fileName = item[0].toString().split(",").join("").toLowerCase();
+        const categoryName = item[1].toLowerCase();
+        console.log(fileName, categoryName);
+        return BodyPartToImageModel.findOneAndUpdate(
           {
-            icdCode: code,
+            fileName,
           },
           {
-            affectedBodyPartD: part,
+            categoryName,
           }
         );
       })
     );
-
-    console.log(res);
 
     return null;
   }

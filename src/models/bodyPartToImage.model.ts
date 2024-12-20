@@ -4,6 +4,12 @@ import { getModelForClass, index, prop } from "@typegoose/typegoose";
 export class BodyPartToImage {
   @prop({ required: true })
   public fileName!: string;
+
+  @prop({ required: false })
+  public categoryName!: string;
+
+  @prop({ required: false })
+  public svg!: string;
 }
 
 export const BodyPartToImageModel = getModelForClass(BodyPartToImage);
