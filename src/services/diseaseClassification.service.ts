@@ -142,6 +142,7 @@ export class DiseaseClassificationService {
         $or: keywords.map((keyword) => ({
           fileName: { $regex: keyword, $options: "i" },
         })),
+        categoryName: { $exists: true },
       });
   
       // Filter results to ensure the affected body part includes the file name
