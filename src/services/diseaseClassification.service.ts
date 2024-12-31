@@ -447,7 +447,7 @@ export class DiseaseClassificationService {
       return [];
     }
 
-    const images = await this.getAffectedBodyPartByMapping( affectedBodyPartData);
+    const images = await this.getAffectedBodyPartByMapping(affectedBodyPartData);
 
     return { 
       images,

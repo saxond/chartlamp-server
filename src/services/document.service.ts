@@ -2,8 +2,8 @@ import { FeatureType, GetDocumentAnalysisCommand, StartDocumentAnalysisCommand }
 import axios from "axios";
 import mongoose from "mongoose";
 import { zodResponseFormat } from 'openai/helpers/zod';
-import pdf from "pdf-parse";
 import { z } from "zod";
+import pdf from "pdf-parse";
 import { CaseModel } from "../models/case.model";
 import { Document, DocumentModel } from "../models/document.model";
 import { textractClient } from '../utils/textract';

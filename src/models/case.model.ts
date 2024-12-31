@@ -38,12 +38,23 @@ class Comment {
   public comment!: string;
 }
 
+class NameOfDiseaseByIcdCode {
+  @prop()
+  public icdCode!: string;
+
+  @prop()
+  public nameOfDisease!: string;
+}
+
 class Report {
   @prop({ type: () => [String], default: [] })
   public icdCodes?: string[];
 
   @prop()
   public nameOfDisease?: string;
+
+  @prop({required: false})
+  public nameOfDiseaseByIcdCode?: NameOfDiseaseByIcdCode[];
 
   @prop()
   public icdCode?: string;
@@ -66,7 +77,8 @@ class Report {
   @prop()
   public dateOfClaim?: Date | null;
 
-  @prop({ default: [TagsType.NOT_DECIDED] })
+  // @prop({ default: [TagsType.NOT_DECIDED] })
+  @prop({ default: [] })
   public tags?: string[];
 
   @prop()

@@ -51,6 +51,11 @@ router.get(
   isAuthenticated,
   caseController.getReportComments
 );
+router.post(
+  "/disease-name",
+  isAuthenticated,
+  caseController.getStreamlinedDiseaseName
+);
 
 router.delete("/:id", isAuthenticated, caseController.delete);
 
