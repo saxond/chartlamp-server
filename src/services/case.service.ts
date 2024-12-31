@@ -875,33 +875,10 @@ export class CaseService {
     caseId: string;
     reportId: string;
   }) {
-    const IcdCodesToDiseaseName = z.object({
-      data: z.array(
-        z.object({
-          icdCode: z.string(),
-          nameOfDisease: z.string(),
-        })
-      ),
+    const diseaseNameByIcdCode = this.documentService.getStreamlinedDiseaseName({
+      icdCodes,
+      diseaseNames,
     });
-
-    // const prompt = `From this list of disease names: ${diseaseNames}, please select one most relevant disease name for the ICD code ${icdCode}`;
-    const prompt = `From this list of disease names: ${diseaseNames}, please match these disease names to their respective ICD codes: ${icdCodes.join(
-      ","
-    )}`;
-
-    const response = await this.openAiService.completeChat({
-      context: "Extract the patient report from the document",
-      prompt,
-      model: "gpt-4o",
-      temperature: 0.4,
-      response_format: zodResponseFormat(IcdCodesToDiseaseName, "report"),
-    });
-
-    if (!response?.data) return [];
-    const diseaseNameByIcdCode = response.data.map((item: any) => ({
-      icdCode: item.icdCode,
-      nameOfDisease: item.nameOfDisease,
-    }));
 
     await CaseModel.findOneAndUpdate(
       {

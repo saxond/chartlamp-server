@@ -1,12 +1,16 @@
-import { FeatureType, GetDocumentAnalysisCommand, StartDocumentAnalysisCommand } from '@aws-sdk/client-textract';
+import {
+  FeatureType,
+  GetDocumentAnalysisCommand,
+  StartDocumentAnalysisCommand,
+} from "@aws-sdk/client-textract";
 import axios from "axios";
 import mongoose from "mongoose";
-import { zodResponseFormat } from 'openai/helpers/zod';
-import { z } from "zod";
+import { zodResponseFormat } from "openai/helpers/zod";
 import pdf from "pdf-parse";
+import { z } from "zod";
 import { CaseModel } from "../models/case.model";
 import { Document, DocumentModel } from "../models/document.model";
-import { textractClient } from '../utils/textract';
+import { textractClient } from "../utils/textract";
 import OpenAIService from "./openai.service";
 
 const MAX_TOKENS = 16385;
@@ -19,7 +23,6 @@ export class DocumentService {
       process.env.OPENAI_API_KEY as string
     );
   }
-
 
   // Split content into chunks
   private splitContent(content: string, maxTokens: number): string[] {
@@ -48,15 +51,12 @@ export class DocumentService {
       const jsonString = response.replace(/```json|```/g, "").trim();
       // IS THIS A VALID JSON STRING?
       return JSON.parse(jsonString);
-
     } catch (error) {
-
       return [];
     }
   }
 
   async validateAmount(amount: string): Promise<number> {
-
     console.log("Amount:", amount);
 
     // If the string is empty, return 0
@@ -101,7 +101,6 @@ export class DocumentService {
     return date;
   }
 
-
   async getBase64FromUrl(url: string): Promise<string> {
     try {
       // Download PDF from URL
@@ -110,7 +109,7 @@ export class DocumentService {
       });
 
       // Convert PDF buffer to Base64
-      const base64 = Buffer.from(response.data).toString('base64');
+      const base64 = Buffer.from(response.data).toString("base64");
 
       return base64;
     } catch (error) {
@@ -160,9 +159,7 @@ export class DocumentService {
     }
   }
 
-
   private async processContentChunk(chunk: string): Promise<any[]> {
-
     const MedicalRecord = z.object({
       diseaseName: z.union([z.string(), z.array(z.string())]),
       amountSpent: z.string(),
@@ -173,7 +170,7 @@ export class DocumentService {
     });
 
     const prompt = `Here's the extracted document of a patient's medical record: ${chunk} I want you to process this text and provide me the information`;
-    
+
     const response = await this.openAiService.completeChat({
       context: "Extract the patient report from the document",
       prompt,
@@ -181,7 +178,6 @@ export class DocumentService {
       temperature: 0.4,
       response_format: zodResponseFormat(MedicalRecord, "report"),
     });
-
 
     return response;
   }
@@ -194,8 +190,8 @@ export class DocumentService {
       // Process content chunks
       const results = await Promise.all(
         contentChunks.map((chunk) => this.processContentChunk(chunk))
-      );   
-      
+      );
+
       // Define the type of result
       type ResultType = {
         amountSpent: string;
@@ -212,14 +208,26 @@ export class DocumentService {
       // Create report objects from flattened results
       const reportObjects = await Promise.all(
         flattenedResults.map(async (result: ResultType) => {
-          const amountSpent = await this.validateAmount(result.amountSpent || "");
+          const amountSpent = await this.validateAmount(
+            result.amountSpent || ""
+          );
           const dateOfClaim = await this.validateDateStr(result.date || "");
-          const nameOfDisease = typeof result.diseaseName === "string" ? result.diseaseName : Array.isArray(result.diseaseName) ? result.diseaseName.join(",") : "";
+          const nameOfDisease =
+            typeof result.diseaseName === "string"
+              ? result.diseaseName
+              : Array.isArray(result.diseaseName)
+              ? result.diseaseName.join(",")
+              : "";
           const icdCodes = await this.getIcdCodeFromDescription(
             nameOfDisease + " " + result.medicalNote
           );
 
-          //check to make sure 
+          const diseaseNameByIcdCode = await this.getStreamlinedDiseaseName({
+            icdCodes,
+            diseaseNames: nameOfDisease,
+          });
+
+          //check to make sure
 
           return {
             icdCodes,
@@ -229,16 +237,57 @@ export class DocumentService {
             doctorName: result.doctorName || "",
             medicalNote: result.medicalNote || "",
             dateOfClaim,
+            nameOfDiseaseByIcdCode: diseaseNameByIcdCode,
           };
         })
       );
 
       return reportObjects;
-
     } catch (error) {
       console.log("Error processing document content:", error);
-        return [];
+      return [];
     }
+  }
+
+  async getStreamlinedDiseaseName({
+    icdCodes,
+    diseaseNames,
+  }: {
+    icdCodes: string[];
+    diseaseNames: string;
+  }): Promise<
+    {
+      icdCode: string;
+      nameOfDisease: string;
+    }[]
+  > {
+    const IcdCodesToDiseaseName = z.object({
+      data: z.array(
+        z.object({
+          icdCode: z.string(),
+          nameOfDisease: z.string(),
+        })
+      ),
+    });
+
+    const prompt = `From this list of disease names: ${diseaseNames}, please match these disease names to their respective ICD codes: ${icdCodes.join(
+      ","
+    )}`;
+
+    const response = await this.openAiService.completeChat({
+      context: "Match icd codes with disease names",
+      prompt,
+      model: "gpt-4o",
+      temperature: 0.4,
+      response_format: zodResponseFormat(IcdCodesToDiseaseName, "report"),
+    });
+
+    if (!response?.data) return [];
+    const diseaseNameByIcdCode = response.data.map((item: any) => ({
+      icdCode: item.icdCode,
+      nameOfDisease: item.nameOfDisease,
+    }));
+    return diseaseNameByIcdCode;
   }
 
   // Create report from document
@@ -248,58 +297,75 @@ export class DocumentService {
       if (!content) {
         return []; // Skip to the next document
       }
-  
+
       const results = await this.processDocumentContent(content);
-  
+
       // Add document ID to each result
-      return results.map((result) => ({ ...result, document: doc._id as string }));
+      return results.map((result) => ({
+        ...result,
+        document: doc._id as string,
+      }));
     } catch (error) {
       console.log("Error generating report for document:", error);
-       return [];
+      return [];
     }
   }
 
-
-  async extractContentFromDocumentUsingTextract(documentUrl: string): Promise<string> {
+  async extractContentFromDocumentUsingTextract(
+    documentUrl: string
+  ): Promise<string> {
     try {
       // Ensure the documentUrl is the S3 object key, not the full URL
-      const s3ObjectKey = documentUrl.split('/').pop();
+      const s3ObjectKey = documentUrl.split("/").pop();
 
       // Call Amazon Textract to extract text from the PDF
       const params = {
         DocumentLocation: {
           S3Object: {
-            Bucket: process.env.AWS_BUCKET_NAME as string || "chartlamp",
+            Bucket: (process.env.AWS_BUCKET_NAME as string) || "chartlamp",
             Name: s3ObjectKey!,
           },
         },
-        FeatureTypes: [FeatureType.TABLES, FeatureType.FORMS, FeatureType.SIGNATURES],
+        FeatureTypes: [
+          FeatureType.TABLES,
+          FeatureType.FORMS,
+          FeatureType.SIGNATURES,
+        ],
       };
 
       //start document analysis
-      const startDocumentAnalysisCommand = new StartDocumentAnalysisCommand(params);
+      const startDocumentAnalysisCommand = new StartDocumentAnalysisCommand(
+        params
+      );
 
       const { JobId } = await textractClient.send(startDocumentAnalysisCommand);
 
-      return JobId || '';
-
+      return JobId || "";
     } catch (error) {
       // Log more detailed error information for debugging
       console.error("Textract error details:", JSON.stringify(error, null, 2));
 
       // Handle specific Textract exceptions
-      if ((error as any).__type === 'UnsupportedDocumentException') {
+      if ((error as any).__type === "UnsupportedDocumentException") {
         console.error("Unsupported document type:", error);
         throw new Error("Unsupported document type");
       } else {
-        console.error("Error extracting content from document using Textract:", error);
-        throw new Error("Failed to extract content from document using Textract");
+        console.error(
+          "Error extracting content from document using Textract:",
+          error
+        );
+        throw new Error(
+          "Failed to extract content from document using Textract"
+        );
       }
     }
   }
 
-  //get document analysis output 
-  async getDocumentAnalysisOutput(jobId: string, nextToken?: string): Promise<any> {
+  //get document analysis output
+  async getDocumentAnalysisOutput(
+    jobId: string,
+    nextToken?: string
+  ): Promise<any> {
     try {
       const params = {
         JobId: jobId,
@@ -308,12 +374,13 @@ export class DocumentService {
       };
 
       //get document analysis output
-      const startDocumentAnalysisCommand = new GetDocumentAnalysisCommand(params);
+      const startDocumentAnalysisCommand = new GetDocumentAnalysisCommand(
+        params
+      );
 
       const response = await textractClient.send(startDocumentAnalysisCommand);
 
       return response;
-
     } catch (error) {
       console.error("Error getting document analysis output:", error);
       throw new Error("Failed to get document analysis output");
@@ -321,31 +388,35 @@ export class DocumentService {
   }
 
   // Extract content from the document that is in PDF format
-   async extractContentFromDocument(documentUrl: string, documentId?: string): Promise<string> {
+  async extractContentFromDocument(
+    documentUrl: string,
+    documentId?: string
+  ): Promise<string> {
     try {
-
       console.log("Document URL:", documentUrl);
-      
+
       // Download PDF from URL (S3 URL)
       const response = await axios.get(documentUrl, {
         responseType: "arraybuffer",
       });
       const pdfBuffer = response.data;
-  
+
       // Extract content from PDF
       const data = await pdf(pdfBuffer);
       let content = data.text;
-  
+
       // Remove empty lines and trim
       content = content
         .split("\n")
         .map((line) => line.trim())
         .filter((line) => line)
         .join("\n");
-  
+
       // If the content is empty, try to extract using Textract
       if (!content) {
-        content = await this.extractContentFromDocumentUsingTextract(documentUrl);
+        content = await this.extractContentFromDocumentUsingTextract(
+          documentUrl
+        );
         // If documentId is provided, update the document with the jobId
         if (documentId) {
           await DocumentModel.findByIdAndUpdate(documentId, {
@@ -356,14 +427,13 @@ export class DocumentService {
       }
 
       console.log("Content:", content);
-  
+
       // Return content
       return content;
-
-
     } catch (error) {
       console.error("Error extracting content from document:", error);
-      let content = await this.extractContentFromDocumentUsingTextract(documentUrl) || "";
+      let content =
+        (await this.extractContentFromDocumentUsingTextract(documentUrl)) || "";
       // If documentId is provided, update the document with the jobId
       if (documentId) {
         await DocumentModel.findByIdAndUpdate(documentId, {
@@ -379,7 +449,7 @@ export class DocumentService {
   async getCombinedDocumentContent(jobId: string): Promise<string> {
     try {
       let nextToken;
-      let combinedContent = '';
+      let combinedContent = "";
 
       do {
         const response = await this.getDocumentAnalysisOutput(jobId, nextToken);
@@ -387,8 +457,8 @@ export class DocumentService {
 
         if (blocks) {
           for (const block of blocks) {
-            if (block.BlockType === 'LINE') {
-              combinedContent += block.Text + '\n';
+            if (block.BlockType === "LINE") {
+              combinedContent += block.Text + "\n";
             }
           }
         }
@@ -419,7 +489,10 @@ export class DocumentService {
 
       // Extract content from each document
       const updatePromises = documents.map(async (document) => {
-        const content = await this.extractContentFromDocument(document.url, document._id);
+        const content = await this.extractContentFromDocument(
+          document.url,
+          document._id
+        );
         await DocumentModel.findByIdAndUpdate(document._id, {
           extractedData: content,
         });
@@ -450,7 +523,10 @@ export class DocumentService {
 
       // Extract content from each document
       const updatePromises = documents.map(async (document) => {
-        const content = await this.extractContentFromDocument(document.url, document._id);
+        const content = await this.extractContentFromDocument(
+          document.url,
+          document._id
+        );
         await DocumentModel.findByIdAndUpdate(document._id, {
           extractedData: content,
         });
@@ -639,10 +715,7 @@ export class DocumentService {
   }
 
   //add document to case
-  async addDocumentToCase(
-    caseId: string,
-    docs: string[]
-  ) {
+  async addDocumentToCase(caseId: string, docs: string[]) {
     const session = await mongoose.startSession();
     session.startTransaction();
 
@@ -673,7 +746,6 @@ export class DocumentService {
 
       if (!content) {
         throw new Error("No content extracted from document");
-
       }
 
       // Clean content with keywords
@@ -681,14 +753,12 @@ export class DocumentService {
 
       if (!contentExtracts) {
         throw new Error("No content extracted from document");
-
       }
 
       return await this.processDocumentContent(contentExtracts);
-
     } catch (error) {
       console.log("Error extracting report from document:", error);
-       return [];
+      return [];
     }
   }
 
@@ -700,22 +770,19 @@ export class DocumentService {
 
       if (!content) {
         throw new Error("No content extracted from document");
-
       }
 
       // Clean content with keywords
       const contentExtracts = await this.getContentFromDocument(content);
-      
 
       if (!contentExtracts) {
         throw new Error("No content extracted from document");
-
       }
 
-      const results =  await this.processDocumentContent(contentExtracts);
+      const results = await this.processDocumentContent(contentExtracts);
 
       console.log(results);
-      
+
       // Flatten the array of arrays into a single array
       return results;
     } catch (error) {
