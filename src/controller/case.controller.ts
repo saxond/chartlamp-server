@@ -265,18 +265,30 @@ export class CaseController {
       if (!req?.user) {
         return res.status(401).json({ message: "Unauthorized" });
       }
-      const response = await caseService.shareCaseWithUsers(
-        {
-          caseId: req.params.id,
-          userIds: req.body.userIds,
-        }
-      );
+      const response = await caseService.shareCaseWithUsers({
+        caseId: req.params.id,
+        userIds: req.body.userIds,
+      });
       res.status(200).json(response);
     } catch (error) {
       handleError(res, error);
     }
   }
-  
+
+  async getStreamlinedDiseaseName(req: AuthRequest, res: Response) {
+    try {
+      if (!req?.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const response = await caseService.getStreamlinedDiseaseName({
+        ...req.body,
+      });
+      res.status(200).json(response);
+    } catch (error) {
+      handleError(res, error);
+    }
+  }
+
   //runOcrDocumentExtraction
   async runOcrDocumentExtraction(req: Request, res: Response) {
     try {
@@ -286,5 +298,4 @@ export class CaseController {
       handleError(res, error);
     }
   }
-
 }
