@@ -142,7 +142,8 @@ export class DiseaseClassificationService {
         $or: keywords.map((keyword) => ({
           fileName: { $regex: keyword, $options: "i" },
         })),
-      });
+        categoryName: { $exists: true },
+      }).lean();
   
       // Filter results to ensure the affected body part includes the file name
       const filteredResults = results.filter((result) =>
@@ -446,7 +447,7 @@ export class DiseaseClassificationService {
       return [];
     }
 
-    const images = await this.getAffectedBodyPartByMapping( affectedBodyPartData);
+    const images = await this.getAffectedBodyPartByMapping(affectedBodyPartData);
 
     return { 
       images,

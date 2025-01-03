@@ -1,4 +1,6 @@
 import mongoose, { Types } from "mongoose";
+import { zodResponseFormat } from "openai/helpers/zod";
+import { z } from "zod";
 import {
   CaseInvitationModel,
   CaseInvitationStatus,
@@ -11,14 +13,20 @@ import { UserModel } from "../models/user.model";
 import { DiseaseClassificationService } from "./diseaseClassification.service";
 import { DocumentService } from "./document.service";
 import notificationService from "./notification.service";
+import OpenAIService from "./openai.service";
 
 export class CaseService {
   private documentService: DocumentService;
-  private dcService:DiseaseClassificationService;
+  private dcService: DiseaseClassificationService;
   private notificationService = notificationService;
+  private openAiService: OpenAIService;
+
   constructor() {
     this.documentService = new DocumentService();
     this.dcService = new DiseaseClassificationService();
+    this.openAiService = new OpenAIService(
+      process.env.OPENAI_API_KEY as string
+    );
   }
 
   // Create a new case
@@ -102,7 +110,6 @@ export class CaseService {
   async getCaseByIdWithBodyParts(caseId: string) {
     const caseResponse = await this.getCaseById(new Types.ObjectId(caseId));
     if (!caseResponse?.reports) return null;
-
 
     // Filter out reports without icdCodes before mapping
     const reportsWithIcdCodes = caseResponse.reports.filter(
@@ -287,13 +294,15 @@ export class CaseService {
   //remove duplicates based on icdcodes and combine reports
   async removeDuplicateReports(data: any) {
     // If all the items in icdCodes are the same, then remove the duplicate
-    const uniqueReports = data.filter((report: any, index: number, self: any) => {
-      const icdCodes = report.icdCodes.sort().toString();
-      const foundIndex = self.findIndex(
-        (r: any) => r.icdCodes.sort().toString() === icdCodes
-      );
-      return foundIndex === index;
-    });
+    const uniqueReports = data.filter(
+      (report: any, index: number, self: any) => {
+        const icdCodes = report.icdCodes.sort().toString();
+        const foundIndex = self.findIndex(
+          (r: any) => r.icdCodes.sort().toString() === icdCodes
+        );
+        return foundIndex === index;
+      }
+    );
 
     return uniqueReports;
   }
@@ -378,9 +387,8 @@ export class CaseService {
 
   // Update case reports
   async updateCaseReports(caseId: string, flattenedResults: any[]) {
-
     if (flattenedResults.length) {
-     // Fetch existing reports
+      // Fetch existing reports
       const caseData = await CaseModel.findById(caseId).lean();
       const existingReports = caseData?.reports || [];
 
@@ -401,24 +409,26 @@ export class CaseService {
   }
 
   // Populate report from case documents
-   async populateReportFromCaseDocuments(caseId: string): Promise<any> {
+  async populateReportFromCaseDocuments(caseId: string): Promise<any> {
     try {
       const documents = await DocumentModel.find({ case: caseId }).lean();
-  
+
       if (!documents.length) {
         return [];
       }
-  
+
       const flattenedResults = (
         await Promise.all(
-          documents.map((doc) => this.documentService.generateReportForDocument(doc))
+          documents.map((doc) =>
+            this.documentService.generateReportForDocument(doc)
+          )
         )
       ).flat();
-  
+
       if (flattenedResults.length) {
         await this.updateCaseReports(caseId, flattenedResults);
       }
-  
+
       return flattenedResults;
     } catch (error) {
       console.error("Error populating report from case documents:", error);
@@ -811,39 +821,78 @@ export class CaseService {
   }
 
   //run ocr document extraction
-   async runOcrDocumentExtraction() {
+  async runOcrDocumentExtraction() {
     try {
       // Find document with jobId and status PENDING
       const document = await DocumentModel.findOne({
         jobId: { $ne: null },
         status: ExtractionStatus.PENDING,
       }).lean();
-  
+
       if (!document) {
         console.log("No document found for OCR extraction");
         return [];
       }
 
-      console.log("Running OCR document extraction for document:", document._id);
-  
+      console.log(
+        "Running OCR document extraction for document:",
+        document._id
+      );
+
       // Extract content from the document
-      const content = await this.documentService.getCombinedDocumentContent(document.jobId!);
-  
+      const content = await this.documentService.getCombinedDocumentContent(
+        document.jobId!
+      );
+
       // Update document with extracted content and status
       await DocumentModel.findByIdAndUpdate(document._id, {
         content,
         status: ExtractionStatus.SUCCESS,
       });
-  
+
       // Generate report for the document and update case reports
-      const results = await this.documentService.generateReportForDocument(document);
+      const results = await this.documentService.generateReportForDocument(
+        document
+      );
 
       await this.updateCaseReports(document.case as string, results);
-  
+
       return results;
     } catch (error) {
       console.error("Error running OCR document extraction:", error);
       throw new Error("Failed to run OCR document extraction");
     }
+  }
+
+  async getStreamlinedDiseaseName({
+    icdCodes,
+    diseaseNames,
+    caseId,
+    reportId,
+  }: {
+    icdCodes: string[];
+    diseaseNames: string;
+    caseId: string;
+    reportId: string;
+  }) {
+    const diseaseNameByIcdCode = this.documentService.getStreamlinedDiseaseName({
+      icdCodes,
+      diseaseNames,
+    });
+
+    await CaseModel.findOneAndUpdate(
+      {
+        _id: caseId,
+        "reports._id": reportId,
+      },
+      {
+        $set: {
+          "reports.$.nameOfDiseaseByIcdCode": diseaseNameByIcdCode,
+        },
+      }
+    );
+
+    console.log(diseaseNameByIcdCode);
+    return diseaseNameByIcdCode;
   }
 }
