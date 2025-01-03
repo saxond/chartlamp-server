@@ -143,7 +143,7 @@ export class DiseaseClassificationService {
           fileName: { $regex: keyword, $options: "i" },
         })),
         categoryName: { $exists: true },
-      });
+      }).lean();
   
       // Filter results to ensure the affected body part includes the file name
       const filteredResults = results.filter((result) =>
