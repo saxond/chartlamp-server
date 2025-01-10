@@ -4,7 +4,10 @@ import fs from "fs";
 import { Types } from "mongoose";
 import { pipeline } from "stream";
 import { promisify } from "util";
-import { BodyPartToImage, BodyPartToImageModel } from "../models/bodyPartToImage.model";
+import {
+  BodyPartToImage,
+  BodyPartToImageModel,
+} from "../models/bodyPartToImage.model";
 import {
   DiseaseClassification,
   DiseaseClassificationModel,
@@ -123,20 +126,21 @@ export class DiseaseClassificationService {
     }
   }
 
-
-   // Get affected body part by mapping and return the images
-  async getAffectedBodyPartByMapping(affectedBodyPart: string): Promise<BodyPartToImage[]> {
+  // Get affected body part by mapping and return the images
+  async getAffectedBodyPartByMapping(
+    affectedBodyPart: string
+  ): Promise<BodyPartToImage[]> {
     try {
       if (!affectedBodyPart) {
         return Promise.resolve([]);
       }
-  
+
       // Extract keywords from the affected body part
       const keywords = affectedBodyPart
         .toLowerCase()
         .split(" ")
         .filter((word) => word.length > 2); // Filter out short words
-  
+
       // Search for images where the affected body part includes the file name
       const results = await BodyPartToImageModel.find({
         $or: keywords.map((keyword) => ({
@@ -144,22 +148,25 @@ export class DiseaseClassificationService {
         })),
         categoryName: { $exists: true },
       }).lean();
-  
+
       // Filter results to ensure the affected body part includes the file name
       const filteredResults = results.filter((result) =>
         affectedBodyPart.toLowerCase().includes(result.fileName.toLowerCase())
       );
-  
+
       // Remove duplicates based on the file name while retaining other information
-      const uniqueResults = filteredResults.reduce((acc: typeof filteredResults, current) => {
-        const x = acc.find(item => item.fileName === current.fileName);
-        if (!x) {
-          return acc.concat([current]);
-        } else {
-          return acc;
-        }
-      }, []);
-  
+      const uniqueResults = filteredResults.reduce(
+        (acc: typeof filteredResults, current) => {
+          const x = acc.find((item) => item.fileName === current.fileName);
+          if (!x) {
+            return acc.concat([current]);
+          } else {
+            return acc;
+          }
+        },
+        []
+      );
+
       return uniqueResults;
       //the filtered results should have unique file names
       // const uniqueResults = Array.from(new Set(filteredResults.map((result) => result.fileName)));
@@ -201,7 +208,7 @@ export class DiseaseClassificationService {
         icdCode: icdCode.slice(0, -2),
       }).lean();
     }
-  
+
     return diseaseC;
   }
 
@@ -275,7 +282,7 @@ export class DiseaseClassificationService {
       throw new Error("Failed to export disease classifications");
     }
   }
-  
+
   // async exportDiseaseClassificationsToCSV() {
   //   try {
   //     const diseaseClassifications = await DiseaseClassificationModel.find()
@@ -290,7 +297,7 @@ export class DiseaseClassificationService {
   //         { id: "mappedImages", title: "Mapped Images" },
   //       ],
   //     });
-  
+
   //     const writeStream = fs.createWriteStream("diseaseClassifications.csv");
   //     writeStream.write(csvStringifier.getHeaderString());
 
@@ -299,34 +306,34 @@ export class DiseaseClassificationService {
   //         if (!affectedBodyPart) {
   //           return [];
   //         }
-      
+
   //         // Extract keywords from the affected body part
   //         const keywords = affectedBodyPart
   //           .toLowerCase()
   //           .split(" ")
   //           .filter((word) => word.length > 2); // Filter out short words
-      
+
   //         // Search for images where the affected body part includes the file name
   //         const results = await BodyPartToImageModel.find({
   //           $or: keywords.map((keyword) => ({
   //             fileName: { $regex: keyword, $options: "i" },
   //           })),
   //         });
-      
+
   //         // Filter results to ensure the affected body part includes the file name
   //         const filteredResults = results.filter((result) =>
   //           affectedBodyPart.toLowerCase().includes(result.fileName.toLowerCase())
   //         );
   //         //the filtered results should have unique file names
   //         const uniqueResults = Array.from(new Set(filteredResults.map((result) => result.fileName)));
-    
+
   //         return uniqueResults;
   //       } catch (error) {
   //         console.error("Error getting affected body part by mapping:", error);
   //         throw new Error("Failed to get affected body part by mapping");
   //       }
   //     }
-  
+
   //     await pipelineAsync(
   //       diseaseClassifications,
   //       async function* (source: AsyncIterable<DiseaseClassification & { mappedImages?: string }>) {
@@ -338,7 +345,7 @@ export class DiseaseClassificationService {
   //       }.bind(this),
   //       writeStream
   //     );
-  
+
   //     return "Disease classifications exported successfully";
   //   } catch (error) {
   //     console.error("Error exporting disease classifications to CSV:", error);
@@ -373,7 +380,6 @@ export class DiseaseClassificationService {
 
   //update disease classification records by using OpenAI
   async updateDiseaseClassificationRecords() {
-
     const diseaseClassifications = await DiseaseClassificationModel.find({
       affectedBodyPartC: { $in: [null, ""] },
     })
@@ -396,11 +402,14 @@ export class DiseaseClassificationService {
               context:
                 "Update the affected body part for the following disease classification",
               prompt,
-              model: "o1-preview"
+              model: "o1-preview",
             });
 
-            console.log(`${diseaseClassification.icdCode} ${diseaseClassification.description}`,  response);
-            
+            console.log(
+              `${diseaseClassification.icdCode} ${diseaseClassification.description}`,
+              response
+            );
+
             await DiseaseClassificationModel.findByIdAndUpdate(
               diseaseClassification._id,
               { affectedBodyPartC: response || null }
@@ -440,20 +449,59 @@ export class DiseaseClassificationService {
       icdCode
     );
 
-    const affectedBodyPartData = affectedBodyPart?.affectedBodyPartD || '';
+    const affectedBodyPartData = affectedBodyPart?.affectedBodyPartD || "";
     // const affectedBodyPartData = affectedBodyPart?.affectedBodyPartC || affectedBodyPart?.affectedBodyPartB || affectedBodyPart?.affectedBodyPart || '';
 
     if (!affectedBodyPartData) {
       return [];
     }
 
-    const images = await this.getAffectedBodyPartByMapping(affectedBodyPartData);
+    const images = await this.getAffectedBodyPartByMapping(
+      affectedBodyPartData
+    );
 
-    return { 
+    return {
       images,
       bodyParts: affectedBodyPartData,
-      description: affectedBodyPart?.description || '',
-    icdCode };
+      description: affectedBodyPart?.description || "",
+      icdCode,
+    };
+  }
+
+  async getImagesByIcdCodesTwo(icdCodes: string[]) {
+    // Use Promise.all to process ICD codes in parallel
+    const results = await Promise.all(
+      icdCodes.map(async (icdCode) => {
+        try {
+          const affectedBodyPart = await this.getDiseaseClassificationByIcdCode(
+            icdCode
+          );
+          const affectedBodyPartData =
+            affectedBodyPart?.affectedBodyPartD || "";
+
+          if (!affectedBodyPartData) {
+            return null; // Return null for ICD codes with no data
+          }
+
+          const images = await this.getAffectedBodyPartByMapping(
+            affectedBodyPartData
+          );
+
+          return {
+            images,
+            bodyParts: affectedBodyPartData,
+            description: affectedBodyPart?.description || "",
+            icdCode,
+          };
+        } catch (error) {
+          console.error(`Error fetching data for ICD code ${icdCode}:`, error);
+          return null; // Return null on failure to avoid disrupting other results
+        }
+      })
+    );
+
+    // Filter out null results to return only successful data
+    return results.filter((result) => result !== null);
   }
 
   async getImagesByIcdCodes(icdCodes: string) {
@@ -485,7 +533,6 @@ export class DiseaseClassificationService {
     description?: string
   ) {
     try {
-    
       const searchArray = Array.isArray(searchString)
         ? searchString.map((str) => str.toLowerCase())
         : [searchString.toLowerCase()];
@@ -530,7 +577,7 @@ export class DiseaseClassificationService {
       ) {
         return [];
       }
-      
+
       const response = await this.openAiService.completeChat({
         context: "Get the ICD 10 code for the following description",
         prompt,
@@ -539,7 +586,16 @@ export class DiseaseClassificationService {
       });
 
       if (response) {
-          return Array.from(new Set(response.split(",").map((code: string) => code.trim()).filter((code: string) => code))) || [];
+        return (
+          Array.from(
+            new Set(
+              response
+                .split(",")
+                .map((code: string) => code.trim())
+                .filter((code: string) => code)
+            )
+          ) || []
+        );
       }
 
       return [];

@@ -13,5 +13,3 @@ export class BodyPartToImage {
 }
 
 export const BodyPartToImageModel = getModelForClass(BodyPartToImage);
-
-

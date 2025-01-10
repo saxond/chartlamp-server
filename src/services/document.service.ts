@@ -509,7 +509,7 @@ export class DocumentService {
     }
   }
 
-  async extractCaseDocumentData(caseId: string): Promise<any[]> {
+  async extractCaseDocumentData(caseId: string): Promise<any> {
     try {
       // Get documents from the database that do not have content extracted
       const documents = await DocumentModel.find({
@@ -521,12 +521,17 @@ export class DocumentService {
         return [];
       }
 
+      let hasError = false;
+
       // Extract content from each document
       const updatePromises = documents.map(async (document) => {
         const content = await this.extractContentFromDocument(
           document.url,
           document._id
         );
+        if (!content) {
+          hasError = true;
+        }
         await DocumentModel.findByIdAndUpdate(document._id, {
           extractedData: content,
         });
@@ -536,7 +541,7 @@ export class DocumentService {
       // Wait for all updates to complete
       const updatedDocuments = await Promise.all(updatePromises);
       // Return updated documents
-      return updatedDocuments;
+      return {extractCaseDocumentData: updatedDocuments, hasError};
     } catch (error) {
       throw new Error("Failed to get documents without content");
     }
