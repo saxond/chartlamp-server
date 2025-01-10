@@ -231,6 +231,21 @@ export class CaseController {
     }
   }
 
+  async updateComment(req: AuthRequest, res: Response) {
+    try {
+      if (!req?.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const response = await caseService.updateComment({
+        commentId: req.params.commentId,
+        ...req.body,
+      });
+      res.status(200).json(response);
+    } catch (error) {
+      handleError(res, error);
+    }
+  }
+
   async deleteReportFile(req: AuthRequest, res: Response) {
     try {
       if (!req?.user) {
@@ -254,6 +269,21 @@ export class CaseController {
         req.params.caseId,
         req.body
       );
+      res.status(200).json(response);
+    } catch (error) {
+      handleError(res, error);
+    }
+  }
+
+  async createCaseTag(req: AuthRequest, res: Response) {
+    try {
+      if (!req?.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const response = await caseService.createCaseTag({
+        caseId: req.params.id,
+        ...req.body,
+      });
       res.status(200).json(response);
     } catch (error) {
       handleError(res, error);

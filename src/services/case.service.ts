@@ -1,10 +1,10 @@
 import mongoose, { Types } from "mongoose";
-import { zodResponseFormat } from "openai/helpers/zod";
-import { z } from "zod";
 import {
   CaseInvitationModel,
   CaseInvitationStatus,
   CaseModel,
+  CaseTagModel,
+  CommentModel,
   CronStatus,
 } from "../models/case.model"; // Ensure this path is correct
 import { DocumentModel, ExtractionStatus } from "../models/document.model";
@@ -94,6 +94,7 @@ export class CaseService {
       { new: true }
     )
       .populate("user", "email name role profilePicture")
+      .populate("tags")
       .lean();
     if (!caseData) {
       return null;
@@ -115,23 +116,14 @@ export class CaseService {
     const reportsWithIcdCodes = caseResponse.reports.filter(
       (report: any) => report.icdCodes && report.icdCodes.length > 0
     );
-
+    console.log("reportsWithIcdCodes", reportsWithIcdCodes);
     // Use Promise.all to handle the async mapping for the filtered reports
     const newReports = await Promise.all(
       reportsWithIcdCodes.map(async (report: any) => {
-        const bodyParts = await Promise.all(
-          report.icdCodes.map(async (code: string) => {
-            try {
-              return await this.dcService.getImagesByIcdCode(code);
-            } catch (error) {
-              console.error(
-                `Error fetching images for ICD code ${code}:`,
-                error
-              );
-              return []; // Return an empty array on failure
-            }
-          })
+        const bodyParts = await this.dcService.getImagesByIcdCodesTwo(
+          report.icdCodes
         );
+        console.log("bodyParts", bodyParts);
 
         // Flatten the array if needed, and ensure we keep the structure
         return {
@@ -710,21 +702,28 @@ export class CaseService {
     userId: string;
     comment: string;
   }) {
-    return CaseModel.findByIdAndUpdate(
-      caseId,
-      {
-        $push: {
-          "reports.$[report].comments": {
-            user: userId,
-            comment,
-          },
-        },
-      },
-      {
-        arrayFilters: [{ "report._id": reportId }],
-        new: true,
-      }
-    ).lean();
+    return CommentModel.create({
+      user: userId,
+      comment,
+      report: reportId,
+    });
+
+    // return CaseModel.findByIdAndUpdate(
+    //   caseId,
+    //   {
+    //     $push: {
+    //       "reports.$[report].comments": {
+    //         user: userId,
+    //         comment,
+    //         createdAt: new Date()
+    //       },
+    //     },
+    //   },
+    //   {
+    //     arrayFilters: [{ "report._id": reportId }],
+    //     new: true,
+    //   }
+    // ).lean();
   }
 
   async getReportComments({
@@ -736,37 +735,56 @@ export class CaseService {
     reportId: string;
     userId: string;
   }) {
-    return CaseModel.aggregate([
-      {
-        $match: {
-          _id: new Types.ObjectId(caseId),
-        },
-      },
-      {
-        $project: {
-          reports: 1,
-        },
-      },
-      {
-        $unwind: "$reports",
-      },
-      {
-        $match: {
-          "reports._id": new Types.ObjectId(reportId),
-        },
-      },
-      {
-        $project: {
-          comments: {
-            $filter: {
-              input: "$reports.comments",
-              as: "comment",
-              cond: { $eq: ["$$comment.user", userId] },
-            },
-          },
-        },
-      },
-    ]);
+    return CommentModel.find({
+      report: reportId,
+      user: userId,
+    })
+      .lean()
+      .populate("user", "profilePicture");
+    // return CaseModel.aggregate([
+    //   {
+    //     $match: {
+    //       _id: new Types.ObjectId(caseId),
+    //     },
+    //   },
+    //   {
+    //     $project: {
+    //       reports: 1,
+    //     },
+    //   },
+    //   {
+    //     $unwind: "$reports",
+    //   },
+    //   {
+    //     $match: {
+    //       "reports._id": new Types.ObjectId(reportId),
+    //     },
+    //   },
+    //   {
+    //     $project: {
+    //       comments: {
+    //         $filter: {
+    //           input: "$reports.comments",
+    //           as: "comment",
+    //           cond: { $eq: ["$$comment.user", userId] },
+    //         },
+    //       },
+    //     },
+    //   },
+    // ]);
+  }
+
+  async updateComment({
+    commentId,
+    comment,
+  }: {
+    commentId: string;
+    comment: string;
+  }) {
+    return CommentModel.findByIdAndUpdate(commentId, {
+      comment,
+      isEdited: true,
+    });
   }
 
   async deleteReportFile(documentId: string) {
@@ -875,10 +893,12 @@ export class CaseService {
     caseId: string;
     reportId: string;
   }) {
-    const diseaseNameByIcdCode = this.documentService.getStreamlinedDiseaseName({
-      icdCodes,
-      diseaseNames,
-    });
+    const diseaseNameByIcdCode = this.documentService.getStreamlinedDiseaseName(
+      {
+        icdCodes,
+        diseaseNames,
+      }
+    );
 
     await CaseModel.findOneAndUpdate(
       {
@@ -894,5 +914,19 @@ export class CaseService {
 
     console.log(diseaseNameByIcdCode);
     return diseaseNameByIcdCode;
+  }
+
+  async createCaseTag({
+    caseId,
+    tagName,
+  }: {
+    caseId: string;
+    tagName: string;
+  }) {
+    return CaseTagModel.findOneAndUpdate(
+      { tagName, case: caseId },
+      {},
+      { upsert: true }
+    );
   }
 }

@@ -30,14 +30,6 @@ export enum TagsType {
   NOT_DECIDED = "yet_to_be_decided",
 }
 
-class Comment {
-  @prop({ ref: () => User, required: true })
-  public user!: Ref<User>;
-
-  @prop()
-  public comment!: string;
-}
-
 class NameOfDiseaseByIcdCode {
   @prop()
   public icdCode!: string;
@@ -53,7 +45,7 @@ class Report {
   @prop()
   public nameOfDisease?: string;
 
-  @prop({required: false})
+  @prop({ required: false })
   public nameOfDiseaseByIcdCode?: NameOfDiseaseByIcdCode[];
 
   @prop()
@@ -68,8 +60,8 @@ class Report {
   @prop()
   public doctorName?: string;
 
-  @prop()
-  public comments?: Comment[];
+  // @prop()
+  // public comments?: Comment[];
 
   @prop()
   public medicalNote?: string;
@@ -85,6 +77,40 @@ class Report {
   public document?: string;
 }
 
+class CaseTag {
+  @prop({ ref: () => User, required: true })
+  public case!: Ref<Case>;
+
+  @prop()
+  public tagName!: string;
+}
+
+export const CaseTagModel = getModelForClass(CaseTag);
+
+@modelOptions({
+  schemaOptions: {
+    timestamps: true,
+  },
+})
+class Comment {
+  @prop({ ref: () => User, required: true })
+  public user!: Ref<User>;
+
+  @prop({ ref: () => Report, required: true })
+  public report!: Ref<Report>;
+
+  @prop()
+  public comment!: string;
+
+  @prop({ default: false })
+  public isEdited!: boolean;
+
+  @prop()
+  public createdAt?: Date;
+}
+
+export const CommentModel = getModelForClass(Comment);
+
 export enum CronStatus {
   Pending = "pending",
   Processing = "processing",
@@ -98,6 +124,8 @@ export enum CronStatus {
 @index({ user: 1 })
 @modelOptions({
   schemaOptions: {
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
     timestamps: true,
   },
 })
@@ -136,6 +164,13 @@ export class Case {
 
   @prop({ type: () => [Report], default: [] })
   public reports!: Report[];
+
+  @prop({
+    ref: () => CaseTag,
+    foreignField: "case",
+    localField: "_id",
+  })
+  public tags!: Ref<CaseTag>[];
 
   //Viewed on last date that the case was viewed
   @prop({ default: Date.now })
