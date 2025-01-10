@@ -116,14 +116,14 @@ export class CaseService {
     const reportsWithIcdCodes = caseResponse.reports.filter(
       (report: any) => report.icdCodes && report.icdCodes.length > 0
     );
-    console.log("reportsWithIcdCodes", reportsWithIcdCodes);
+    // console.log("reportsWithIcdCodes", reportsWithIcdCodes);
     // Use Promise.all to handle the async mapping for the filtered reports
     const newReports = await Promise.all(
       reportsWithIcdCodes.map(async (report: any) => {
         const bodyParts = await this.dcService.getImagesByIcdCodesTwo(
           report.icdCodes
         );
-        console.log("bodyParts", bodyParts);
+        // console.log("bodyParts", bodyParts);
 
         // Flatten the array if needed, and ensure we keep the structure
         return {
@@ -431,8 +431,9 @@ export class CaseService {
   //process case
   async processCase(caseId: string) {
     try {
-      const extractCaseDocumentData =
+      const { extractCaseDocumentData, hasError } =
         await this.documentService.extractCaseDocumentData(caseId);
+      console.log("processCase - hasError", hasError);
       console.log("extractCaseDocumentData", extractCaseDocumentData);
       const extractCaseDocumentWithoutContent =
         await this.documentService.extractCaseDocumentWithoutContent(caseId);
@@ -446,6 +447,7 @@ export class CaseService {
         "populateReportFromCaseDocuments",
         populateReportFromCaseDocuments
       );
+      return hasError;
     } catch (error) {
       console.error("Error processing case:", error);
     }
@@ -472,14 +474,15 @@ export class CaseService {
 
     try {
       // Process the case
-      await this.processCase(caseItem._id);
-
-      // Update to processed
-      await CaseModel.findByIdAndUpdate(
-        caseItem._id,
-        { cronStatus: CronStatus.Processed },
-        { new: true }
-      );
+      const hasError = await this.processCase(caseItem._id);
+      if (!hasError) {
+        // Update to processed
+        await CaseModel.findByIdAndUpdate(
+          caseItem._id,
+          { cronStatus: CronStatus.Processed },
+          { new: true }
+        );
+      }
     } catch (error) {
       // Handle error and revert status to pending if needed
       await CaseModel.findByIdAndUpdate(
@@ -874,6 +877,21 @@ export class CaseService {
       );
 
       await this.updateCaseReports(document.case as string, results);
+
+      const pendingCaseDoc = await DocumentModel.find({
+        case: document.case,
+        status: ExtractionStatus.PENDING,
+      }).lean();
+
+      if (pendingCaseDoc.length === 0) {
+        await CaseModel.findByIdAndUpdate(
+          document.case,
+          {
+            cronStatus: CronStatus.Processed,
+          },
+          { new: true }
+        );
+      }
 
       return results;
     } catch (error) {
