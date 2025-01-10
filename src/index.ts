@@ -66,7 +66,8 @@ cron.schedule("* * * * *", async () => {
   // Add your task logic here
 });
 
-console.log("Cron job scheduled....");
+
+console.log('Cron job scheduled....');
 
 const start = async (): Promise<void> => {
   try {
