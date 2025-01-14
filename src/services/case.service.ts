@@ -952,7 +952,7 @@ export class CaseService {
           },
           { new: true }
         );
-        await this.cacheCaseData(document.case);
+        await this.cacheCaseData(document.case.toString());
       }
 
       return results;
