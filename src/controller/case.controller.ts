@@ -215,6 +215,36 @@ export class CaseController {
     }
   }
 
+  async updateFavoriteStatus(req: AuthRequest, res: Response) {
+    try {
+      if (!req?.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const response = await caseService.updateFavoriteStatus({
+        ...req.body,
+        caseId: req.params.id,
+      });
+      res.status(200).json(response);
+    } catch (error) {
+      handleError(res, error);
+    }
+  }
+
+  async updateClaimStatus(req: AuthRequest, res: Response) {
+    try {
+      if (!req?.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const response = await caseService.updateClaimStatus({
+        ...req.body,
+        caseId: req.params.id,
+      });
+      res.status(200).json(response);
+    } catch (error) {
+      handleError(res, error);
+    }
+  }
+
   async getReportComments(req: AuthRequest, res: Response) {
     try {
       if (!req?.user) {

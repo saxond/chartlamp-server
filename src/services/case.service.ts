@@ -790,6 +790,38 @@ export class CaseService {
     });
   }
 
+  async updateFavoriteStatus({
+    caseId,
+    isFavorite,
+  }: {
+    caseId: string;
+    isFavorite: boolean;
+  }) {
+    return CaseModel.findByIdAndUpdate(
+      caseId,
+      {
+        isFavorite,
+      },
+      { new: true }
+    );
+  }
+
+  async updateClaimStatus({
+    caseId,
+    claimStatus,
+  }: {
+    caseId: string;
+    claimStatus: boolean;
+  }) {
+    return CaseModel.findByIdAndUpdate(
+      caseId,
+      {
+        claimStatus,
+      },
+      { new: true }
+    );
+  }
+
   async deleteReportFile(documentId: string) {
     return DocumentModel.findByIdAndDelete(documentId).lean();
   }

@@ -42,10 +42,23 @@ router.patch(
   isAuthenticated,
   caseController.updateCaseReportTags
 );
+
 router.patch(
   "/:commentId/comment",
   isAuthenticated,
   caseController.updateComment
+);
+
+router.patch(
+  "/:id/update-favorite",
+  isAuthenticated,
+  caseController.updateFavoriteStatus
+);
+
+router.patch(
+  "/:id/update-claim-status",
+  isAuthenticated,
+  caseController.updateClaimStatus
 );
 
 router.post(
