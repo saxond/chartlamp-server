@@ -109,9 +109,9 @@ export class CaseService {
     return { ...caseData, documents };
   }
 
-  async getCaseByIdWithBodyParts(caseId: string) {
+  async getCaseByIdWithBodyParts(caseId: string, shouldSKipCache=false) {
     const cachedData = await redis.get(caseId);
-    if (cachedData) {
+    if (cachedData && !shouldSKipCache) {
       console.log("Using cached data", caseId);
       return JSON.parse(cachedData);
     }
@@ -139,7 +139,6 @@ export class CaseService {
         };
       })
     );
-
     await redis.set(
       caseId,
       JSON.stringify({ ...caseResponse, reports: newReports }),
@@ -151,7 +150,7 @@ export class CaseService {
   }
 
   async cacheCaseData(caseId: string) {
-    const response = await this.getCaseByIdWithBodyParts(caseId);
+    const response = await this.getCaseByIdWithBodyParts(caseId, true);
     await redis.set(caseId, JSON.stringify(response), "EX", 144000);
   }
 
