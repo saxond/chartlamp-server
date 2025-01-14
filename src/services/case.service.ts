@@ -112,6 +112,7 @@ export class CaseService {
   async getCaseByIdWithBodyParts(caseId: string) {
     const cachedData = await redis.get(caseId);
     if (cachedData) {
+      console.log("Using cached data", caseId);
       return JSON.parse(cachedData);
     }
 
@@ -143,7 +144,7 @@ export class CaseService {
       caseId,
       JSON.stringify({ ...caseResponse, reports: newReports }),
       "EX",
-      3600
+      144000
     );
 
     return { ...caseResponse, reports: newReports };
