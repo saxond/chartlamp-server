@@ -162,6 +162,9 @@ export class Case {
   @prop({ default: false })
   public isArchived?: boolean;
 
+  @prop({ default: false })
+  public isFavorite!: boolean;
+
   @prop({ type: () => [Report], default: [] })
   public reports!: Report[];
 
