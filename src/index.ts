@@ -40,7 +40,6 @@ app.use(errorHandlerMiddleware);
 
 console.log("Scheduling cron job...");
 
-// cron.schedule("*/15 * * * *", async () => {
 cron.schedule("* * * * *", async () => {
   console.log("Running a task every minute");
 
