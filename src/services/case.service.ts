@@ -95,8 +95,8 @@ export class CaseService {
       { new: true }
     )
       .lean()
-      .populate("user", "email name role profilePicture")
-      // .populate("tags");
+      .populate("user", "email name role profilePicture");
+    // .populate("tags");
     if (!caseData) {
       return null;
     }
@@ -166,9 +166,7 @@ export class CaseService {
 
   // Get all cases
   async getAllCases() {
-    return CaseModel.find()
-      .sort({ createdAt: -1 })
-      .lean();
+    return CaseModel.find().sort({ createdAt: -1 }).lean();
   }
 
   async getUserStats(userId: string) {
@@ -477,7 +475,7 @@ export class CaseService {
         "populateReportFromCaseDocuments",
         populateReportFromCaseDocuments
       );
-      await this.cacheCaseData(caseId)
+      await this.cacheCaseData(caseId);
       return hasError;
     } catch (error) {
       console.error("Error processing case:", error);
@@ -954,6 +952,7 @@ export class CaseService {
           },
           { new: true }
         );
+        await this.cacheCaseData(document.case.toString());
       }
 
       return results;
