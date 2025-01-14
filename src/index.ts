@@ -1,4 +1,3 @@
-import axios from "axios";
 import dotenv from "dotenv-safe";
 import cron from "node-cron";
 dotenv.config(); // Ensure this is the first line
@@ -16,6 +15,7 @@ import api from "./routes";
 import swaggerDocument from "./swagger/swagger.json";
 import corsOptions from "./utils/corsOption";
 import { connectToMongo } from "./utils/mongo";
+import axios from "axios";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -40,8 +40,10 @@ app.use(errorHandlerMiddleware);
 
 console.log("Scheduling cron job...");
 
+// cron.schedule("*/15 * * * *", async () => {
 cron.schedule("* * * * *", async () => {
   console.log("Running a task every minute");
+
   const ocr = await axios.get(
     `${process.env.SERVER_URL as string}/api/v1/case/ocr`,
     {
@@ -66,8 +68,7 @@ cron.schedule("* * * * *", async () => {
   // Add your task logic here
 });
 
-
-console.log('Cron job scheduled....');
+console.log("Cron job scheduled....");
 
 const start = async (): Promise<void> => {
   try {
