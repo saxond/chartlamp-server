@@ -10,6 +10,7 @@ import {
 import { DocumentModel, ExtractionStatus } from "../models/document.model";
 import { Organization } from "../models/organization.model";
 import { UserModel } from "../models/user.model";
+import { redis } from "../utils/redis";
 import { DiseaseClassificationService } from "./diseaseClassification.service";
 import { DocumentService } from "./document.service";
 import notificationService from "./notification.service";
@@ -93,9 +94,9 @@ export class CaseService {
       { $inc: { viewCount: 1 }, lastViewed: new Date() },
       { new: true }
     )
+      .lean()
       .populate("user", "email name role profilePicture")
-      .populate("tags")
-      .lean();
+      // .populate("tags");
     if (!caseData) {
       return null;
     }
@@ -109,6 +110,11 @@ export class CaseService {
   }
 
   async getCaseByIdWithBodyParts(caseId: string) {
+    const cachedData = await redis.get(caseId);
+    if (cachedData) {
+      return JSON.parse(cachedData);
+    }
+
     const caseResponse = await this.getCaseById(new Types.ObjectId(caseId));
     if (!caseResponse?.reports) return null;
 
@@ -133,12 +139,35 @@ export class CaseService {
       })
     );
 
+    await redis.set(
+      caseId,
+      JSON.stringify({ ...caseResponse, reports: newReports }),
+      "EX",
+      3600
+    );
+
     return { ...caseResponse, reports: newReports };
+  }
+
+  async cacheCaseData(caseId: string) {
+    const response = await this.getCaseByIdWithBodyParts(caseId);
+    await redis.set(caseId, JSON.stringify(response), "EX", 144000);
+  }
+
+  async cacheAllCases() {
+    const cases = await this.getAllCases();
+    console.log("Caching all cases...", cases.length);
+    await Promise.all(
+      cases.slice(0, 3).map((c) => this.cacheCaseData(c._id.toString()))
+    );
+    console.log("All cases cached");
   }
 
   // Get all cases
   async getAllCases() {
-    return CaseModel.find().sort({ createdAt: -1 }).lean();
+    return CaseModel.find()
+      .sort({ createdAt: -1 })
+      .lean();
   }
 
   async getUserStats(userId: string) {
@@ -447,6 +476,7 @@ export class CaseService {
         "populateReportFromCaseDocuments",
         populateReportFromCaseDocuments
       );
+      await this.cacheCaseData(caseId)
       return hasError;
     } catch (error) {
       console.error("Error processing case:", error);
