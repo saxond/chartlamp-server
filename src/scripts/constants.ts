@@ -87,3 +87,5 @@ export const excludeWords = [
   "a",
   "an",
 ];
+
+export const CACHE_TTL = 86400;
