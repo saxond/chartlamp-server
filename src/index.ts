@@ -2,6 +2,7 @@ import dotenv from "dotenv-safe";
 import cron from "node-cron";
 dotenv.config(); // Ensure this is the first line
 
+import axios from "axios";
 import compression from "compression";
 import cookieParser from "cookie-parser";
 import cors from "cors";
@@ -15,7 +16,6 @@ import api from "./routes";
 import swaggerDocument from "./swagger/swagger.json";
 import corsOptions from "./utils/corsOption";
 import { connectToMongo } from "./utils/mongo";
-import axios from "axios";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -43,27 +43,27 @@ console.log("Scheduling cron job...");
 cron.schedule("* * * * *", async () => {
   console.log("Running a task every minute");
 
-  // const ocr = await axios.get(
-  //   `${process.env.SERVER_URL as string}/api/v1/case/ocr`,
-  //   {
-  //     headers: {
-  //       "api-key": `${process.env.API_KEY}`,
-  //     },
-  //   }
-  // );
+  const ocr = await axios.get(
+    `${process.env.SERVER_URL as string}/api/v1/case/ocr`,
+    {
+      headers: {
+        "api-key": `${process.env.API_KEY}`,
+      },
+    }
+  );
 
-  // console.log(ocr?.data);
+  console.log(ocr?.data);
 
-  // const result = await axios.get(
-  //   `${process.env.SERVER_URL as string}/api/v1/case/process`,
-  //   {
-  //     headers: {
-  //       "api-key": `${process.env.API_KEY}`,
-  //     },
-  //   }
-  // );
+  const result = await axios.get(
+    `${process.env.SERVER_URL as string}/api/v1/case/process`,
+    {
+      headers: {
+        "api-key": `${process.env.API_KEY}`,
+      },
+    }
+  );
 
-  // console.log(result?.data);
+  console.log(result?.data);
   // Add your task logic here
 });
 

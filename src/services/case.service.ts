@@ -1,4 +1,5 @@
 import mongoose, { Types } from "mongoose";
+import { BodyPartToImageModel } from "../models/bodyPartToImage.model";
 import {
   CaseInvitationModel,
   CaseInvitationStatus,
@@ -10,6 +11,7 @@ import {
 import { DocumentModel, ExtractionStatus } from "../models/document.model";
 import { Organization } from "../models/organization.model";
 import { UserModel } from "../models/user.model";
+import { CACHE_TTL } from "../scripts/constants";
 import { redis } from "../utils/redis";
 import { DiseaseClassificationService } from "./diseaseClassification.service";
 import { DocumentService } from "./document.service";
@@ -104,18 +106,12 @@ export class CaseService {
       await this.populateReportFromCaseDocuments(id.toString());
     }
 
-    const documents = await DocumentModel.find({ case: id }).lean();
+    const documents = await DocumentModel.find({ case: id }, "case url").lean();
 
     return { ...caseData, documents };
   }
 
-  async getCaseByIdWithBodyParts(caseId: string, shouldSKipCache=false) {
-    const cachedData = await redis.get(caseId);
-    if (cachedData && !shouldSKipCache) {
-      console.log("Using cached data", caseId);
-      return JSON.parse(cachedData);
-    }
-
+  async getCaseByIdWithBodyParts(caseId: string) {
     const caseResponse = await this.getCaseById(new Types.ObjectId(caseId));
     if (!caseResponse?.reports) return null;
 
@@ -123,8 +119,7 @@ export class CaseService {
     const reportsWithIcdCodes = caseResponse.reports.filter(
       (report: any) => report.icdCodes && report.icdCodes.length > 0
     );
-    // console.log("reportsWithIcdCodes", reportsWithIcdCodes);
-    // Use Promise.all to handle the async mapping for the filtered reports
+
     const newReports = await Promise.all(
       reportsWithIcdCodes.map(async (report: any) => {
         const bodyParts = await this.dcService.getImagesByIcdCodesTwo(
@@ -139,28 +134,14 @@ export class CaseService {
         };
       })
     );
-    await redis.set(
-      caseId,
-      JSON.stringify({ ...caseResponse, reports: newReports }),
-      "EX",
-      144000
-    );
 
     return { ...caseResponse, reports: newReports };
   }
 
   async cacheCaseData(caseId: string) {
-    const response = await this.getCaseByIdWithBodyParts(caseId, true);
-    await redis.set(caseId, JSON.stringify(response), "EX", 144000);
-  }
-
-  async cacheAllCases() {
-    const cases = await this.getAllCases();
-    console.log("Caching all cases...", cases.length);
-    await Promise.all(
-      cases.slice(0, 3).map((c) => this.cacheCaseData(c._id.toString()))
-    );
-    console.log("All cases cached");
+    const response = await this.getCaseByIdWithBodyParts(caseId);
+    await redis.set(caseId, JSON.stringify(response), "EX", CACHE_TTL);
+    console.log(`case ${caseId} has been cached successfully`);
   }
 
   // Get all cases
@@ -250,9 +231,9 @@ export class CaseService {
         {
           $or: [{ user: userId }, { _id: { $in: invitedCaseIds } }],
         },
-        {
-          $or: [{ isArchived: false }, { isArchived: { $exists: false } }],
-        },
+        // {
+        //   $or: [{ isArchived: false }, { isArchived: { $exists: false } }],
+        // },
       ],
     };
 
@@ -474,7 +455,6 @@ export class CaseService {
         "populateReportFromCaseDocuments",
         populateReportFromCaseDocuments
       );
-      await this.cacheCaseData(caseId);
       return hasError;
     } catch (error) {
       console.error("Error processing case:", error);
@@ -834,6 +814,22 @@ export class CaseService {
     );
   }
 
+  async updateArchiveStatus({
+    caseId,
+    isArchived,
+  }: {
+    caseId: string;
+    isArchived: boolean;
+  }) {
+    return CaseModel.findByIdAndUpdate(
+      caseId,
+      {
+        isArchived,
+      },
+      { new: true }
+    );
+  }
+
   async updateClaimStatus({
     caseId,
     claimStatus,
@@ -951,7 +947,6 @@ export class CaseService {
           },
           { new: true }
         );
-        await this.cacheCaseData(document.case.toString());
       }
 
       return results;
@@ -1007,5 +1002,25 @@ export class CaseService {
       {},
       { upsert: true }
     );
+  }
+
+  async getCaseTags({ caseId }: { caseId: string }) {
+    return CaseTagModel.find({ case: caseId }).lean();
+  }
+
+  async uploadSvg() {
+    console.log("uploading...");
+    const svgList = await BodyPartToImageModel.find({}).limit(1).lean();
+    console.log("svg", svgList);
+    //   for (const svg of svgList.slice(0, 2)) {
+    //     try {
+    //       // const url = await uploadSvgToS3(svg._id.toString(), svg.svg);
+    //       // await BodyPartToImageModel.findByIdAndUpdate(svg._id, {
+    //       //   svgUrl: url,
+    //       // });
+    //     } catch (error) {
+    //       console.error("Error uploading SVG to S3:", error);
+    //     }
+    //   }
   }
 }

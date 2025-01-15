@@ -179,6 +179,9 @@ export class Case {
   @prop({ default: Date.now })
   public lastViewed?: Date;
 
+  @prop()
+  public lastCachedAt?: Date;
+
   @prop({ required: false, enum: CronStatus, default: CronStatus.Pending })
   public cronStatus?: CronStatus;
 

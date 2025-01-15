@@ -33,6 +33,7 @@ router.get(
   caseController.getCaseByIdWithBodyParts
 );
 router.post("/:id/share", isAuthenticated, caseController.shareCaseWithUsers);
+router.get("/:id/tags", isAuthenticated, caseController.getCaseTags);
 router.post("/:id/tags", isAuthenticated, caseController.createCaseTag);
 router.get("/user", isAuthenticated, caseController.getUserCases);
 router.get("/:id", isAuthenticated, caseController.getById);
@@ -59,6 +60,12 @@ router.patch(
   "/:id/update-claim-status",
   isAuthenticated,
   caseController.updateClaimStatus
+);
+
+router.patch(
+  "/:id/archive",
+  isAuthenticated,
+  caseController.updateArchiveStatus
 );
 
 router.post(

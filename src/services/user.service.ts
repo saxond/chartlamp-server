@@ -350,8 +350,11 @@ class UserService {
 
   // Get recently joined users
   async getRecentlyJoinedUsers(organizationId: string, userId: string) {
+    console.log('organizationId', organizationId)
     return await UserModel.find({
       _id: { $ne: userId },
+      organization: organizationId,
+      createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
     })
       .select("-password")
       .sort({ createdAt: -1 })

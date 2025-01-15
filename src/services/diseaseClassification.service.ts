@@ -142,12 +142,15 @@ export class DiseaseClassificationService {
         .filter((word) => word.length > 2); // Filter out short words
 
       // Search for images where the affected body part includes the file name
-      const results = await BodyPartToImageModel.find({
-        $or: keywords.map((keyword) => ({
-          fileName: { $regex: keyword, $options: "i" },
-        })),
-        categoryName: { $exists: true },
-      }).lean();
+      const results = await BodyPartToImageModel.find(
+        {
+          $or: keywords.map((keyword) => ({
+            fileName: { $regex: keyword, $options: "i" },
+          })),
+          categoryName: { $exists: true },
+        },
+        "fileName categoryName"
+      ).lean();
 
       // Filter results to ensure the affected body part includes the file name
       const filteredResults = results.filter((result) =>
