@@ -33,16 +33,26 @@ router.get(
   caseController.getCaseByIdWithBodyParts
 );
 router.post("/:id/share", isAuthenticated, caseController.shareCaseWithUsers);
-router.get("/:id/tags", isAuthenticated, caseController.getCaseTags);
-router.post("/:id/tags", isAuthenticated, caseController.createCaseTag);
 router.get("/user", isAuthenticated, caseController.getUserCases);
 router.get("/:id", isAuthenticated, caseController.getById);
 router.put("/:id", isAuthenticated, caseController.update);
+
+router.get("/:id/tags", isAuthenticated, caseController.getCaseTags);
+router.post("/:id/tags", isAuthenticated, caseController.createCaseTag);
 router.patch(
   "/:id/reports/:reportId",
   isAuthenticated,
   caseController.updateCaseReportTags
 );
+
+router.get("/:id/notes", isAuthenticated, caseController.getCaseNotes);
+router.post("/:id/notes", isAuthenticated, caseController.createCaseNote);
+router.patch(
+  "/:id/notes/:noteId",
+  isAuthenticated,
+  caseController.updateCaseNote
+);
+router.delete("/:id/notes/:noteId", isAuthenticated, caseController.deleteNote);
 
 router.patch(
   "/:commentId/comment",
@@ -66,6 +76,12 @@ router.patch(
   "/:id/archive",
   isAuthenticated,
   caseController.updateArchiveStatus
+);
+
+router.patch(
+  "/:id/update-target-completion",
+  isAuthenticated,
+  caseController.updateTargetCompletion
 );
 
 router.post(
