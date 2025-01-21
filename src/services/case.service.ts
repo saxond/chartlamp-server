@@ -4,6 +4,7 @@ import {
   CaseInvitationModel,
   CaseInvitationStatus,
   CaseModel,
+  CaseNoteModel,
   CaseTagModel,
   CommentModel,
   CronStatus,
@@ -702,6 +703,46 @@ export class CaseService {
     }
   }
 
+  async updateCaseNote({
+    caseId,
+    noteId,
+    userId,
+    note,
+  }: {
+    caseId: string;
+    noteId: string;
+    userId: string;
+    note: string;
+  }) {
+    return CaseNoteModel.findOneAndUpdate(
+      {
+        case: caseId,
+        user: userId,
+        _id: noteId,
+      },
+      {
+        note,
+      },
+      { new: true }
+    );
+  }
+
+  async deleteNote({
+    caseId,
+    noteId,
+    userId,
+ }: {
+    caseId: string;
+    noteId: string;
+    userId: string;
+  }) {
+    return CaseNoteModel.findOneAndDelete( {
+        case: caseId,
+        user: userId,
+        _id: noteId,
+      }).lean();
+  }
+
   async addComment({
     userId,
     caseId,
@@ -841,6 +882,22 @@ export class CaseService {
       caseId,
       {
         claimStatus,
+      },
+      { new: true }
+    );
+  }
+
+  async updateTargetCompletion({
+    caseId,
+    targetCompletion,
+  }: {
+    caseId: string;
+    targetCompletion: Date;
+  }) {
+    return CaseModel.findByIdAndUpdate(
+      caseId,
+      {
+        targetCompletion,
       },
       { new: true }
     );
@@ -1004,8 +1061,31 @@ export class CaseService {
     );
   }
 
+  async createCaseNote({
+    caseId,
+    userId,
+    note,
+  }: {
+    caseId: string;
+    userId: string;
+    note: string;
+  }) {
+    return CaseNoteModel.findOneAndUpdate(
+      { note, case: caseId, user: userId },
+      {},
+      { upsert: true }
+    );
+  }
+
   async getCaseTags({ caseId }: { caseId: string }) {
     return CaseTagModel.find({ case: caseId }).lean();
+  }
+
+  async getCaseNotes({ caseId }: { caseId: string }) {
+    return CaseNoteModel.find({ case: caseId })
+      .lean()
+      .populate("user", "_id name profilePicture")
+      .sort({ updatedAt: -1 });
   }
 
   async uploadSvg() {

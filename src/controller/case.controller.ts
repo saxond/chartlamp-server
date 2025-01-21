@@ -132,6 +132,25 @@ export class CaseController {
     }
   }
 
+  async deleteNote(req: AuthRequest, res: Response) {
+    try {
+      if (!req?.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const deletedCase = await caseService.deleteNote({
+        caseId: req.params.id,
+        noteId: req.params.noteId,
+        userId: req?.user?.id,
+      });
+      if (!deletedCase) {
+        return res.status(404).json({ message: "Note not found" });
+      }
+      res.status(200).json({ message: "Note deleted successfully" });
+    } catch (error) {
+      handleError(res, error);
+    }
+  }
+
   async getUserStats(req: AuthRequest, res: Response) {
     try {
       if (!req?.user) {
@@ -198,6 +217,23 @@ export class CaseController {
     }
   }
 
+  async updateCaseNote(req: AuthRequest, res: Response) {
+    try {
+      if (!req?.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const response = await caseService.updateCaseNote({
+        ...req.body,
+        caseId: req.params.id,
+        noteId: req.params.noteId,
+        user: req?.user?.id,
+      });
+      res.status(200).json(response);
+    } catch (error) {
+      handleError(res, error);
+    }
+  }
+
   async addComment(req: AuthRequest, res: Response) {
     try {
       if (!req?.user) {
@@ -208,6 +244,21 @@ export class CaseController {
         caseId: req.params.id,
         reportId: req.params.reportId,
         userId: req?.user?.id,
+      });
+      res.status(200).json(response);
+    } catch (error) {
+      handleError(res, error);
+    }
+  }
+
+  async updateTargetCompletion(req: AuthRequest, res: Response) {
+    try {
+      if (!req?.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const response = await caseService.updateTargetCompletion({
+        caseId: req.params.id,
+        ...req.body,
       });
       res.status(200).json(response);
     } catch (error) {
@@ -266,6 +317,20 @@ export class CaseController {
         return res.status(401).json({ message: "Unauthorized" });
       }
       const response = await caseService.getCaseTags({
+        caseId: req.params.id,
+      });
+      res.status(200).json(response);
+    } catch (error) {
+      handleError(res, error);
+    }
+  }
+
+  async getCaseNotes(req: AuthRequest, res: Response) {
+    try {
+      if (!req?.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const response = await caseService.getCaseNotes({
         caseId: req.params.id,
       });
       res.status(200).json(response);
@@ -341,6 +406,22 @@ export class CaseController {
       }
       const response = await caseService.createCaseTag({
         caseId: req.params.id,
+        ...req.body,
+      });
+      res.status(200).json(response);
+    } catch (error) {
+      handleError(res, error);
+    }
+  }
+
+  async createCaseNote(req: AuthRequest, res: Response) {
+    try {
+      if (!req?.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const response = await caseService.createCaseNote({
+        caseId: req.params.id,
+        userId: req?.user?.id,
         ...req.body,
       });
       res.status(200).json(response);

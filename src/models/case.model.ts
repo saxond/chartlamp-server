@@ -77,16 +77,6 @@ class Report {
   public document?: string;
 }
 
-class CaseTag {
-  @prop({ ref: () => User, required: true })
-  public case!: Ref<Case>;
-
-  @prop()
-  public tagName!: string;
-}
-
-export const CaseTagModel = getModelForClass(CaseTag);
-
 @modelOptions({
   schemaOptions: {
     timestamps: true,
@@ -141,7 +131,11 @@ export class Case {
   @prop({ required: true })
   public dateOfClaim!: Date;
 
-  @prop({ required: true, enum: ["In Progress", "New"], default: "New" })
+  @prop({
+    required: true,
+    enum: ["Pre Litigation", "New", "Litigated"],
+    default: "New",
+  })
   public claimStatus!: string;
 
   @prop({ required: true })
@@ -168,12 +162,12 @@ export class Case {
   @prop({ type: () => [Report], default: [] })
   public reports!: Report[];
 
-  @prop({
-    ref: () => CaseTag,
-    foreignField: "case",
-    localField: "_id",
-  })
-  public tags!: Ref<CaseTag>[];
+  // @prop({
+  //   ref: () => CaseTag,
+  //   foreignField: "case",
+  //   localField: "_id",
+  // })
+  // public tags!: Ref<CaseTag>[];
 
   //Viewed on last date that the case was viewed
   @prop({ default: Date.now })
@@ -191,6 +185,34 @@ export class Case {
 }
 
 export const CaseModel = getModelForClass(Case);
+
+class CaseTag {
+  @prop({ ref: () => Case, required: true })
+  public case!: Ref<Case>;
+
+  @prop()
+  public tagName!: string;
+}
+
+export const CaseTagModel = getModelForClass(CaseTag);
+
+@modelOptions({
+  schemaOptions: {
+    timestamps: true,
+  },
+})
+class CaseNote {
+  @prop({ ref: () => Case, required: true })
+  public case!: Ref<Case>;
+
+  @prop({ ref: () => User, required: true })
+  public user!: Ref<User>;
+
+  @prop()
+  public note!: string;
+}
+
+export const CaseNoteModel = getModelForClass(CaseNote);
 
 export enum CaseInvitationStatus {
   Pending = "pending",

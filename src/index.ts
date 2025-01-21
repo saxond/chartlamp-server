@@ -41,29 +41,29 @@ app.use(errorHandlerMiddleware);
 console.log("Scheduling cron job...");
 
 cron.schedule("* * * * *", async () => {
-  console.log("Running a task every minute");
+  // console.log("Running a task every minute");
 
-  const ocr = await axios.get(
-    `${process.env.SERVER_URL as string}/api/v1/case/ocr`,
-    {
-      headers: {
-        "api-key": `${process.env.API_KEY}`,
-      },
-    }
-  );
+  // const ocr = await axios.get(
+  //   `${process.env.SERVER_URL as string}/api/v1/case/ocr`,
+  //   {
+  //     headers: {
+  //       "api-key": `${process.env.API_KEY}`,
+  //     },
+  //   }
+  // );
 
-  console.log(ocr?.data);
+  // console.log(ocr?.data);
 
-  const result = await axios.get(
-    `${process.env.SERVER_URL as string}/api/v1/case/process`,
-    {
-      headers: {
-        "api-key": `${process.env.API_KEY}`,
-      },
-    }
-  );
+  // const result = await axios.get(
+  //   `${process.env.SERVER_URL as string}/api/v1/case/process`,
+  //   {
+  //     headers: {
+  //       "api-key": `${process.env.API_KEY}`,
+  //     },
+  //   }
+  // );
 
-  console.log(result?.data);
+  // console.log(result?.data);
   // Add your task logic here
 });
 
