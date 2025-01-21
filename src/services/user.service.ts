@@ -121,7 +121,7 @@ class UserService {
       subject: "Password Reset",
       text: `You are receiving this because you (or someone else) have requested the reset of the password for your account.\n\n
              Please click on the following link, or paste this into your browser to complete the process:\n\n
-             http://${process.env.HOST}/reset/${user.resetPasswordToken}\n\n
+             ${process.env.FRONTEND_URL}/reset/${user.resetPasswordToken}\n\n
              If you did not request this, please ignore this email and your password will remain unchanged.\n`,
     };
 
