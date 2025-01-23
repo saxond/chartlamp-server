@@ -4,6 +4,7 @@ import fs from "fs";
 import qrcode from "qrcode";
 import speakeasy from "speakeasy";
 import { UserRegistrationInput } from "../interfaces/user";
+import { BodyPartToImageModel } from "../models/bodyPartToImage.model";
 import { Organization, OrganizationModel } from "../models/organization.model";
 import {
   TwoFactorAuth,
@@ -12,7 +13,6 @@ import {
 import { User, UserModel } from "../models/user.model";
 import { signJwt } from "../utils/jwt";
 import notificationService from "./notification.service"; // Import the instance directly
-import { BodyPartToImageModel } from "../models/bodyPartToImage.model";
 
 class UserService {
   private notificationService = notificationService;
@@ -43,7 +43,7 @@ class UserService {
 
     await user.save();
     // Subscribe user to 2FA
-    await this.generateTwoFactorSecret(user, "email");
+    await this.generateTwoFactorSecret({ user, method: "email" });
 
     return user;
   }
@@ -94,6 +94,8 @@ class UserService {
               ? {
                   isEnabled: (user.twoFactorAuth as TwoFactorAuth).isEnabled,
                   method: (user.twoFactorAuth as TwoFactorAuth).method,
+                  phoneNumber: (user.twoFactorAuth as TwoFactorAuth)
+                    .phoneNumber,
                 }
               : null,
         },
@@ -121,7 +123,7 @@ class UserService {
       subject: "Password Reset",
       text: `You are receiving this because you (or someone else) have requested the reset of the password for your account.\n\n
              Please click on the following link, or paste this into your browser to complete the process:\n\n
-             ${process.env.FRONTEND_URL}/reset/${user.resetPasswordToken}\n\n
+             ${process.env.FRONTEND_URL}/auth/reset-password?token=${user.resetPasswordToken}\n\n
              If you did not request this, please ignore this email and your password will remain unchanged.\n`,
     };
 
@@ -135,7 +137,13 @@ class UserService {
   }
 
   // Reset password
-  static async resetPassword(token: string, newPassword: string) {
+  async resetPassword({
+    token,
+    newPassword,
+  }: {
+    token: string;
+    newPassword: string;
+  }) {
     const user = await UserModel.findOne({
       resetPasswordToken: token,
       resetPasswordExpires: { $gt: new Date() },
@@ -145,7 +153,8 @@ class UserService {
       throw new Error("Password reset token is invalid or has expired");
     }
 
-    user.password = newPassword;
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
 
@@ -153,36 +162,58 @@ class UserService {
   }
 
   // Generate two-factor authentication secret
-  async generateTwoFactorSecret(
-    user: User,
-    method: string,
-    phoneNumber?: string
-  ) {
+  async generateTwoFactorSecret({
+    user,
+    method,
+    phoneNumber,
+    existingAuthId,
+    isEnabled,
+  }: {
+    user: User;
+    method: string;
+    phoneNumber?: string;
+    existingAuthId?: string;
+    isEnabled?: boolean;
+  }) {
     this.validateTwoFactorMethod(method);
 
     if (method === "phone" && !phoneNumber) {
       throw new Error("Phone number is required for phone 2FA");
     }
+    console.log("existingAuthId", existingAuthId);
+    if (existingAuthId) {
+      const updatedDoc = await TwoFactorAuthModel.findByIdAndUpdate(
+        existingAuthId,
+        {
+          method,
+          isEnabled,
+        }
+      );
+      if (phoneNumber && updatedDoc) {
+        updatedDoc.phoneNumber = phoneNumber;
+        await updatedDoc.save();
+      }
+    } else {
+      const secret = speakeasy.generateSecret({ length: 20 });
+      const twoFactorAuth = new TwoFactorAuthModel({
+        user: user._id,
+        secret: secret.base32,
+        method,
+        phoneNumber,
+      });
 
-    const secret = speakeasy.generateSecret({ length: 20 });
-    const twoFactorAuth = new TwoFactorAuthModel({
-      user: user._id,
-      secret: secret.base32,
-      method,
-      phoneNumber,
-    });
+      await twoFactorAuth.save();
 
-    await twoFactorAuth.save();
+      await UserModel.findByIdAndUpdate(user._id, {
+        twoFactorAuth: twoFactorAuth._id,
+      });
 
-    await UserModel.findByIdAndUpdate(user._id, {
-      twoFactorAuth: twoFactorAuth._id,
-    });
+      if (method === "app") {
+        return this.generateAppTwoFactorResponse(secret, user.email);
+      }
 
-    if (method === "app") {
-      return this.generateAppTwoFactorResponse(secret, user.email);
+      return secret.base32;
     }
-
-    return secret.base32;
   }
 
   // Get current user details
@@ -217,6 +248,7 @@ class UserService {
         ? {
             isEnabled: (twoFactorAuth as TwoFactorAuth).isEnabled,
             method: (twoFactorAuth as TwoFactorAuth).method,
+            phoneNumber: (twoFactorAuth as TwoFactorAuth).phoneNumber,
           }
         : null,
     };
@@ -232,6 +264,11 @@ class UserService {
     if (!user?.organization) {
       throw new Error("User not found");
     }
+
+    if (user.role === "admin") {
+      return await UserModel.find({}).lean();
+    }
+
     return await UserModel.find({
       organization: (user.organization as Organization)._id,
     }).lean();
@@ -323,7 +360,7 @@ class UserService {
   // Regenerate two-factor secret
   async regenerateTwoFactorSecret(user: User, method: string) {
     await this.disableTwoFactorAuth(user);
-    return this.generateTwoFactorSecret(user, method);
+    return this.generateTwoFactorSecret({ user, method });
   }
 
   // Validate two-factor method
@@ -350,7 +387,7 @@ class UserService {
 
   // Get recently joined users
   async getRecentlyJoinedUsers(organizationId: string, userId: string) {
-    console.log('organizationId', organizationId)
+    console.log("organizationId", organizationId);
     return await UserModel.find({
       _id: { $ne: userId },
       organization: organizationId,
@@ -423,23 +460,31 @@ class UserService {
     return user;
   }
 
-  async toggleUser2FA(input: { userId: string; isEnabled: boolean }) {
+  async toggleUser2FA(input: {
+    userId: string;
+    isEnabled: boolean;
+    howToGetCode: string;
+  }) {
     // await this.seedTwo();
-    const { userId, isEnabled } = input;
-    const user = await UserModel.findById(userId).populate("twoFactorAuth");
+    const { userId, isEnabled, howToGetCode } = input;
+    const user = await UserModel.findById(userId).populate<{
+      twoFactorAuth: TwoFactorAuth;
+    }>("twoFactorAuth");
     if (!user) throw new Error("User not found");
-    if (isEnabled && user.twoFactorAuth) {
+    if (
+      isEnabled &&
+      user.twoFactorAuth &&
+      user.twoFactorAuth.method == howToGetCode &&
+      user.twoFactorAuth.isEnabled === isEnabled
+    ) {
       throw new Error("2FA is already enabled");
     }
-    if (!isEnabled && !user.twoFactorAuth) {
-      throw new Error("2FA is already disabled");
-    }
-    if (isEnabled) {
-      return this.generateTwoFactorSecret(user, "email");
-    } else {
-      await this.disableTwoFactorAuth(user);
-    return "2FA disabled";
-    }
+    return this.generateTwoFactorSecret({
+      user: user as unknown as User,
+      method: howToGetCode,
+      existingAuthId: user?.twoFactorAuth?._id?.toString(),
+      isEnabled,
+    });
   }
 
   async update2faPhoneNumber(input: {
@@ -450,11 +495,18 @@ class UserService {
     const { userId, phoneNumber, howToGetCode } = input;
     const user = await UserModel.findById(userId);
     if (!user) throw new Error("User not found");
-    if (!user.twoFactorAuth) throw new Error("2FA is not enabled");
-    await TwoFactorAuthModel.findByIdAndUpdate(user.twoFactorAuth, {
-      phoneNumber,
-      method: howToGetCode,
-    });
+    if (!user.twoFactorAuth) {
+      await this.generateTwoFactorSecret({
+        user: user as unknown as User,
+        method: howToGetCode,
+        phoneNumber,
+      });
+    } else {
+      await TwoFactorAuthModel.findByIdAndUpdate(user.twoFactorAuth, {
+        phoneNumber,
+        // method: howToGetCode,
+      });
+    }
     return "Phone number updated";
   }
 

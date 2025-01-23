@@ -94,19 +94,36 @@ export class InvitationService {
     const organizationId = (userWithOrganization.organization as Organization)
       ._id;
 
-    const [users, invitations] = await Promise.all([
-      UserModel.find({
-        organization: organizationId,
-        $or: [{ status: "active" }, { status: { $exists: false } }],
-      })
-        .select("name email role accessLevel organization createdAt updatedAt")
-        .lean(),
-      InvitationModel.find({
-        organization: organizationId,
-        status: "pending",
-      }).lean(),
-    ]);
+    if (userWithOrganization.role !== "admin") {
+      const [users, invitations] = await Promise.all([
+        UserModel.find({
+          organization: organizationId,
+          $or: [{ status: "active" }, { status: { $exists: false } }],
+        })
+          .select(
+            "name email role accessLevel organization createdAt updatedAt"
+          )
+          .lean(),
+        InvitationModel.find({
+          organization: organizationId,
+          status: "pending",
+        }).lean(),
+      ]);
 
-    return { users, invitations };
+      return { users, invitations };
+    } else {
+      const [users, invitations] = await Promise.all([
+        UserModel.find({})
+          .select(
+            "name email role accessLevel organization createdAt updatedAt"
+          )
+          .lean(),
+        InvitationModel.find({
+          status: "pending",
+        }).lean(),
+      ]);
+
+      return { users, invitations };
+    }
   }
 }
