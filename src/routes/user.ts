@@ -11,6 +11,9 @@ router.post("/login", (req, res) => userController.login(req, res));
 router.post("/forgot-password", (req, res) =>
   userController.forgotPassword(req, res)
 );
+router.post("/reset-password", (req, res) =>
+  userController.resetPassword(req, res)
+);
 router.post("/logout", isAuthenticated, (req, res) =>
   userController.logout(req, res)
 );

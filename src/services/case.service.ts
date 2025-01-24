@@ -13,7 +13,7 @@ import { DocumentModel, ExtractionStatus } from "../models/document.model";
 import { Organization } from "../models/organization.model";
 import { UserModel } from "../models/user.model";
 import { CACHE_TTL } from "../scripts/constants";
-import { redis } from "../utils/redis";
+// import { redis } from "../utils/redis";
 import { DiseaseClassificationService } from "./diseaseClassification.service";
 import { DocumentService } from "./document.service";
 import notificationService from "./notification.service";
@@ -141,7 +141,7 @@ export class CaseService {
 
   async cacheCaseData(caseId: string) {
     const response = await this.getCaseByIdWithBodyParts(caseId);
-    await redis.set(caseId, JSON.stringify(response), "EX", CACHE_TTL);
+    // await redis.set(caseId, JSON.stringify(response), "EX", CACHE_TTL);
     console.log(`case ${caseId} has been cached successfully`);
   }
 

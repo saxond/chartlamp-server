@@ -48,6 +48,18 @@ export class UserController {
     }
   }
 
+  //reset password
+  public async resetPassword(req: Request, res: Response): Promise<void> {
+    try {
+      await this.userService.resetPassword({
+        ...req.body,
+      });
+      res.status(200).json(formatResponse(true, "Password reset successful"));
+    } catch (error) {
+      res.status(400).json(formatResponse(false, (error as Error).message));
+    }
+  }
+
   public async register(req: Request, res: Response): Promise<void> {
     try {
       const { name, organization, email, password } = req.body;
@@ -152,10 +164,10 @@ export class UserController {
       const appUser = await this.handleUserNotFound(res, user.id);
       if (!appUser) return;
 
-      const result = await this.userService.generateTwoFactorSecret(
-        appUser,
-        method
-      );
+      const result = await this.userService.generateTwoFactorSecret({
+        user: appUser,
+        method,
+      });
       res.status(200).json(formatResponse(true, "2FA enabled", { result }));
     } catch (error) {
       res.status(400).json(formatResponse(false, (error as Error).message));
