@@ -41,7 +41,7 @@ app.use(errorHandlerMiddleware);
 console.log("Scheduling cron job...");
 
 cron.schedule("* * * * *", async () => {
-  console.log("Running a task every minute");
+  console.log("Running a task every minute!!");
 
   if (process.env.NODE_ENV === "local") return;
   
