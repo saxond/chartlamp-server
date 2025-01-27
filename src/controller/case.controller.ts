@@ -281,6 +281,18 @@ export class CaseController {
     }
   }
 
+  async getAllFavoriteCases(req: AuthRequest, res: Response) {
+    try {
+      if (!req?.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const response = await caseService.getAllFavoriteCases(req?.user?.id);
+      res.status(200).json(response);
+    } catch (error) {
+      handleError(res, error);
+    }
+  }
+
   async updateArchiveStatus(req: AuthRequest, res: Response) {
     try {
       if (!req?.user) {

@@ -162,6 +162,7 @@ export class DocumentService {
   private async processContentChunk(chunk: string): Promise<any[]> {
     const MedicalRecord = z.object({
       diseaseName: z.union([z.string(), z.array(z.string())]),
+      diagnosis: z.union([z.string(), z.array(z.string())]),
       amountSpent: z.string(),
       providerName: z.string(),
       doctorName: z.string(),
@@ -179,6 +180,7 @@ export class DocumentService {
       response_format: zodResponseFormat(MedicalRecord, "report"),
     });
 
+    console.log("processContentChunk", response);
     return response;
   }
 
@@ -541,7 +543,7 @@ export class DocumentService {
       // Wait for all updates to complete
       const updatedDocuments = await Promise.all(updatePromises);
       // Return updated documents
-      return {extractCaseDocumentData: updatedDocuments, hasError};
+      return { extractCaseDocumentData: updatedDocuments, hasError };
     } catch (error) {
       throw new Error("Failed to get documents without content");
     }
