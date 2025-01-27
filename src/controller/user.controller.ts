@@ -86,8 +86,8 @@ export class UserController {
       // Set cookie with auth token
       res.cookie("authToken", authToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production", // Ensure this matches your environment
-        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // Adjust based on your needs
+        secure: process.env.NODE_ENV !== "local", // Ensure this matches your environment
+        sameSite: process.env.NODE_ENV !== "local" ? "none" : "lax", // Adjust based on your needs
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
       });
 

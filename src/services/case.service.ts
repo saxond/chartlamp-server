@@ -473,13 +473,16 @@ export class CaseService {
       },
       { cronStatus: CronStatus.Processing },
       { new: true }
-    ).lean();
+    );
 
     if (!caseItem) {
       return;
     }
 
-    if (caseItem.env && caseItem.env !== process.env.NODE_ENV) return;
+    if (caseItem.env && caseItem.env !== process.env.NODE_ENV) {
+      caseItem.cronStatus = CronStatus.Pending;
+      await caseItem.save();
+    }
 
     console.log(`Processing case: ${caseItem?._id}`);
 
