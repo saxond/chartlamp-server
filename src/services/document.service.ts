@@ -184,6 +184,18 @@ export class DocumentService {
     return response;
   }
 
+  private getDiseaseName(
+    name: string | string[],
+    diagnosis: string | string[]
+  ) {
+    const nameArr = Array.isArray(name) ? name : name.split(",");
+    const diagnosisArr = Array.isArray(diagnosis)
+      ? diagnosis
+      : diagnosis.split(",");
+    const nameSet = new Set(nameArr.concat(diagnosisArr));
+    return Array.from(nameSet).join(",");
+  }
+
   async processDocumentContent(content: string): Promise<any[]> {
     try {
       // Split content into smaller chunks
@@ -199,6 +211,7 @@ export class DocumentService {
         amountSpent: string;
         date: string;
         diseaseName: string | string[];
+        diagnosis: string | string[];
         providerName: string;
         doctorName: string;
         medicalNote: string;
@@ -214,12 +227,15 @@ export class DocumentService {
             result.amountSpent || ""
           );
           const dateOfClaim = await this.validateDateStr(result.date || "");
-          const nameOfDisease =
-            typeof result.diseaseName === "string"
-              ? result.diseaseName
-              : Array.isArray(result.diseaseName)
-              ? result.diseaseName.join(",")
-              : "";
+          const nameOfDisease = this.getDiseaseName(
+            result.diseaseName,
+            result.diagnosis
+          );
+          // typeof result.diseaseName === "string"
+          //   ? result.diseaseName
+          //   : Array.isArray(result.diseaseName)
+          //   ? result.diseaseName.join(",")
+          //   : "";
           const icdCodes = await this.getIcdCodeFromDescription(
             nameOfDisease + " " + result.medicalNote
           );

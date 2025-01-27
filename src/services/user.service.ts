@@ -73,13 +73,15 @@ class UserService {
       );
       if (!user2Fa) throw new Error("TwoFactorAuth not found");
 
-      const token = speakeasy.totp({
-        secret: user2Fa.secret!,
-        encoding: "base32",
-        step: 300, // 5 minutes
-      });
+      if (user2Fa.isEnabled) {
+        const token = speakeasy.totp({
+          secret: user2Fa.secret!,
+          encoding: "base32",
+          step: 300, // 5 minutes
+        });
 
-      await this.sendTwoFactorToken(user, token);
+        await this.sendTwoFactorToken(user, token);
+      }
 
       return {
         user: {
@@ -99,7 +101,7 @@ class UserService {
                 }
               : null,
         },
-        twoFactorRequired: true,
+        twoFactorRequired: (user.twoFactorAuth as TwoFactorAuth).isEnabled,
         authToken,
       };
     }

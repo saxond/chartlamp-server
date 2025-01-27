@@ -141,6 +141,8 @@ export class DiseaseClassificationService {
         .split(" ")
         .filter((word) => word.length > 2); // Filter out short words
 
+      console.log("keywords", keywords);
+
       // Search for images where the affected body part includes the file name
       const results = await BodyPartToImageModel.find(
         {
@@ -486,10 +488,27 @@ export class DiseaseClassificationService {
             return null; // Return null for ICD codes with no data
           }
 
+          let isLeft = false;
+          let isRight = false;
+
+          if (affectedBodyPart?.description) {
+            isLeft = affectedBodyPart?.description
+              .toLowerCase()
+              .includes("left");
+            isRight = affectedBodyPart?.description
+              .toLowerCase()
+              .includes("right");
+          }
+
           const images = await this.getAffectedBodyPartByMapping(
-            affectedBodyPartData
+            isLeft
+              ? "left " + affectedBodyPartData
+              : isRight
+              ? "right " + affectedBodyPartData
+              : affectedBodyPartData
           );
 
+          console.log("affectedBodyPartData", images);
           return {
             images,
             bodyParts: affectedBodyPartData,
