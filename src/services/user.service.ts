@@ -101,7 +101,7 @@ class UserService {
                 }
               : null,
         },
-        twoFactorRequired: true,
+        twoFactorRequired: (user.twoFactorAuth as TwoFactorAuth).isEnabled,
         authToken,
       };
     }
