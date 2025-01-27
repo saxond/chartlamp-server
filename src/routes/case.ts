@@ -27,6 +27,7 @@ router.get(
   isAuthenticated,
   caseController.getLastViewedCaseByUser
 );
+router.get("/favorites", isAuthenticated, caseController.getAllFavoriteCases);
 router.get(
   "/:id/detail",
   isAuthenticated,

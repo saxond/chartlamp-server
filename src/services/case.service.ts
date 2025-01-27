@@ -12,7 +12,6 @@ import {
 import { DocumentModel, ExtractionStatus } from "../models/document.model";
 import { Organization } from "../models/organization.model";
 import { UserModel } from "../models/user.model";
-import { CACHE_TTL } from "../scripts/constants";
 // import { redis } from "../utils/redis";
 import { DiseaseClassificationService } from "./diseaseClassification.service";
 import { DocumentService } from "./document.service";
@@ -62,6 +61,7 @@ export class CaseService {
       const newCase = new CaseModel({
         ...data,
         organization: (userWithOrganization.organization as Organization)._id,
+        env: process.env.NODE_ENV,
       });
       await newCase.save({ session });
 
@@ -479,6 +479,8 @@ export class CaseService {
       return;
     }
 
+    if (caseItem.env && caseItem.env !== process.env.NODE_ENV) return;
+
     console.log(`Processing case: ${caseItem?._id}`);
 
     try {
@@ -731,16 +733,16 @@ export class CaseService {
     caseId,
     noteId,
     userId,
- }: {
+  }: {
     caseId: string;
     noteId: string;
     userId: string;
   }) {
-    return CaseNoteModel.findOneAndDelete( {
-        case: caseId,
-        user: userId,
-        _id: noteId,
-      }).lean();
+    return CaseNoteModel.findOneAndDelete({
+      case: caseId,
+      user: userId,
+      _id: noteId,
+    }).lean();
   }
 
   async addComment({
@@ -853,6 +855,55 @@ export class CaseService {
       },
       { new: true }
     );
+  }
+
+  async getAllFavoriteCases(userId: string) {
+    const favoriteCases = await CaseModel.aggregate([
+      {
+        $match: {
+          user: new Types.ObjectId(userId),
+          // isFavorite: true,
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "user",
+          foreignField: "_id",
+          as: "userDetails",
+        },
+      },
+      {
+        $unwind: "$userDetails",
+      },
+      {
+        $sort: { createdAt: -1 },
+      },
+      {
+        $project: {
+          caseNumber: 1, // Project caseNumber
+          "userDetails.name": 1, // Project user details
+          "userDetails._id": 1,
+          "userDetails.profilePicture": 1,
+          reports: 1,
+        },
+      },
+
+      {
+        $limit: 3, // Get the most visited case
+      },
+      {
+        $project: {
+          _id: 0, // Exclude the case ID
+          userDetails: 1, // Return user details
+          reports: 1,
+          caseNumber: 1, // Return case number
+        },
+      },
+    ]);
+    console.log("favoriteCases", favoriteCases);
+
+    return favoriteCases;
   }
 
   async updateArchiveStatus({

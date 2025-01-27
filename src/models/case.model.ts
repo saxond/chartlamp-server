@@ -153,6 +153,13 @@ export class Case {
   @prop({ required: false, default: 0 })
   public viewCount!: number;
 
+  @prop({
+    required: true,
+    enum: ["local", "development", "production"],
+    default: "production",
+  })
+  public env!: string;
+
   @prop({ default: false })
   public isArchived?: boolean;
 
