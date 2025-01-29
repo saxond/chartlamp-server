@@ -214,6 +214,13 @@ export class DiseaseClassificationService {
       }).lean();
     }
 
+    if (!diseaseC) {
+      const part = icdCode.slice(0, 3);
+      diseaseC = await DiseaseClassificationModel.findOne({
+        icdCode: new RegExp(`^${part}`),
+      }).lean();
+    }
+
     return diseaseC;
   }
 
@@ -485,7 +492,12 @@ export class DiseaseClassificationService {
             affectedBodyPart?.affectedBodyPartD || "";
 
           if (!affectedBodyPartData) {
-            return null; // Return null for ICD codes with no data
+            return {
+              images: [],
+              bodyParts: "unspecified",
+              description: affectedBodyPart?.description || "",
+              icdCode,
+            };
           }
 
           let isLeft = false;

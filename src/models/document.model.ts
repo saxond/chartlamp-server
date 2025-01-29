@@ -23,6 +23,9 @@ export class Document {
   public url!: string;
 
   @prop({ default: null })
+  public patientRecord?: Object[];
+
+  @prop({ default: null })
   public content?: string;
 
   @prop({ default: null })

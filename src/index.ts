@@ -73,7 +73,7 @@ console.log("Cron job scheduled....");
 
 const start = async (): Promise<void> => {
   try {
-    console.error = () => {};
+    // console.error = () => {};
     await connectToMongo();
     app.listen(PORT, () => {
       console.log(`Server started on port ${PORT}`);

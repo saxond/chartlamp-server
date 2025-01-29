@@ -38,7 +38,7 @@ class NameOfDiseaseByIcdCode {
   public nameOfDisease!: string;
 }
 
-class Report {
+export class Report {
   @prop({ type: () => [String], default: [] })
   public icdCodes?: string[];
 

@@ -8,6 +8,10 @@ import mongoose from "mongoose";
 import { zodResponseFormat } from "openai/helpers/zod";
 import pdf from "pdf-parse";
 import { z } from "zod";
+import {
+  mergeEncounters,
+  patientRecordSchema,
+} from "../interfaces/PatientRecord";
 import { CaseModel } from "../models/case.model";
 import { Document, DocumentModel } from "../models/document.model";
 import { textractClient } from "../utils/textract";
@@ -329,6 +333,65 @@ export class DocumentService {
     }
   }
 
+  // Create report from document
+  async generateReportForDocumentV2(doc: Document): Promise<any[]> {
+    try {
+      const encounters = doc.patientRecord;
+      console.log("encounters", encounters);
+
+      if (!encounters || !encounters.length) {
+        return []; // Skip to the next document
+      }
+
+      const results = await Promise.all(
+        encounters.map(async (encounter: any) => {
+          if (encounter.dateTime.toLowerCase() === "not provided") return null;
+
+          const icdCodes = (encounter.diagnoses || [])
+            .filter((d: any) => d.code.toLowerCase() !== "not provided")
+            .map((d: any) => d.code);
+
+          const nameOfDisease = (encounter.diagnoses || [])
+            .filter((d: any) => d.code.toLowerCase() !== "not provided")
+            .map((d: any) => d.diagnosis)
+            .join(",");
+
+          const diseaseNameByIcdCode = await this.getStreamlinedDiseaseName({
+            icdCodes,
+            diseaseNames: nameOfDisease,
+          });
+
+          const amountSpent =
+            encounter.claims?.[0]?.totalAmount.toLowerCase() !== "not provided"
+              ? encounter.claims?.[0]?.totalAmount
+              : 0;
+
+          return {
+            icdCodes,
+            nameOfDisease,
+            amountSpent,
+            providerName: encounter.location,
+            doctorName: encounter.careTeam?.[0]?.name || "",
+            medicalNote: encounter.medicalNote,
+            dateOfClaim: new Date(encounter.dateTime),
+            nameOfDiseaseByIcdCode: diseaseNameByIcdCode,
+          };
+        })
+      );
+
+      // Add document ID to each result
+      return results
+        .filter((item) => Boolean(item))
+        .map((result) => ({
+          ...result,
+          document: doc._id as string,
+        }));
+    } catch (error) {
+      console.log("Error generating report for document:", error);
+      return [];
+    }
+  }
+
   async extractContentFromDocumentUsingTextract(
     documentUrl: string
   ): Promise<string> {
@@ -444,7 +507,7 @@ export class DocumentService {
         }
       }
 
-      console.log("Content:", content);
+      // console.log("Content:", content);
 
       // Return content
       return content;
@@ -565,6 +628,27 @@ export class DocumentService {
     }
   }
 
+  private getPrompt(content: string) {
+
+    return `
+    Extract relevant:
+    
+     Patient Details: Include name,
+     Date of the encounter. (e.g. 2018-05-24. Remove the time and leave just the date alone)
+     Location of the visit (e.g. hospital name, department).
+     Diagnoses made during the encounter (with codes if available or generate relevant icd-code if not available).
+     Claims: For each encounter, extract:
+     Total amount claimed.
+     Date of claim submission.
+     Status of the claim (e.g., approved, denied, pending).
+     Ensure no encounter or claim is missed.
+
+ from the document below document. Where a data is not available in the document just mark it as not provided.
+ document:
+${content}
+`;
+  }
+
   // Pass the extractedData from the document to get the content in the above structure
 
   async getContentFromDocument(extractedData: string): Promise<string> {
@@ -600,7 +684,7 @@ export class DocumentService {
       // Process each chunk and collect responses
       const responses = await Promise.all(
         chunks.map(async (chunk) => {
-          const prompt = `Extract the patient details, encounters, and claims from the document below: ${chunk}`;
+          const prompt = this.getPrompt(chunk);
           const response = await this.openAiService.completeChat({
             context:
               "Extract the patient details, encounters, and claims from the document below:",
@@ -622,6 +706,70 @@ export class DocumentService {
     }
   }
 
+  async getContentFromDocumentV2(extractedData: string) {
+    try {
+      // Trim the extractedData and remove any empty strings
+      extractedData = extractedData?.trim();
+
+      if (!extractedData) {
+        return [];
+      }
+
+      const MAX_TOKENS = 4096; // Example token limit for GPT-3.5-turbo
+      const CHUNK_SIZE = 1000; // Adjust chunk size as needed
+
+      // Function to split text into chunks
+      const splitTextIntoChunks = (text: string, size: number): string[] => {
+        const chunks = [];
+        for (let i = 0; i < text.length; i += size) {
+          const chunk = text.slice(i, i + size).trim();
+          if (chunk) {
+            chunks.push(chunk);
+          }
+        }
+        return chunks;
+      };
+
+      // Split extractedData if it exceeds the token limit
+      const chunks =
+        extractedData.length > MAX_TOKENS
+          ? splitTextIntoChunks(extractedData, CHUNK_SIZE)
+          : [extractedData];
+
+      // Process each chunk and collect responses
+      const responses = await Promise.all(
+        chunks.map(async (chunk) => {
+          const prompt = this.getPrompt(chunk);
+          const response = await this.openAiService.completeChat({
+            context:
+              "Extract the patient details, encounters, and claims from the document below:",
+            prompt,
+            model: "gpt-4o",
+            temperature: 0.4,
+            response_format: zodResponseFormat(patientRecordSchema, "record"),
+          });
+          console.log("response", response);
+          return response;
+        })
+      );
+      // Return merged content
+      return responses;
+    } catch (error) {
+      throw new Error("Failed to get content from document");
+    }
+  }
+
+  private cleanAndParseJson(data: string) {
+    const cleanedData = data.replace(/^```json\s*/, "").replace(/```$/, "");
+
+    try {
+      return JSON.parse(cleanedData);
+    } catch (error) {
+      console.error("Failed to parse JSON:", error);
+      return null;
+    }
+  }
+
   async getDocumentWithoutContent(limit: number = 1): Promise<any> {
     try {
       // Get document from the database that do not have content
@@ -635,7 +783,6 @@ export class DocumentService {
       if (!documents?.length) {
         return [];
       }
-
       // Extract content from each document
       const updatePromises = documents.map(async (document) => {
         const content = await this.getContentFromDocument(
@@ -672,13 +819,18 @@ export class DocumentService {
 
       // Extract content from each document
       const updatePromises = documents.map(async (document) => {
-        const content = await this.getContentFromDocument(
+        const patientRecord = await this.getContentFromDocumentV2(
           document.extractedData || ""
         );
+        const allEncounters = patientRecord.flatMap(
+          (record) => record.encounters
+        );
+        const encounters = mergeEncounters(allEncounters);
+        console.log("patientRecord", encounters);
         await DocumentModel.findByIdAndUpdate(document._id, {
-          content: content,
+          patientRecord: encounters,
         });
-        return { ...document, content };
+        return { ...document, content: "" };
       });
 
       // Wait for all updates to complete

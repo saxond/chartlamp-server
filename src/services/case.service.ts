@@ -437,21 +437,51 @@ export class CaseService {
     }
   }
 
+  // Populate report from case documents
+  async populateReportFromCaseDocumentsV2(caseId: string): Promise<any> {
+    try {
+      const documents = await DocumentModel.find({ case: caseId }).lean();
+
+      if (!documents.length) {
+        return [];
+      }
+
+      const flattenedResults = (
+        await Promise.all(
+          documents.map((doc) =>
+            this.documentService.generateReportForDocumentV2(doc)
+          )
+        )
+      ).flat();
+
+      console.log('flattenedResults', flattenedResults)
+
+      if (flattenedResults.length) {
+        await this.updateCaseReports(caseId, flattenedResults);
+      }
+
+      return flattenedResults;
+    } catch (error) {
+      console.error("Error populating report from case documents:", error);
+      throw new Error("Failed to populate report from case documents");
+    }
+  }
+
   //process case
   async processCase(caseId: string) {
     try {
       const { extractCaseDocumentData, hasError } =
         await this.documentService.extractCaseDocumentData(caseId);
-      console.log("processCase - hasError", hasError);
-      console.log("extractCaseDocumentData", extractCaseDocumentData);
+      // console.log("processCase - hasError", hasError);
+      // console.log("extractCaseDocumentData", extractCaseDocumentData);
       const extractCaseDocumentWithoutContent =
         await this.documentService.extractCaseDocumentWithoutContent(caseId);
-      console.log(
-        "extractCaseDocumentWithoutContent",
-        extractCaseDocumentWithoutContent
-      );
+      // console.log(
+      //   "extractCaseDocumentWithoutContent",
+      //   extractCaseDocumentWithoutContent
+      // );
       const populateReportFromCaseDocuments =
-        await this.populateReportFromCaseDocuments(caseId);
+        await this.populateReportFromCaseDocumentsV2(caseId);
       console.log(
         "populateReportFromCaseDocuments",
         populateReportFromCaseDocuments
