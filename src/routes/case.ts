@@ -39,7 +39,35 @@ router.get("/:id", isAuthenticated, caseController.getById);
 router.put("/:id", isAuthenticated, caseController.update);
 
 router.get("/:id/tags", isAuthenticated, caseController.getCaseTags);
+
+router.post(
+  "/:id/reports/:reportId/dc/tags",
+  isAuthenticated,
+  caseController.getDcTagMapping
+);
+
+router.get("/:id/dcId/tags", isAuthenticated, caseController.getCaseDcTagMapping);
+
+router.post(
+  "/:id/dc/addRemove",
+  isAuthenticated,
+  caseController.updateCaseReportMultipleTags
+);
+
+router.post(
+  "/:id/reports/filter-by-dc",
+  isAuthenticated,
+  caseController.getReportsByDcTagMapping
+);
+
+router.post(
+  "/:id/reports/filter-by-tags",
+  isAuthenticated,
+  caseController.getReportsByTagMapping
+);
+
 router.post("/:id/tags", isAuthenticated, caseController.createCaseTag);
+
 router.patch(
   "/:id/reports/:reportId",
   isAuthenticated,
