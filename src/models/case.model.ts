@@ -5,6 +5,7 @@ import {
   prop,
   Ref,
 } from "@typegoose/typegoose";
+import { DiseaseClassification } from "./diseaseClassification.model";
 import { Organization } from "./organization.model"; // Ensure this path is correct
 import { User } from "./user.model"; // Ensure this path is correct
 
@@ -69,7 +70,6 @@ class Report {
   @prop()
   public dateOfClaim?: Date | null;
 
-  // @prop({ default: [TagsType.NOT_DECIDED] })
   @prop({ default: [] })
   public tags?: string[];
 
@@ -195,13 +195,34 @@ export const CaseModel = getModelForClass(Case);
 
 class CaseTag {
   @prop({ ref: () => Case, required: true })
-  public case!: Ref<Case>;
+  public case?: Ref<Case>;
 
   @prop()
   public tagName!: string;
 }
 
 export const CaseTagModel = getModelForClass(CaseTag);
+
+class DiseaseClassificationTagMapping {
+  @prop({ ref: () => CaseTag, required: true })
+  public caseTag!: Ref<CaseTag>;
+
+  @prop({ ref: () => Report, required: true })
+  public report!: Ref<Report>;
+
+  @prop({ ref: () => DiseaseClassification, required: false })
+  public dc?: Ref<DiseaseClassification>;
+
+  @prop({ required: false })
+  public icdCode?: string;
+
+  @prop()
+  public case!: string;
+}
+
+export const DiseaseClassificationTagMappingModel = getModelForClass(
+  DiseaseClassificationTagMapping
+);
 
 @modelOptions({
   schemaOptions: {
