@@ -981,7 +981,7 @@ export class CaseService {
         $unwind: "$userDetails",
       },
       {
-        $sort: { createdAt: -1 },
+        $sort: { updatedAt: -1 },
       },
       {
         $project: {
