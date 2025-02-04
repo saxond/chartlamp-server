@@ -44,7 +44,8 @@ class UserService {
     await user.save();
     // Subscribe user to 2FA
     await this.generateTwoFactorSecret({ user, method: "email" });
-
+    
+    await this.sendNewUserMailToAdmin(name, userOrganizationName);
     return user;
   }
 
@@ -136,6 +137,23 @@ class UserService {
     );
 
     return user.resetPasswordToken;
+  }
+
+  async sendNewUserMailToAdmin(userName: string, OrganizationName: string) {
+    const mailOptions = {
+      to: "justin@chartlamp.com",
+      // to: "veyrondavids@gmail.com",
+      subject: "Chartlamp - New user Alert",
+      text: `
+      Hello,\n
+      A new user ${userName} has been added to ${OrganizationName} organization.\n\n
+      `,
+    };
+    await this.notificationService.sendEmail(
+      mailOptions.to,
+      mailOptions.subject,
+      mailOptions.text
+    );
   }
 
   // Reset password

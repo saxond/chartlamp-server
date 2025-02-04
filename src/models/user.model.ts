@@ -1,5 +1,10 @@
-import { getModelForClass, modelOptions, prop, Ref } from "@typegoose/typegoose";
-import { v4 as uuidv4 } from 'uuid';
+import {
+  getModelForClass,
+  modelOptions,
+  prop,
+  Ref,
+} from "@typegoose/typegoose";
+import { v4 as uuidv4 } from "uuid";
 import { Organization } from "./organization.model"; // Ensure this path is correct
 import { TwoFactorAuth } from "./twoFactorAuth.model"; // Ensure this path is correct
 
