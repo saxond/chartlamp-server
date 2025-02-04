@@ -226,27 +226,39 @@ export class CaseService {
       claimStatus?: string;
     };
   }) {
-    const invitedCases = await CaseInvitationModel.find({
-      invitedUser: userId,
-      // status: CaseInvitationStatus.ACCEPTED,
-    }).lean();
-    let invitedCaseIds = invitedCases.map((inv) => inv.case);
-    const casesQuery: mongoose.FilterQuery<any> = {
-      $and: [
-        {
-          $or: [{ user: userId }, { _id: { $in: invitedCaseIds } }],
-        },
-        // {
-        //   $or: [{ isArchived: false }, { isArchived: { $exists: false } }],
-        // },
-      ],
-    };
+    const user = await UserModel.findById(userId).lean();
+    if (!user) throw new Error("User not found");
+    console.log("role", user.role);
+    if (user.role === "admin") {
+      const adminQuery: mongoose.FilterQuery<any> = {};
 
-    if (query?.claimStatus) {
-      casesQuery["claimStatus"] = query.claimStatus;
+      if (query?.claimStatus) {
+        adminQuery["claimStatus"] = query.claimStatus;
+      }
+
+      return CaseModel.find(adminQuery).sort({ createdAt: -1 }).lean();
+    } else {
+      const invitedCases = await CaseInvitationModel.find({
+        invitedUser: userId,
+        // status: CaseInvitationStatus.ACCEPTED,
+      }).lean();
+
+      let invitedCaseIds = invitedCases.map((inv) => inv.case);
+
+      const casesQuery: mongoose.FilterQuery<any> = {
+        $and: [
+          {
+            $or: [{ user: userId }, { _id: { $in: invitedCaseIds } }],
+          },
+        ],
+      };
+
+      if (query?.claimStatus) {
+        casesQuery["claimStatus"] = query.claimStatus;
+      }
+
+      return CaseModel.find(casesQuery).sort({ createdAt: -1 }).lean();
     }
-
-    return CaseModel.find(casesQuery).sort({ createdAt: -1 }).lean();
   }
 
   //get user archived cases
