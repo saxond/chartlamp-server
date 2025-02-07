@@ -57,6 +57,9 @@ export class User {
   @prop({ ref: () => TwoFactorAuth, required: false, default: null })
   public twoFactorAuth?: Ref<TwoFactorAuth> | null;
 
+  @prop()
+  public lastViewedCase?: string;
+
   @prop({ required: false })
   public resetPasswordToken?: string;
 

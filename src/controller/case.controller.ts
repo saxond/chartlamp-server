@@ -1,8 +1,10 @@
 import { Request, Response } from "express";
 import { Types } from "mongoose";
 import { AuthRequest } from "../middleware/isAuth";
+import { UserModel } from "../models/user.model";
 import { CaseService } from "../services/case.service"; // Ensure this path is correct
 import { DocumentService } from "../services/document.service";
+import { CaseModel } from "../models/case.model";
 
 const caseService = new CaseService();
 const documentService = new DocumentService();
@@ -56,12 +58,17 @@ export class CaseController {
     }
   }
 
-  async getCaseByIdWithBodyParts(req: Request, res: Response) {
+  async getCaseByIdWithBodyParts(req: AuthRequest, res: Response) {
     try {
       const { id } = req.params;
       const caseData = await caseService.getCaseByIdWithBodyParts(id);
       if (!caseData) {
         return res.status(404).json({ message: "Case not found" });
+      }
+      if (req?.user?.id) {
+        await UserModel.findByIdAndUpdate(req?.user?.id, {
+          lastViewedCase: id,
+        });
       }
       res.status(200).json(caseData);
     } catch (error) {
@@ -192,10 +199,33 @@ export class CaseController {
       if (!req?.user) {
         return res.status(401).json({ message: "Unauthorized" });
       }
-      const lastViewed = await caseService.getLastViewedCaseByUser(
-        req?.user?.id
-      );
-      res.status(200).json(lastViewed);
+
+      const userDoc = await UserModel.findById(
+        req?.user?.id,
+        "lastViewedCase"
+      ).lean();
+
+      if (!userDoc) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      if (userDoc?.lastViewedCase) {
+        const caseData = await caseService.getCaseByIdWithBodyParts(
+          userDoc.lastViewedCase
+        );
+        return res.status(200).json(caseData);
+      } else {
+        const userCases = await CaseModel.find({ user: req?.user?.id }, "_id")
+          .lean()
+          .sort({ lastViewed: -1 });
+        if (userCases.length) {
+          const caseData = await caseService.getCaseByIdWithBodyParts(
+            userCases[0]._id
+          );
+          return res.status(200).json(caseData);
+        }
+      }
+      return res.status(200).json(null);
     } catch (error) {
       handleError(res, error);
     }
