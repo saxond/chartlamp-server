@@ -527,8 +527,16 @@ export class DiseaseClassificationService {
           );
 
           // console.log("affectedBodyPartData", images);
+          const updatedImages = images.map((item) => {
+            return {
+              ...item,
+              reportId,
+              icdCode,
+              classificationId: affectedBodyPart?._id,
+            };
+          });
           return {
-            images,
+            images: updatedImages,
             bodyParts: affectedBodyPartData,
             description: affectedBodyPart?.description || "",
             icdCode,
