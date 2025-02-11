@@ -92,11 +92,7 @@ export class CaseService {
 
   // Get a case by ID
   async getCaseById(id: Types.ObjectId) {
-    const caseData = await CaseModel.findByIdAndUpdate(
-      id,
-      { $inc: { viewCount: 1 }, lastViewed: new Date() },
-      { new: true }
-    )
+    const caseData = await CaseModel.findById(id)
       .lean()
       .populate("user", "email name role profilePicture");
     // .populate("tags");
@@ -997,6 +993,7 @@ export class CaseService {
       },
       {
         $project: {
+          _id: 1,
           caseNumber: 1, // Project caseNumber
           "userDetails.name": 1, // Project user details
           "userDetails._id": 1,
@@ -1010,7 +1007,7 @@ export class CaseService {
       },
       {
         $project: {
-          _id: 0, // Exclude the case ID
+          _id: 1, // Exclude the case ID
           userDetails: 1, // Return user details
           reports: 1,
           caseNumber: 1, // Return case number
