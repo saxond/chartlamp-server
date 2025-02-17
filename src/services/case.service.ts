@@ -488,14 +488,7 @@ export class CaseService {
     );
 
     if (!caseItem) {
-      console.log("no case to process", {
-        $or: [
-          { cronStatus: CronStatus.Pending },
-          { cronStatus: "" },
-          { cronStatus: { $exists: false } }, // Matches undefined (i.e., field does not exist)
-        ],
-        env: process.env.NODE_ENV,
-      });
+      console.log("no case to process");
       return null;
     }
 
@@ -1226,7 +1219,7 @@ export class CaseService {
       document._id,
       {
         content,
-        // status: ExtractionStatus.SUCCESS,
+        status: ExtractionStatus.SUCCESS,
       },
       {
         new: true,
