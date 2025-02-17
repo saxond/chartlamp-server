@@ -31,7 +31,7 @@ app.use(morgan("combined"));
 app.set("trust proxy", 1); // Trust first proxy
 
 app.get("/", (_req: Request, res: Response): Response => {
-  return res.json({ message: "Construction check AI 🤟" });
+  return res.json({ message: "Chartlamp server 🤟" });
 });
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
