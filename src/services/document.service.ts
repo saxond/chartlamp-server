@@ -507,7 +507,7 @@ export class DocumentService {
       const jobStatus = await this.getTextractJobStatus(jobId);
       if (!jobStatus) return "";
       if (jobStatus === "IN_PROGRESS") {
-        console.log("⏳ Textract job still processing, adding to queue...");
+        console.log("⏳ Textract job still processing...");
         return ""; // Exit early since the job isn't done
       }
       if (jobStatus === "SUCCEEDED") {
