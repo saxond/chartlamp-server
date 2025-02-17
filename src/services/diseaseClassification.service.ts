@@ -188,29 +188,36 @@ export class DiseaseClassificationService {
     // return DiseaseClassificationModel.findOne({ icdCode }).lean();
     icdCode = icdCode.replace(/\./g, "").toUpperCase();
 
-    let diseaseC = await DiseaseClassificationModel.findOne({ icdCode }).lean();
+    let diseaseC = await DiseaseClassificationModel.findOne({
+      icdCode,
+      affectedBodyPartD: { $exists: true },
+    }).lean();
 
     if (!diseaseC) {
       diseaseC = await DiseaseClassificationModel.findOne({
         icdCode: new RegExp(`^${icdCode}`),
+        affectedBodyPartD: { $exists: true },
       }).lean();
     }
 
     if (!diseaseC) {
       diseaseC = await DiseaseClassificationModel.findOne({
         icdCode: new RegExp(`${icdCode}$`),
+        affectedBodyPartD: { $exists: true },
       }).lean();
     }
 
     if (!diseaseC) {
       diseaseC = await DiseaseClassificationModel.findOne({
         icdCode: icdCode.slice(0, -1),
+        affectedBodyPartD: { $exists: true },
       }).lean();
     }
 
     if (!diseaseC) {
       diseaseC = await DiseaseClassificationModel.findOne({
         icdCode: icdCode.slice(0, -2),
+        affectedBodyPartD: { $exists: true },
       }).lean();
     }
 
@@ -218,6 +225,7 @@ export class DiseaseClassificationService {
       const part = icdCode.slice(0, 3);
       diseaseC = await DiseaseClassificationModel.findOne({
         icdCode: new RegExp(`^${part}`),
+        affectedBodyPartD: { $exists: true },
       }).lean();
     }
 
@@ -234,7 +242,7 @@ export class DiseaseClassificationService {
       let diseaseC = await this.getDiseaseClassificationByIcdCode(icdCode);
 
       if (!diseaseC) {
-        throw new Error("Disease classification not found");
+        throw new Error("Disease classification not found!");
       }
 
       return [diseaseC.affectedBodyPartB];

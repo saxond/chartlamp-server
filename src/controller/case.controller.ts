@@ -1,10 +1,10 @@
 import { Request, Response } from "express";
 import { Types } from "mongoose";
 import { AuthRequest } from "../middleware/isAuth";
+import { CaseModel } from "../models/case.model";
 import { UserModel } from "../models/user.model";
 import { CaseService } from "../services/case.service"; // Ensure this path is correct
 import { DocumentService } from "../services/document.service";
-import { CaseModel } from "../models/case.model";
 
 const caseService = new CaseService();
 const documentService = new DocumentService();
@@ -576,8 +576,11 @@ export class CaseController {
   //runOcrDocumentExtraction
   async runOcrDocumentExtraction(req: Request, res: Response) {
     try {
-      const response = await caseService.runOcrDocumentExtraction();
-      res.status(200).json(response);
+      // const doc = await caseService.getOcrDocumentToProcess();
+      // if (doc) addBackgroundJob("extractOcr", { documentId: doc._id });
+      // if (doc) addBackgroundJob("extractOcr", { documentId: '123' });
+      // const result = await caseService.runOcrDocumentExtraction2();
+      res.status(200).json({});
     } catch (error) {
       handleError(res, error);
     }

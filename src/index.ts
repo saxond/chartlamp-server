@@ -16,6 +16,7 @@ import api from "./routes";
 import swaggerDocument from "./swagger/swagger.json";
 import corsOptions from "./utils/corsOption";
 import { connectToMongo } from "./utils/mongo";
+import { startBackgroundJobs } from "./utils/queue";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -44,17 +45,17 @@ cron.schedule("* * * * *", async () => {
   console.log("Running a task every minute!!");
 
   // if (process.env.NODE_ENV === "local") return;
-  
-  const ocr = await axios.get(
-    `${process.env.SERVER_URL as string}/api/v1/case/ocr`,
-    {
-      headers: {
-        "api-key": `${process.env.API_KEY}`,
-      },
-    }
-  );
 
-  console.log(ocr?.data);
+  // const ocr = await axios.get(
+  //   `${process.env.SERVER_URL as string}/api/v1/case/ocr`,
+  //   {
+  //     headers: {
+  //       "api-key": `${process.env.API_KEY}`,
+  //     },
+  //   }
+  // );
+
+  // console.log(ocr?.data);
 
   const result = await axios.get(
     `${process.env.SERVER_URL as string}/api/v1/case/process`,
@@ -75,6 +76,7 @@ const start = async (): Promise<void> => {
   try {
     console.error = () => {};
     await connectToMongo();
+    startBackgroundJobs();
     app.listen(PORT, () => {
       console.log(`Server started on port ${PORT}`);
     });
