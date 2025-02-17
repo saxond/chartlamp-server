@@ -481,19 +481,28 @@ export class CaseService {
           { cronStatus: "" },
           { cronStatus: { $exists: false } }, // Matches undefined (i.e., field does not exist)
         ],
+        env: process.env.NODE_ENV,
       },
       { cronStatus: CronStatus.Processing },
       { new: true }
     );
 
     if (!caseItem) {
-      return;
+      console.log("no case to process", {
+        $or: [
+          { cronStatus: CronStatus.Pending },
+          { cronStatus: "" },
+          { cronStatus: { $exists: false } }, // Matches undefined (i.e., field does not exist)
+        ],
+        env: process.env.NODE_ENV,
+      });
+      return null;
     }
 
-    if (caseItem.env && caseItem.env !== process.env.NODE_ENV) {
-      caseItem.cronStatus = CronStatus.Pending;
-      await caseItem.save();
-    }
+    // if (caseItem.env && caseItem.env !== process.env.NODE_ENV) {
+    //   caseItem.cronStatus = CronStatus.Pending;
+    //   await caseItem.save();
+    // }
 
     console.log(`Processing case: ${caseItem?._id}`);
 
