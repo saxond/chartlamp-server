@@ -474,33 +474,26 @@ export class CaseService {
   }
 
   async processCases() {
-    const caseItem = await CaseModel.findOneAndUpdate(
-      {
-        $or: [
-          { cronStatus: CronStatus.Pending },
-          { cronStatus: "" },
-          { cronStatus: { $exists: false } }, // Matches undefined (i.e., field does not exist)
-        ],
-        env: process.env.NODE_ENV,
-      },
-      { cronStatus: CronStatus.Processing },
-      { new: true }
-    );
+    const caseItem = await CaseModel.findOne({
+      $or: [
+        { cronStatus: CronStatus.Pending },
+        { cronStatus: "" },
+        { cronStatus: { $exists: false } },
+      ],
+      env: process.env.NODE_ENV,
+    });
 
     if (!caseItem) {
       console.log("no case to process");
       return null;
     }
 
-    // if (caseItem.env && caseItem.env !== process.env.NODE_ENV) {
-    //   caseItem.cronStatus = CronStatus.Pending;
-    //   await caseItem.save();
-    // }
-
     console.log(`Processing case: ${caseItem?._id}`);
 
     try {
       // Process the case
+      caseItem.cronStatus = CronStatus.Processing;
+      await caseItem.save();
       const hasError = await this.processCase(caseItem._id);
       console.log(`Processed case: ${caseItem?._id}`, { hasError });
       if (!hasError) {
