@@ -11,7 +11,11 @@ import { zodResponseFormat } from "openai/helpers/zod";
 import pdf from "pdf-parse";
 import { z } from "zod";
 import { CaseModel } from "../models/case.model";
-import { Document, DocumentModel, ExtractionStatus } from "../models/document.model";
+import {
+  Document,
+  DocumentModel,
+  ExtractionStatus,
+} from "../models/document.model";
 import {
   addOcrExtractionBackgroundJob,
   addOcrExtractionStatusPollingJob,
@@ -433,6 +437,13 @@ export class DocumentService {
   ): Promise<string> {
     try {
       console.log("Document URL:", documentUrl);
+
+      const isTiffDoc =
+        documentUrl.includes(".tiff") || documentUrl.includes(".tif");
+
+      if (isTiffDoc) {
+        throw new Error("Failed to extract content from document");
+      }
 
       // Download PDF from URL (S3 URL)
       const response = await axios.get(documentUrl, {
