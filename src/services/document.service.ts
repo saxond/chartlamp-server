@@ -10,7 +10,7 @@ import mongoose from "mongoose";
 import { zodResponseFormat } from "openai/helpers/zod";
 import pdf from "pdf-parse";
 import { z } from "zod";
-import { CaseModel } from "../models/case.model";
+import { CaseModel, NameOfDiseaseByIcdCode } from "../models/case.model";
 import {
   Document,
   DocumentModel,
@@ -238,15 +238,18 @@ export class DocumentService {
             result.amountSpent || ""
           );
           const dateOfClaim = await this.validateDateStr(result.date || "");
+
           const nameOfDisease = this.getDiseaseName(
             result.diseaseName,
             result.diagnosis
           );
+
           // typeof result.diseaseName === "string"
           //   ? result.diseaseName
           //   : Array.isArray(result.diseaseName)
           //   ? result.diseaseName.join(",")
           //   : "";
+
           const icdCodes = await this.getIcdCodeFromDescription(
             nameOfDisease + " " + result.medicalNote
           );
@@ -254,6 +257,7 @@ export class DocumentService {
           const diseaseNameByIcdCode = await this.getStreamlinedDiseaseName({
             icdCodes,
             diseaseNames: nameOfDisease,
+            note: nameOfDisease + " " + result.medicalNote,
           });
 
           //check to make sure
@@ -285,28 +289,30 @@ export class DocumentService {
   async getStreamlinedDiseaseName({
     icdCodes,
     diseaseNames,
+    note,
   }: {
     icdCodes: string[];
     diseaseNames: string;
-  }): Promise<
-    {
-      icdCode: string;
-      nameOfDisease: string;
-    }[]
-  > {
+    note?: string;
+  }): Promise<NameOfDiseaseByIcdCode[]> {
     if (!icdCodes.length || !/[a-zA-Z0-9]/.test(icdCodes.join(""))) return [];
     const IcdCodesToDiseaseName = z.object({
       data: z.array(
         z.object({
           icdCode: z.string(),
           nameOfDisease: z.string(),
+          summary: z.string(),
         })
       ),
     });
 
-    const prompt = `From this list of disease names: ${diseaseNames}, please match these disease names to their respective ICD codes: ${icdCodes.join(
+    const initial = `From this list of disease names: ${diseaseNames}, please match these disease names to their respective ICD codes: ${icdCodes.join(
       ","
     )}`;
+
+    const prompt = note
+      ? `${initial}. Also give a summary of why each ICD code is captured using this note: ${note}. You can start with a short description of the icd Code`
+      : `${initial}.`;
 
     const response = await this.openAiService.completeChat({
       context: "Match icd codes with disease names",
@@ -317,10 +323,13 @@ export class DocumentService {
     });
 
     if (!response?.data) return [];
-    const diseaseNameByIcdCode = response.data.map((item: any) => ({
-      icdCode: item.icdCode,
-      nameOfDisease: item.nameOfDisease,
-    }));
+    const diseaseNameByIcdCode: NameOfDiseaseByIcdCode[] = response.data.map(
+      (item: any) => ({
+        icdCode: item.icdCode,
+        nameOfDisease: item.nameOfDisease,
+        summary: item.summary,
+      })
+    );
     return diseaseNameByIcdCode;
   }
 
@@ -736,6 +745,7 @@ export class DocumentService {
         await DocumentModel.findByIdAndUpdate(document._id, {
           content: content,
           status: ExtractionStatus.SUCCESS,
+          isCompleted: true,
         });
         return { ...document, content };
       });

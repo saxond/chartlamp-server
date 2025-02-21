@@ -7,7 +7,6 @@ export enum ExtractionStatus {
   FAILED = 'FAILED',
 }
 
-
 @modelOptions({
   schemaOptions: {
     timestamps: true,
