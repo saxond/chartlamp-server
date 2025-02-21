@@ -31,12 +31,15 @@ export enum TagsType {
   NOT_DECIDED = "yet_to_be_decided",
 }
 
-class NameOfDiseaseByIcdCode {
+export class NameOfDiseaseByIcdCode {
   @prop()
   public icdCode!: string;
 
   @prop()
   public nameOfDisease!: string;
+
+  @prop()
+  public summary?: string;
 }
 
 class Report {

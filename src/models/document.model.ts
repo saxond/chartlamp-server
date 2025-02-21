@@ -7,7 +7,6 @@ export enum ExtractionStatus {
   FAILED = 'FAILED',
 }
 
-
 @modelOptions({
   schemaOptions: {
     timestamps: true,
@@ -27,6 +26,9 @@ export class Document {
 
   @prop({ default: null })
   public extractedData?: string;
+
+  @prop({ default: false })
+  public isCompleted!: boolean;
 
   //job Id from the document processing service
   @prop({ default: null })

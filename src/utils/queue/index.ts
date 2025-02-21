@@ -1,8 +1,6 @@
-import IORedis from 'ioredis';
-import {  caseQueueName } from "./types";
-import {createWorker} from './worker.factory';
-import casePopulationProcessor from './workers/casePopulation';
-import { redisOptions as redisOptionsI} from '../redis/config';
+import { redisOptions as redisOptionsI } from "../redis/config";
+import { createOcrExtractionWorker } from "./ocrExtraction/worker";
+import { createOcrExtractionStatusWorker } from "./ocrExtractionStatus/worker";
 
 export async function startBackgroundJobs() {
   const redisOptions = {
@@ -10,19 +8,15 @@ export async function startBackgroundJobs() {
     maxRetriesPerRequest: null,
   };
 
-  const { worker: casePopulationWorker } = createWorker(
-    caseQueueName,
-    casePopulationProcessor,
-    new IORedis(redisOptions)
-  );
-
-  await casePopulationWorker.startStalledCheckTimer();
+  const ocrExtractionWorker = await createOcrExtractionWorker();
+  const ocrExtractionStatusWorker = await createOcrExtractionStatusWorker();
 
   const shutdown = async () => {
-    await casePopulationWorker.close();
+    await ocrExtractionWorker.close();
+    await ocrExtractionStatusWorker.close();
     process.exit(0);
   };
 
-  process.on('SIGTERM', shutdown);
-  process.on('SIGINT', shutdown);
+  process.on("SIGTERM", shutdown);
+  process.on("SIGINT", shutdown);
 }

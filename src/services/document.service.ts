@@ -1,6 +1,8 @@
 import {
   FeatureType,
   GetDocumentAnalysisCommand,
+  GetDocumentAnalysisCommandOutput,
+  JobStatus,
   StartDocumentAnalysisCommand,
 } from "@aws-sdk/client-textract";
 import axios from "axios";
@@ -8,8 +10,17 @@ import mongoose from "mongoose";
 import { zodResponseFormat } from "openai/helpers/zod";
 import pdf from "pdf-parse";
 import { z } from "zod";
-import { CaseModel } from "../models/case.model";
-import { Document, DocumentModel } from "../models/document.model";
+import { CaseModel, NameOfDiseaseByIcdCode } from "../models/case.model";
+import {
+  Document,
+  DocumentModel,
+  ExtractionStatus,
+} from "../models/document.model";
+import {
+  addOcrExtractionBackgroundJob,
+  addOcrExtractionStatusPollingJob,
+  cancelOcrExtractionPolling,
+} from "../utils/queue/producer";
 import { textractClient } from "../utils/textract";
 import OpenAIService from "./openai.service";
 
@@ -180,7 +191,7 @@ export class DocumentService {
       response_format: zodResponseFormat(MedicalRecord, "report"),
     });
 
-    console.log("processContentChunk", response);
+    // console.log("processContentChunk", response);
     return response;
   }
 
@@ -222,20 +233,23 @@ export class DocumentService {
 
       // Create report objects from flattened results
       const reportObjects = await Promise.all(
-        flattenedResults.map(async (result: ResultType) => {
+        flattenedResults.flatMap(async (result: ResultType) => {
           const amountSpent = await this.validateAmount(
             result.amountSpent || ""
           );
           const dateOfClaim = await this.validateDateStr(result.date || "");
+
           const nameOfDisease = this.getDiseaseName(
             result.diseaseName,
             result.diagnosis
           );
+
           // typeof result.diseaseName === "string"
           //   ? result.diseaseName
           //   : Array.isArray(result.diseaseName)
           //   ? result.diseaseName.join(",")
           //   : "";
+
           const icdCodes = await this.getIcdCodeFromDescription(
             nameOfDisease + " " + result.medicalNote
           );
@@ -243,24 +257,29 @@ export class DocumentService {
           const diseaseNameByIcdCode = await this.getStreamlinedDiseaseName({
             icdCodes,
             diseaseNames: nameOfDisease,
+            note: nameOfDisease + " " + result.medicalNote,
           });
 
           //check to make sure
 
-          return {
-            icdCodes,
-            nameOfDisease: nameOfDisease || "",
-            amountSpent: amountSpent || 0,
-            providerName: result.providerName || "",
-            doctorName: result.doctorName || "",
-            medicalNote: result.medicalNote || "",
-            dateOfClaim,
-            nameOfDiseaseByIcdCode: diseaseNameByIcdCode,
-          };
+          if (nameOfDisease.toLowerCase() === "not specified") return [];
+
+          return [
+            {
+              icdCodes,
+              nameOfDisease: nameOfDisease || "",
+              amountSpent: amountSpent || 0,
+              providerName: result.providerName || "",
+              doctorName: result.doctorName || "",
+              medicalNote: result.medicalNote || "",
+              dateOfClaim,
+              nameOfDiseaseByIcdCode: diseaseNameByIcdCode,
+            },
+          ];
         })
       );
 
-      return reportObjects;
+      return reportObjects.flat();
     } catch (error) {
       console.log("Error processing document content:", error);
       return [];
@@ -270,27 +289,30 @@ export class DocumentService {
   async getStreamlinedDiseaseName({
     icdCodes,
     diseaseNames,
+    note,
   }: {
     icdCodes: string[];
     diseaseNames: string;
-  }): Promise<
-    {
-      icdCode: string;
-      nameOfDisease: string;
-    }[]
-  > {
+    note?: string;
+  }): Promise<NameOfDiseaseByIcdCode[]> {
+    if (!icdCodes.length || !/[a-zA-Z0-9]/.test(icdCodes.join(""))) return [];
     const IcdCodesToDiseaseName = z.object({
       data: z.array(
         z.object({
           icdCode: z.string(),
           nameOfDisease: z.string(),
+          summary: z.string(),
         })
       ),
     });
 
-    const prompt = `From this list of disease names: ${diseaseNames}, please match these disease names to their respective ICD codes: ${icdCodes.join(
+    const initial = `From this list of disease names: ${diseaseNames}, please match these disease names to their respective ICD codes: ${icdCodes.join(
       ","
     )}`;
+
+    const prompt = note
+      ? `${initial}. Also give a summary of why each ICD code is captured using this note: ${note}. You can start with a short description of the icd Code`
+      : `${initial}.`;
 
     const response = await this.openAiService.completeChat({
       context: "Match icd codes with disease names",
@@ -301,10 +323,13 @@ export class DocumentService {
     });
 
     if (!response?.data) return [];
-    const diseaseNameByIcdCode = response.data.map((item: any) => ({
-      icdCode: item.icdCode,
-      nameOfDisease: item.nameOfDisease,
-    }));
+    const diseaseNameByIcdCode: NameOfDiseaseByIcdCode[] = response.data.map(
+      (item: any) => ({
+        icdCode: item.icdCode,
+        nameOfDisease: item.nameOfDisease,
+        summary: item.summary,
+      })
+    );
     return diseaseNameByIcdCode;
   }
 
@@ -317,6 +342,8 @@ export class DocumentService {
       }
 
       const results = await this.processDocumentContent(content);
+
+      console.log("generateReportForDocument", results);
 
       // Add document ID to each result
       return results.map((result) => ({
@@ -352,6 +379,9 @@ export class DocumentService {
       };
 
       //start document analysis
+      // const startDocumentAnalysisCommand = new StartDocumentAnalysisCommand(
+      //   params
+      // );
       const startDocumentAnalysisCommand = new StartDocumentAnalysisCommand(
         params
       );
@@ -379,12 +409,13 @@ export class DocumentService {
     }
   }
 
-  //get document analysis output
+  // //get document analysis output
   async getDocumentAnalysisOutput(
     jobId: string,
     nextToken?: string
-  ): Promise<any> {
+  ): Promise<GetDocumentAnalysisCommandOutput> {
     try {
+      // console.log("getDocumentAnalysisOutput", jobId);
       const params = {
         JobId: jobId,
         MaxResults: 1000,
@@ -392,6 +423,9 @@ export class DocumentService {
       };
 
       //get document analysis output
+      // const startDocumentAnalysisCommand = new GetDocumentAnalysisCommand(
+      //   params
+      // );
       const startDocumentAnalysisCommand = new GetDocumentAnalysisCommand(
         params
       );
@@ -413,6 +447,13 @@ export class DocumentService {
     try {
       console.log("Document URL:", documentUrl);
 
+      const isTiffDoc =
+        documentUrl.includes(".tiff") || documentUrl.includes(".tif");
+
+      if (isTiffDoc) {
+        throw new Error("Failed to extract content from document");
+      }
+
       // Download PDF from URL (S3 URL)
       const response = await axios.get(documentUrl, {
         responseType: "arraybuffer",
@@ -432,19 +473,8 @@ export class DocumentService {
 
       // If the content is empty, try to extract using Textract
       if (!content) {
-        content = await this.extractContentFromDocumentUsingTextract(
-          documentUrl
-        );
-        // If documentId is provided, update the document with the jobId
-        if (documentId) {
-          await DocumentModel.findByIdAndUpdate(documentId, {
-            jobId: content,
-          });
-          content = "";
-        }
+        throw new Error("Failed to extract content from document");
       }
-
-      console.log("Content:", content);
 
       // Return content
       return content;
@@ -454,39 +484,78 @@ export class DocumentService {
         (await this.extractContentFromDocumentUsingTextract(documentUrl)) || "";
       // If documentId is provided, update the document with the jobId
       if (documentId) {
-        await DocumentModel.findByIdAndUpdate(documentId, {
+        const doc = await DocumentModel.findByIdAndUpdate(documentId, {
           jobId: content,
         });
-        content = "";
+        if (doc) {
+          await addOcrExtractionBackgroundJob("extractOcr", {
+            documentId: doc._id,
+          });
+          await addOcrExtractionStatusPollingJob(content);
+        }
       }
-      return content;
+      content = "";
+      return "";
     }
   }
 
-  //get combine document content using jobId
+  async getTextractJobStatus(jobId: string): Promise<JobStatus | undefined> {
+    try {
+      const command = new GetDocumentAnalysisCommand({ JobId: jobId });
+      const response: GetDocumentAnalysisCommandOutput =
+        await textractClient.send(command);
+
+      console.log(`ℹ️ Textract Job ${jobId} Status:`, response.JobStatus);
+
+      return response.JobStatus;
+    } catch (error) {
+      console.error(
+        `❌ Error fetching Textract job status for ${jobId}:`,
+        error
+      );
+      throw new Error("Failed to get Textract job status");
+    }
+  }
+
   async getCombinedDocumentContent(jobId: string): Promise<string> {
     try {
-      let nextToken;
+      let nextToken: string | undefined = undefined;
       let combinedContent = "";
+      console.log("Fetching combined document content for job:", jobId);
 
+      // 1️⃣ Check if Textract job is still running before fetching results
+      const jobStatus = await this.getTextractJobStatus(jobId);
+      if (!jobStatus) return "";
+      if (jobStatus === "IN_PROGRESS") {
+        console.log("⏳ Textract job still processing...");
+        return ""; // Exit early since the job isn't done
+      }
+      if (jobStatus === "SUCCEEDED") {
+        console.log("✅ Textract job completed successfully");
+        cancelOcrExtractionPolling(jobId);
+      }
+
+      console.log("⏳ Running loop to get ocr content");
+
+      // 2️⃣ Fetch document content in pages
       do {
         const response = await this.getDocumentAnalysisOutput(jobId, nextToken);
-        const blocks = response.Blocks;
+        // console.log("Fetched document content:", response);
 
-        if (blocks) {
-          for (const block of blocks) {
+        if (response.Blocks) {
+          for (const block of response.Blocks) {
             if (block.BlockType === "LINE") {
               combinedContent += block.Text + "\n";
             }
           }
         }
 
-        nextToken = response.NextToken;
+        nextToken = response.NextToken; // Move to next page
       } while (nextToken);
 
-      return combinedContent;
+      return combinedContent || ""; // Ensure a string is always returned
     } catch (error) {
-      console.error("Error getting combined document content:", error);
+      console.error("❌ Error getting combined document content:", error);
       throw new Error("Failed to get combined document content");
     }
   }
@@ -527,7 +596,7 @@ export class DocumentService {
     }
   }
 
-  async extractCaseDocumentData(caseId: string): Promise<any> {
+  async extractCaseDocumentData(caseId: string) {
     try {
       // Get documents from the database that do not have content extracted
       const documents = await DocumentModel.find({
@@ -535,11 +604,9 @@ export class DocumentService {
         case: caseId,
       }).lean();
 
-      if (!documents.length) {
-        return [];
-      }
+      if (!documents.length) return null;
 
-      let hasError = false;
+      let hasError = true;
 
       // Extract content from each document
       const updatePromises = documents.map(async (document) => {
@@ -547,12 +614,12 @@ export class DocumentService {
           document.url,
           document._id
         );
-        if (!content) {
-          hasError = true;
+        if (content) {
+          hasError = false;
+          await DocumentModel.findByIdAndUpdate(document._id, {
+            extractedData: content,
+          });
         }
-        await DocumentModel.findByIdAndUpdate(document._id, {
-          extractedData: content,
-        });
         return { ...document, extractedData: content };
       });
 
@@ -677,6 +744,8 @@ export class DocumentService {
         );
         await DocumentModel.findByIdAndUpdate(document._id, {
           content: content,
+          status: ExtractionStatus.SUCCESS,
+          isCompleted: true,
         });
         return { ...document, content };
       });
@@ -812,5 +881,9 @@ export class DocumentService {
       console.error("Error extracting report from document:", error);
       throw new Error("Failed to extract report from document");
     }
+  }
+
+  async deleteAllCaseDocument(caseId: string) {
+    return DocumentModel.deleteMany({ case: caseId });
   }
 }
