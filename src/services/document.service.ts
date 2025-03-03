@@ -1,13 +1,17 @@
 import {
+  AnalyzeDocumentCommand,
   FeatureType,
   GetDocumentAnalysisCommand,
   GetDocumentAnalysisCommandOutput,
   JobStatus,
+  SelectionStatus,
   StartDocumentAnalysisCommand,
 } from "@aws-sdk/client-textract";
 import axios from "axios";
+import fs from "fs";
 import mongoose from "mongoose";
 import { zodResponseFormat } from "openai/helpers/zod";
+import path from "path";
 import pdf from "pdf-parse";
 import { z } from "zod";
 import { CaseModel, NameOfDiseaseByIcdCode } from "../models/case.model";
@@ -181,7 +185,30 @@ export class DocumentService {
       date: z.string(),
     });
 
-    const prompt = `Here's the extracted document of a patient's medical record: ${chunk} I want you to process this text and provide me the information`;
+    // const prompt = `Here's the extracted document of a patient's medical record: ${chunk} I want you to process this text and provide me the information.
+    //  please ignore any questionnaire like content`;
+
+    const prompt = `
+You are processing a patient's medical document. Extract the following structured data:
+- Disease name(s)
+- Diagnosis(es)
+- Amount spent
+- Provider name
+- Doctor's name
+- Medical notes
+- Date
+
+❗️ Important Instructions:
+- Ignore any questionnaire-like content, such as sections with "Yes/No" questions, checkboxes, or form-style fields.
+- Do NOT extract sections like:
+  - "Do you smoke? Yes/No"
+  - "Are you taking medication? Yes/No"
+  - "What surgeries have you had?"
+  - Lists of conditions with checkboxes.
+
+Extracted document:
+"${chunk}"
+`;
 
     const response = await this.openAiService.completeChat({
       context: "Extract the patient report from the document",
@@ -192,7 +219,7 @@ export class DocumentService {
     });
 
     // console.log("processContentChunk", response);
-    return response;
+    return { ...response, chunk };
   }
 
   private getDiseaseName(
@@ -226,6 +253,7 @@ export class DocumentService {
         providerName: string;
         doctorName: string;
         medicalNote: string;
+        chunk: string;
       };
 
       // Flatten the results array
@@ -258,6 +286,7 @@ export class DocumentService {
             icdCodes,
             diseaseNames: nameOfDisease,
             note: nameOfDisease + " " + result.medicalNote,
+            chunk: result.chunk,
           });
 
           //check to make sure
@@ -274,6 +303,7 @@ export class DocumentService {
               medicalNote: result.medicalNote || "",
               dateOfClaim,
               nameOfDiseaseByIcdCode: diseaseNameByIcdCode,
+              chunk: result.chunk,
             },
           ];
         })
@@ -290,29 +320,50 @@ export class DocumentService {
     icdCodes,
     diseaseNames,
     note,
+    chunk,
   }: {
     icdCodes: string[];
     diseaseNames: string;
+    chunk: string;
     note?: string;
   }): Promise<NameOfDiseaseByIcdCode[]> {
     if (!icdCodes.length || !/[a-zA-Z0-9]/.test(icdCodes.join(""))) return [];
+
     const IcdCodesToDiseaseName = z.object({
       data: z.array(
         z.object({
           icdCode: z.string(),
           nameOfDisease: z.string(),
           summary: z.string(),
+          excerpt: z.string(),
+          pageNumber: z.number(),
         })
       ),
     });
 
-    const initial = `From this list of disease names: ${diseaseNames}, please match these disease names to their respective ICD codes: ${icdCodes.join(
-      ","
-    )}`;
+const basePrompt = `
+Your task:
+1. From this list of disease names: ${diseaseNames}, please match these disease names to their respective ICD codes: ${icdCodes.join(
+  ","
+)}.
+   
+2. Use the following text to find these matches:
+\n${chunk}\n
 
-    const prompt = note
-      ? `${initial}. Also give a summary of why each ICD code is captured using this note: ${note}. You can start with a short description of the icd Code`
-      : `${initial}.`;
+For each matched ICD code, extract the following:
+- An **excerpt** that includes the **exact line where the match is found**, along with **10 words before and 10 words after**.
+- The **pageNumber** where the match occurs.
+- A brief **summary** explaining why this ICD code is relevant in the context of the provided text.
+
+Please ensure the output is clear, structured, and easy to parse.
+`;
+
+// Important: 
+// - Only use the ICD codes provided.
+// - If no match exists for a disease name, do not assign an ICD code.
+// - Do not generate or assume additional ICD codes beyond the provided list.
+
+    const prompt = `${basePrompt}`.trim();
 
     const response = await this.openAiService.completeChat({
       context: "Match icd codes with disease names",
@@ -328,6 +379,8 @@ export class DocumentService {
         icdCode: item.icdCode,
         nameOfDisease: item.nameOfDisease,
         summary: item.summary,
+        excerpt: item.excerpt,
+        pageNumber: item.pageNumber,
       })
     );
     return diseaseNameByIcdCode;
@@ -343,7 +396,7 @@ export class DocumentService {
 
       const results = await this.processDocumentContent(content);
 
-      console.log("generateReportForDocument", results);
+      // console.log("generateReportForDocument", results);
 
       // Add document ID to each result
       return results.map((result) => ({
@@ -429,7 +482,7 @@ export class DocumentService {
       const startDocumentAnalysisCommand = new GetDocumentAnalysisCommand(
         params
       );
-
+      AnalyzeDocumentCommand;
       const response = await textractClient.send(startDocumentAnalysisCommand);
 
       return response;
@@ -459,7 +512,6 @@ export class DocumentService {
         responseType: "arraybuffer",
       });
       const pdfBuffer = response.data;
-
       // Extract content from PDF
       const data = await pdf(pdfBuffer);
       let content = data.text;
@@ -517,10 +569,61 @@ export class DocumentService {
     }
   }
 
+  async checkIfPageIsQuestionnaire(pageText: string) {
+    const prompt = `
+    You are an assistant that classifies pages of a document.
+
+    Analyze the following page text and determine if it looks like:
+    - A page containing a list of questions, quiz questions, interview questions, survey forms, or any questionnaire-like content.
+    - Or if it is a normal page with paragraphs, explanations, or general content.
+
+    Respond with "QUESTION" if the page is primarily question-like.
+    Respond with "CONTENT" if the page is normal content.
+
+    Page Text:
+    ${pageText}
+
+    Response (just "QUESTION" or "CONTENT", nothing else):
+    `;
+
+    const response = await this.openAiService.completeChat({
+      context: "You classify document pages.",
+      prompt,
+      model: "gpt-4o",
+      temperature: 0.4,
+    });
+
+    // console.log("checkIfPageIsQuestion", response);
+    const result = response;
+
+    return result === "QUESTION";
+  }
+
+  async filterQuestionPages(pageContents: { [key: string]: string }) {
+    const filteredPages: any = {};
+
+    for (const [page, content] of Object.entries(pageContents)) {
+      const isQuestionPage = await this.checkIfPageIsQuestionnaire(content);
+      if (!isQuestionPage) {
+        filteredPages[page] = content;
+      } else {
+        // console.log(`Page ${page} looks like a question page and was skipped.`);
+        let contentOut = "";
+        contentOut += `--- Page ${page} ---\n`;
+        contentOut += content + "\n";
+        fs.appendFileSync(
+          path.join(__dirname, "filtered_out_document_output.txt"),
+          contentOut
+        );
+      }
+    }
+
+    return filteredPages;
+  }
+
   async getCombinedDocumentContent(jobId: string): Promise<string> {
     try {
       let nextToken: string | undefined = undefined;
-      let combinedContent = "";
       console.log("Fetching combined document content for job:", jobId);
 
       // 1️⃣ Check if Textract job is still running before fetching results
@@ -537,25 +640,78 @@ export class DocumentService {
 
       console.log("⏳ Running loop to get ocr content");
 
-      // 2️⃣ Fetch document content in pages
+      // // 2️⃣ Fetch document content in pages
+
+      const pageContents: any = {}; // Keyed by page number
       do {
         const response = await this.getDocumentAnalysisOutput(jobId, nextToken);
-        // console.log("Fetched document content:", response);
 
         if (response.Blocks) {
+          const selectionElements = response.Blocks.filter(
+            (b) =>
+              b.BlockType === "SELECTION_ELEMENT"
+              // &&
+              // b.SelectionStatus === SelectionStatus.NOT_SELECTED
+          );
+
+          // Example: build a set of page numbers that have checkboxes
+          const pagesWithCheckboxes = new Set(
+            selectionElements.map((b) => b.Page)
+          );
+
+          // console.log("pagesWithCheckboxes", pagesWithCheckboxes);
           for (const block of response.Blocks) {
+            if (pagesWithCheckboxes.has(block.Page)) {
+              // Optional: skip the page or process differently
+              // console.log(
+              //   `Skipping line on page ${block.Page} because it has checkboxes ${block.BlockType}`
+              // );
+              continue;
+            }
             if (block.BlockType === "LINE") {
-              combinedContent += block.Text + "\n";
+              const pageNumber = block.Page || 1; // Defaults to page 1 if no page (shouldn't happen with PDFs)
+
+
+              if (!pageContents[pageNumber]) {
+                pageContents[pageNumber] = ""; // Initialize for each page
+              }
+
+              pageContents[pageNumber] += block.Text + "\n";
             }
           }
         }
 
-        nextToken = response.NextToken; // Move to next page
+        nextToken = response.NextToken; // Move to next set of blocks
       } while (nextToken);
 
-      return combinedContent || ""; // Ensure a string is always returned
+      // Combine all pages into a single string with page headers
+      let fileContent = "";
+      for (const [page, content] of Object.entries(pageContents)) {
+        fileContent += `--- Page ${page} ---\n`;
+        fileContent += content + "\n";
+      }
+
+      fs.writeFileSync(
+        path.join(__dirname, "document_output.txt"),
+        fileContent
+      );
+
+      const filteredPages = await this.filterQuestionPages(pageContents);
+      let filteredFileContent = "";
+      // Write filtered content to file
+      for (const [page, content] of Object.entries(filteredPages)) {
+        filteredFileContent += `--- Page ${page} ---\n`;
+        filteredFileContent += content + "\n";
+      }
+
+      fs.writeFileSync(
+        path.join(__dirname, "filtered_in_document_output.txt"),
+        filteredFileContent
+      );
+
+      return filteredFileContent || "";
     } catch (error) {
-      console.error("❌ Error getting combined document content:", error);
+      console.log("❌ Error getting combined document content:", error);
       throw new Error("Failed to get combined document content");
     }
   }

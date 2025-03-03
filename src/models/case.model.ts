@@ -40,9 +40,17 @@ export class NameOfDiseaseByIcdCode {
 
   @prop()
   public summary?: string;
+
+  @prop()
+  public chunk?: string;
+
+  @prop()
+  public pageNumber?: number;
 }
 
 class Report {
+  public _id?: string;
+
   @prop({ type: () => [String], default: [] })
   public icdCodes?: string[];
 
@@ -54,6 +62,9 @@ class Report {
 
   @prop()
   public icdCode?: string;
+
+  @prop()
+  public chunk?: string;
 
   @prop()
   public amountSpent?: string;
