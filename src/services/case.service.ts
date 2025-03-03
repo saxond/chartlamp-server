@@ -1252,7 +1252,7 @@ export class CaseService {
         },
         { new: true }
       );
-      console.log("Ocr Case Extraction Reports =>", updatedCase?.reports);
+      // console.log("Ocr Case Extraction Reports =>", updatedCase?.reports);
     }
     return results;
   }
