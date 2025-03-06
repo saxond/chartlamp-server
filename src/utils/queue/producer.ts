@@ -1,5 +1,6 @@
 import { Queue } from "bullmq";
 import { redisOptions } from "../redis/config";
+import { createIcdcodeClassificationQueue } from "./icdcodeClassification/queue";
 import { createOcrQueue } from "./ocrExtraction/queue";
 import { createOcrStatusQueue } from "./ocrExtractionStatus/queue";
 import { caseQueueName } from "./types";
@@ -10,6 +11,7 @@ const casePopulationQueue = new Queue(caseQueueName, {
 
 const ocrExtractionQueue = createOcrQueue();
 const ocrExtractionStatusQueue = createOcrStatusQueue();
+const icdcodeClassificationQueue = createIcdcodeClassificationQueue();
 
 export async function addOcrExtractionBackgroundJob(
   jobName: string,
@@ -19,6 +21,21 @@ export async function addOcrExtractionBackgroundJob(
   try {
     await ocrExtractionQueue.add(jobName, input, {
       jobId: `ocr-${input.documentId}`,
+    });
+  } catch (error) {
+    console.error("Error adding job to background:", error);
+    throw error;
+  }
+}
+
+export async function addIcdcodeClassificationBackgroundJob(
+  jobName: string,
+  input?: any
+) {
+  console.log("adding job to backgrounds...", { jobName, input });
+  try {
+    await icdcodeClassificationQueue.add(jobName, input, {
+      jobId: `icd-cls-${input.reportId}-${input.icdCodes[0]}`,
     });
   } catch (error) {
     console.error("Error adding job to background:", error);

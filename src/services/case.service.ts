@@ -13,6 +13,7 @@ import { DocumentModel, ExtractionStatus } from "../models/document.model";
 import { Organization } from "../models/organization.model";
 import { UserModel } from "../models/user.model";
 // import { redis } from "../utils/redis";
+import { addIcdcodeClassificationBackgroundJob } from "../utils/queue/producer";
 import { DiseaseClassificationService } from "./diseaseClassification.service";
 import { DocumentService } from "./document.service";
 import notificationService from "./notification.service";
@@ -92,7 +93,7 @@ export class CaseService {
 
   // Get a case by ID
   async getCaseById(id: Types.ObjectId) {
-    const caseData = await CaseModel.findById(id)
+    const caseData = await CaseModel.findById(id, { "reports.chunk": 0 })
       .lean()
       .populate("user", "email name role profilePicture");
     // .populate("tags");
@@ -462,11 +463,15 @@ export class CaseService {
   //process case
   async processCase(caseId: string) {
     try {
+      console.log("processCase... ⌛");
       const reponse = await this.documentService.extractCaseDocumentData(
         caseId
       );
+      console.log("extractCaseDocumentData... ✅");
       await this.documentService.extractCaseDocumentWithoutContent(caseId);
+      console.log("extractCaseDocumentWithoutContent... ✅");
       await this.populateReportFromCaseDocuments(caseId);
+      console.log("populateReportFromCaseDocuments... ✅");
       return reponse?.hasError || false;
     } catch (error) {
       console.error("Error processing case:", error);
@@ -1247,7 +1252,7 @@ export class CaseService {
         },
         { new: true }
       );
-      console.log("Ocr Case Extraction Reports =>", updatedCase?.reports);
+      // console.log("Ocr Case Extraction Reports =>", updatedCase?.reports);
     }
     return results;
   }
@@ -1278,6 +1283,26 @@ export class CaseService {
     }
   }
 
+  async queueIcdcodeCls({
+    icdCodes,
+    diseaseNames,
+    caseId,
+    reportId,
+  }: {
+    icdCodes: string[];
+    diseaseNames: string;
+    caseId: string;
+    reportId: string;
+  }) {
+    await addIcdcodeClassificationBackgroundJob("icdcode-cls", {
+      caseId,
+      reportId,
+      icdCodes,
+      diseaseNames,
+    });
+    return true;
+  }
+
   async getStreamlinedDiseaseName({
     icdCodes,
     diseaseNames,
@@ -1289,27 +1314,46 @@ export class CaseService {
     caseId: string;
     reportId: string;
   }) {
-    const diseaseNameByIcdCode = this.documentService.getStreamlinedDiseaseName(
-      {
-        icdCodes,
+    const caseList = await CaseModel.findById(caseId);
+    if (!caseList) return null;
+    const reportToUpdateIndex = caseList.reports.findIndex(
+      (report: any) => report?._id.toString() === reportId
+    );
+    console.log("reportToUpdateIndex", reportToUpdateIndex);
+
+    if (reportToUpdateIndex < 0) return null;
+    const report = caseList.reports[reportToUpdateIndex];
+    if (!report) return null;
+
+    console.log("reportToUpdateIndex 2", report?._id);
+
+    const diseaseNameByIcdCode =
+      await this.documentService.getStreamlinedDiseaseName({
+        icdCodes: icdCodes.reverse(),
         diseaseNames,
-      }
+        chunk: report?.chunk || "",
+      });
+
+    console.log("reportToUpdateIndex 3", diseaseNameByIcdCode);
+    const nameOfDiseaseByIcdCode = report.nameOfDiseaseByIcdCode || [];
+
+    const existingIcdCodes = new Set(
+      nameOfDiseaseByIcdCode.map((d) => d.icdCode)
     );
 
-    await CaseModel.findOneAndUpdate(
-      {
-        _id: caseId,
-        "reports._id": reportId,
-      },
-      {
-        $set: {
-          "reports.$.nameOfDiseaseByIcdCode": diseaseNameByIcdCode,
-        },
-      }
-    );
+    // Merge and filter so that only new items with unique icdCodes are added
+    const mergedDiseaseNameByIcdCode = [
+      ...nameOfDiseaseByIcdCode,
+      ...diseaseNameByIcdCode.filter(
+        (newItem) => !existingIcdCodes.has(newItem.icdCode)
+      ),
+    ];
 
-    // console.log(diseaseNameByIcdCode);
-    return diseaseNameByIcdCode;
+    caseList.reports[reportToUpdateIndex].nameOfDiseaseByIcdCode =
+      mergedDiseaseNameByIcdCode;
+    await caseList.save();
+
+    return mergedDiseaseNameByIcdCode;
   }
 
   async createCaseTag({
