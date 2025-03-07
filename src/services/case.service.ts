@@ -112,6 +112,38 @@ export class CaseService {
     return { ...caseData, documents };
   }
 
+  async updateCaseDetails({
+    caseId,
+    user,
+    caseNumber,
+    plaintiff,
+    targetCompletion,
+  }: {
+    caseId: string;
+    user: string;
+    caseNumber: string;
+    plaintiff: string;
+    targetCompletion: string;
+  }) {
+    const caseData = await CaseModel.findOneAndUpdate(
+      {
+        _id: caseId,
+        user,
+      },
+      {
+        plaintiff,
+        caseNumber,
+        targetCompletion,
+      },
+      { new: true }
+    );
+
+    if (!caseData) {
+      return null;
+    }
+    return caseData;
+  }
+
   async getCaseByIdWithBodyParts(caseId: string) {
     const caseResponse = await this.getCaseById(new Types.ObjectId(caseId));
     if (!caseResponse?.reports) return null;
@@ -220,17 +252,22 @@ export class CaseService {
   }: {
     userId: string;
     query?: {
+      showFav: string;
       claimStatus?: string;
     };
   }) {
     const user = await UserModel.findById(userId).lean();
     if (!user) throw new Error("User not found");
-    console.log("role", user.role);
+    console.log("role", query);
     if (user.role === "admin") {
       const adminQuery: mongoose.FilterQuery<any> = {};
 
       if (query?.claimStatus) {
         adminQuery["claimStatus"] = query.claimStatus;
+      }
+
+      if (query?.showFav) {
+        adminQuery["isFavorite"] = query.showFav == 'true';
       }
 
       return CaseModel.find(

@@ -7,6 +7,7 @@ const caseController = new CaseController();
 
 // Case routes
 router.post("/", isAuthenticated, caseController.create);
+router.patch("/:id", isAuthenticated, caseController.updateCaseDetails);
 router.get("/", isAuthenticated, caseController.getAll);
 router.get("/process", caseController.processCases);
 //ocr runOcrDocumentExtraction
