@@ -58,6 +58,19 @@ export class CaseController {
     }
   }
 
+  async getCaseExtractionStatus(req: AuthRequest, res: Response) {
+    try {
+      const { id } = req.params;
+      const caseData = await caseService.getCaseExtractionStatus(id);
+      if (!caseData) {
+        return res.status(404).json({ message: "Case not found" });
+      }
+      res.status(200).json(caseData);
+    } catch (error) {
+      handleError(res, error);
+    }
+  }
+
   async getCaseByIdWithBodyParts(req: AuthRequest, res: Response) {
     try {
       const { id } = req.params;
