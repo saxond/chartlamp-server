@@ -4,7 +4,6 @@ import {
   GetDocumentAnalysisCommand,
   GetDocumentAnalysisCommandOutput,
   JobStatus,
-  SelectionStatus,
   StartDocumentAnalysisCommand,
 } from "@aws-sdk/client-textract";
 import axios from "axios";
@@ -13,6 +12,7 @@ import mongoose from "mongoose";
 import { zodResponseFormat } from "openai/helpers/zod";
 import path from "path";
 import pdf from "pdf-parse";
+import { dynamicImport } from "tsimportlib";
 import { z } from "zod";
 import { CaseModel, NameOfDiseaseByIcdCode } from "../models/case.model";
 import {
@@ -20,11 +20,7 @@ import {
   DocumentModel,
   ExtractionStatus,
 } from "../models/document.model";
-import {
-  addOcrExtractionBackgroundJob,
-  addOcrExtractionStatusPollingJob,
-  cancelOcrExtractionPolling,
-} from "../utils/queue/producer";
+import { addOcrExtractionBackgroundJob, addOcrExtractionStatusPollingJob, cancelOcrExtractionPolling } from "../utils/queue/producer";
 import { textractClient } from "../utils/textract";
 import OpenAIService from "./openai.service";
 
@@ -341,11 +337,11 @@ Extracted document:
       ),
     });
 
-const basePrompt = `
+    const basePrompt = `
 Your task:
 1. From this list of disease names: ${diseaseNames}, please match these disease names to their respective ICD codes: ${icdCodes.join(
-  ","
-)}.
+      ","
+    )}.
    
 2. Use the following text to find these matches:
 \n${chunk}\n
@@ -358,10 +354,10 @@ For each matched ICD code, extract the following:
 Please ensure the output is clear, structured, and easy to parse.
 `;
 
-// Important: 
-// - Only use the ICD codes provided.
-// - If no match exists for a disease name, do not assign an ICD code.
-// - Do not generate or assume additional ICD codes beyond the provided list.
+    // Important:
+    // - Only use the ICD codes provided.
+    // - If no match exists for a disease name, do not assign an ICD code.
+    // - Do not generate or assume additional ICD codes beyond the provided list.
 
     const prompt = `${basePrompt}`.trim();
 
@@ -492,6 +488,46 @@ Please ensure the output is clear, structured, and easy to parse.
     }
   }
 
+  async loadPdfJs() {
+    const pdfjsLib = await dynamicImport(
+      "pdfjs-dist/legacy/build/pdf.mjs",
+      module
+    );
+    return pdfjsLib;
+  }
+
+  async splitPdf(pdfBuffer: Uint8Array, documentUrl: string) {
+    // Load PDF using pdf-lib
+    // const pdfDoc = await PDFDocument.load(pdfBuffer);
+    // const numberOfPages = pdfDoc.getPageCount(); // Get total pages
+
+    // Extract text using pdfjs-dist
+    // const pdfData = new Uint8Array(pdfBuffer);
+    try {
+      const pdfjsLib = await this.loadPdfJs();
+      const loadingTask = pdfjsLib.getDocument({ data: pdfBuffer });
+      const pdf = await loadingTask.promise;
+      const numberOfPages = pdf.numPages;
+
+      const pageContents: Record<string, string> = {}; // Store page text
+
+      for (let i = 0; i < numberOfPages; i++) {
+        const page = await pdf.getPage(i + 1); // pdfjs-dist uses 1-based indexing
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items
+          .map((item: any) => item.str)
+          .join(" ");
+
+        pageContents[i + 1] = pageText; // Store text for each page
+      }
+
+      return pageContents;
+    } catch (error) {
+      console.log(`splitPdf error`, error);
+      return null;
+    }
+  }
+
   // Extract content from the document that is in PDF format
   async extractContentFromDocument(
     documentUrl: string,
@@ -511,17 +547,30 @@ Please ensure the output is clear, structured, and easy to parse.
       const response = await axios.get(documentUrl, {
         responseType: "arraybuffer",
       });
-      const pdfBuffer = response.data;
-      // Extract content from PDF
-      const data = await pdf(pdfBuffer);
-      let content = data.text;
 
-      // Remove empty lines and trim
-      content = content
-        .split("\n")
-        .map((line) => line.trim())
-        .filter((line) => line)
-        .join("\n");
+      const pdfBuffer = new Uint8Array(response.data);
+      const pageContents = await this.splitPdf(pdfBuffer, documentUrl);
+      console.log("pageContents", pageContents);
+      if (!pageContents) return "";
+      // Combine all pages into a single string with page headers
+      this.processPageContents(pageContents, "document_output.txt");
+
+      const filteredPages = await this.filterQuestionPages(pageContents);
+
+      console.log("filteredPages", filteredPages);
+
+      // Write filtered content to file
+      let content = this.processPageContents(
+        filteredPages,
+        "filtered_in_document_output.txt"
+      );
+
+      // // Remove empty lines and trim
+      // content = content
+      //   .split("\n")
+      //   .map((line) => line.trim())
+      //   .filter((line) => line)
+      //   .join("\n");
 
       // If the content is empty, try to extract using Textract
       if (!content) {
@@ -621,6 +670,20 @@ Please ensure the output is clear, structured, and easy to parse.
     return filteredPages;
   }
 
+  processPageContents(
+    pageContents: { [key: string]: string },
+    pathurl: string
+  ) {
+    let fileContent = "";
+    for (const [page, content] of Object.entries(pageContents)) {
+      fileContent += `--- Page ${page} ---\n`;
+      fileContent += content + "\n";
+    }
+
+    fs.writeFileSync(path.join(__dirname, pathurl), fileContent);
+    return fileContent;
+  }
+
   async getCombinedDocumentContent(jobId: string): Promise<string> {
     try {
       let nextToken: string | undefined = undefined;
@@ -648,10 +711,9 @@ Please ensure the output is clear, structured, and easy to parse.
 
         if (response.Blocks) {
           const selectionElements = response.Blocks.filter(
-            (b) =>
-              b.BlockType === "SELECTION_ELEMENT"
-              // &&
-              // b.SelectionStatus === SelectionStatus.NOT_SELECTED
+            (b) => b.BlockType === "SELECTION_ELEMENT"
+            // &&
+            // b.SelectionStatus === SelectionStatus.NOT_SELECTED
           );
 
           // Example: build a set of page numbers that have checkboxes
@@ -671,7 +733,6 @@ Please ensure the output is clear, structured, and easy to parse.
             if (block.BlockType === "LINE") {
               const pageNumber = block.Page || 1; // Defaults to page 1 if no page (shouldn't happen with PDFs)
 
-
               if (!pageContents[pageNumber]) {
                 pageContents[pageNumber] = ""; // Initialize for each page
               }
@@ -685,28 +746,14 @@ Please ensure the output is clear, structured, and easy to parse.
       } while (nextToken);
 
       // Combine all pages into a single string with page headers
-      let fileContent = "";
-      for (const [page, content] of Object.entries(pageContents)) {
-        fileContent += `--- Page ${page} ---\n`;
-        fileContent += content + "\n";
-      }
-
-      fs.writeFileSync(
-        path.join(__dirname, "document_output.txt"),
-        fileContent
-      );
+      this.processPageContents(pageContents, "document_output.txt");
 
       const filteredPages = await this.filterQuestionPages(pageContents);
-      let filteredFileContent = "";
-      // Write filtered content to file
-      for (const [page, content] of Object.entries(filteredPages)) {
-        filteredFileContent += `--- Page ${page} ---\n`;
-        filteredFileContent += content + "\n";
-      }
 
-      fs.writeFileSync(
-        path.join(__dirname, "filtered_in_document_output.txt"),
-        filteredFileContent
+      // Write filtered content to file
+      const filteredFileContent = this.processPageContents(
+        filteredPages,
+        "filtered_in_document_output.txt"
       );
 
       return filteredFileContent || "";
@@ -823,7 +870,7 @@ Please ensure the output is clear, structured, and easy to parse.
       // Process each chunk and collect responses
       const responses = await Promise.all(
         chunks.map(async (chunk) => {
-          const prompt = `Extract the patient details, encounters, and claims from the document below: ${chunk}`;
+          const prompt = `Extract the patient details, encounters, and claims from the document below from each page and group them by page: ${chunk}`;
           const response = await this.openAiService.completeChat({
             context:
               "Extract the patient details, encounters, and claims from the document below:",

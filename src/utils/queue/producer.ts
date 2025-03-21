@@ -48,7 +48,7 @@ export async function addOcrExtractionStatusPollingJob(jobId: string) {
     `scheduler-${jobId}`,
     {
       every: 60000, // 1 min
-      limit: 10,
+      limit: 50,
       immediately: false,
     },
     {

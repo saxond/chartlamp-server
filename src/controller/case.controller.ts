@@ -76,6 +76,26 @@ export class CaseController {
     }
   }
 
+  async updateCaseDetails(req: AuthRequest, res: Response) {
+    try {
+      const { id } = req.params;
+      if (!req?.user?.id) {
+        throw new Error("User not found");
+      }
+      const caseData = await caseService.updateCaseDetails({
+        caseId: id,
+        user: req?.user?.id,
+        ...req.body
+      });
+      if (!caseData) {
+        return res.status(404).json({ message: "Case not found" });
+      }
+      res.status(200).json(caseData);
+    } catch (error) {
+      handleError(res, error);
+    }
+  }
+
   async getAll(req: Request, res: Response) {
     try {
       const cases = await caseService.getAllCases();
@@ -101,7 +121,7 @@ export class CaseController {
       }
       const cases = await caseService.getUserCases({
         userId: req?.user?.id,
-        query: req.query,
+        query: req.query as any,
       });
       res.status(200).json(cases);
     } catch (error) {
