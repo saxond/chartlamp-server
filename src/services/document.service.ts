@@ -725,11 +725,12 @@ Please ensure the output is clear, structured, and easy to parse.
 
           // console.log("pagesWithCheckboxes", pagesWithCheckboxes);
           for (const block of response.Blocks) {
+            // console.log("selection elements", JSON.stringify(block));
             if (pagesWithCheckboxes.has(block.Page)) {
               // Optional: skip the page or process differently
-              // console.log(
-              //   `Skipping line on page ${block.Page} because it has checkboxes ${block.BlockType}`
-              // );
+              console.log(
+                `Skipping line on page ${block.Page} because it has checkboxes ${block.BlockType}`
+              );
               continue;
             }
             if (block.BlockType === "LINE") {

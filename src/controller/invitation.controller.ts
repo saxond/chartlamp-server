@@ -8,7 +8,8 @@ const invitationService = new InvitationService();
 export class InvitationController {
   // Create a new invitation
    async createInvitation(req: AuthRequest, res: Response) {
-    try {
+     try {
+      console.log("req.body", req.body);
       const { email, role } = req.body;
       const invitation = await invitationService.createInvitation(req?.user?.id as string, email, role);
       res.status(201).json(invitation);

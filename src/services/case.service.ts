@@ -274,8 +274,8 @@ export class CaseService {
   }) {
     const user = await UserModel.findById(userId).lean();
     if (!user) throw new Error("User not found");
-    console.log("role", query);
-    if (user.role === "admin") {
+    // console.log("role", query);
+    if (user.role === "super_admin") {
       const adminQuery: mongoose.FilterQuery<any> = {};
 
       if (query?.claimStatus) {
@@ -304,7 +304,11 @@ export class CaseService {
       const casesQuery: mongoose.FilterQuery<any> = {
         $and: [
           {
-            $or: [{ user: userId }, { _id: { $in: invitedCaseIds } }],
+            $or: [
+              { user: userId },
+              { _id: { $in: invitedCaseIds } },
+              { organization: user.organization },
+            ],
           },
         ],
       };
@@ -313,7 +317,10 @@ export class CaseService {
         casesQuery["claimStatus"] = query.claimStatus;
       }
 
-      return CaseModel.find(casesQuery).sort({ createdAt: -1 }).lean();
+      return CaseModel.find(casesQuery)
+        .populate("user", "name profilePicture")
+        .sort({ createdAt: -1 })
+        .lean();
     }
   }
 
@@ -550,7 +557,10 @@ export class CaseService {
       84: 93,
       93: 97,
     };
-    console.log('updateCaseCompletion', progressSteps[caseItem.percentageCompletion])
+    console.log(
+      "updateCaseCompletion",
+      progressSteps[caseItem.percentageCompletion]
+    );
     caseItem.percentageCompletion =
       progressSteps[caseItem.percentageCompletion];
 

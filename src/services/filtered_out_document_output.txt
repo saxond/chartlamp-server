@@ -1329,3 +1329,254 @@ Age: 48
 DOB: 5/15/1976
 Phys: Wahba, David
 
+--- Page 9 ---
+To:
+Page: 37 of 54
+2024-10-01 17:34:50 CDT
+16613282390
+From: Bahamas Surgery Center
+Bahamas
+SURGERY CENTER
+ID / Visit: 3004573
+DOS: 12/6/2023
+PREOPERATIVE CALL RECORD
+SHARP, HENRY
+Sex: M
+DOB: 5/15/1976
+Age: 47
+Phys: Wahba, David
+PATIENT INFORMATION
+Name
+HENRY SHARP
+Spanish
+Other :
+Bring interpreter, if possible
+Phone #
+661-496-3624
+661-301-9219
+Time Surgery/Arrival
+915/815
+Surgery <45minutes planned
+Surgery >45minutes planned2 Procedure
+BILATERAL TRANSFORAMINAL LUMBAR EPIDURAL STEROID INJECTION AT L5-S1
+DIAGNOSTICS
+Labs:
+Yes
+No
+EKG:
+Yes
+No
+CHEST X-Ray:
+Yes
+No
+COVID-19
+Yes
+No Location:
+History Obtained from :
+Patient
+Spouse
+Other
+41-60 years old¹
+161-74 years old 2
+75 years old 3 Ht: S Wt: 280
+BMI
+BMI >25 >40* see guidelines
+Allergies to medication?
+Yes
+No Reaction:
+Latex Allergy?
+Yes
+No Reaction:
+Vanco ORDER
+No
+YES, if yes bring 2 hours prior to surgery
+Food Allergies?
+Yes
+No
+If so, please list:
+SOCIAL HISTORY
+Do you smoke/use tobacco
+Yes
+No
+If so, how much?
+Do you drink?
+Yes
+No
+If so, how much?
+Do you use recreational drugs?
+Yes
+No
+If so, what drugs?
+Are you or do you think you may be pregnant?
+Yes
+No
+Taking Birth Control
+SURGICAL HISTORY
+What previous surgeries have you had?
+Hip or knee replacement in last month 5
+ICentral/PICC Line in last Month2
+ave you or a family member ever had any problems with Anesthesia?
+Yes
+No
+MEDICATION
+Are you currently taking prescription medication and/or over the counter medication?
+Yes (if yes, list medication/dose/route)
+No
+Are you taking Blood thinners?
+Yes
+DIABETIC: hold ORAL meds, if insulin please take 1/2 of dose
+RESPIRATORY
+CARDIOVASCULAR
+Asthma
+Sleep Apnea
+Recent Cold or Cough
+Hypertension
+Swollen Legs1
+MI
+CHF 1
+Pace Maker/AICD
+Lung Disease(emphysema/COPD)
+Irregular heart rhythm
+Stroke in last month 5
+Varicose Veins1
+BLOOD DISORDERS
+OTHER
+Anemia
+History of DVT/PE3
+Family HX Clots3
+Diabetes
+Hypoglycemic
+Serious Infection
+Thyroid disease
+Family HX of +test for risk of clotting
+Kidney/Bladder
+Hepatitis/HIV/AIDS
+Bowel disease¹
+Current/Past Malignancies/chemo 3
+MRSA
+MUSCULOSKELTAL
+OTHER
+Broken hip/pelvis/leg in last month
+Bedrest for <72hrs ¹
+Bedrest for >72hrs2
+Serious trauma in last month
+Do you have any other medical concerns I should know about?
+No
+Spinal cord injury resulting in paralysis in last month 5
+Leg Immobility for last month2
+PREOPERATIVE INSTRUCTIONS:
+NPO After:
+No Smoking, chewing tobacco, gum
+No eye makeup/lotion
+life savers, mints(etc) after midnight
+Contact Lenses
+Please remove jewelry /piercings
+Comfortable clothes/ Slippers
+If inhaler is used: bring
+Bring: Patient Packet, AMD, Living Will,
+Adult Driver / Care Giver recommended 24 hrs
+Identification Card, Insurance Card, any Post-Operative Aides
+Total patient score
+(greater than 8 place DVT orders on chart for physician)
+RN Signature:
+
+--- Page 10 ---
+To:
+Page: 38 of 54
+2024-10-01 17:34:50 CDT
+16613282390
+From: Bahamas Surgery Center
+Bahamas
+SURGERY CENTER
+Pre-Operative Evaluation
+ID / Visit: 3004573
+SHARP, HENRY
+DOS: 12/6/2023
+Patient Name:
+DOB: 5/15/1976
+Sex: M
+Phys: Wahba, David
+Age: 47
+Height:
+Weight:
+Check if history of:
+NEURO
+RESPIRATORY
+Stroke: When
+Recent Cold / Pneumonia
+Transient Ischemic Attack
+Lung Disease
+Seizures
+COPD / Asthma / Emphysema
+Headaches / Migraines
+Sleep Apnea
+Paralysis / Weakness
+Tuberculosis
+Fainting
+Abnormal Chest X-Ray
+MUSCULAR SKELETAL
+Smoking
+Packs Per Day
+Arthritis / Joint Pain / Swelling
+CARDIOVASCULAR
+Fractured Bones
+Heart attack: When
+Plates or Implants
+Congestive Heart Failure
+Back or Disc Pain
+Heart Murmurs
+ENDOCRINE
+Chest Pain / Angina
+Diabetes
+Pacemaker / AICD
+Insulin Dependant
+High Blood Pressure
+Hyperthyroid or Hypothyroid
+Mitral Valve Prolapse
+PSYCHIATRIC/SOCIAL
+GI/GU
+Mental Illness
+Ulcers/ Reflux
+Depression
+Irritable Bowel
+BLOOD DISORDERS
+Constipation Diarrhea
+Bleeding Disorder
+Nausea / Vomiting
+Blood Disease (Anemia)
+Hepatitis: Type
+Blood Transfusions
+Liver Problems / Jaundice
+Sickle Cell Trait
+Kidney Disease
+HIV/AIDS
+Prostate Problems
+DO YOU?
+Possibility of Pregnancy
+Wear Contact Lenses
+Last Menstrual Cycle
+Wear a Hearing Aid
+Hysterectomy
+Wear Dentures / Partials Plates / Bridge
+INFECTIONS
+Have Capped / Loose Teeth
+Staph
+Do you drink alcohol? If yes, amount 2-4 druk,
+Other
+Recreational Drugs
+aweek
+Smoke / Chew Tobacco? If yes, amount
+PREVIOUS SURGICAL HISTORY
+Date of Last Anesthesia 8/7/27
+Surgeries Septaplatory Nerve left orm (trive), verectomy
+Any history of abnormal reaction to anesthesia
+Family history of reaction to anesthesia
+Do you have an Advance Directive? No
+If yes, please provide copy to center
+I received the information on patient rights, responsibilities, physician disclosure, notice of patient privacy and
+HIPAA, advance directive information and grievance policy, in advance of my surgery. I understand that if an
+adverse event occurs during my treatment at the surgery center, the personnel at the surgery center will initiate
+resuscitative or other stabilizing measures and transfer me to an acute care facility for further evaluation.
+Patient Signature Hyz
+BSC-101 (3/21) MM
+
