@@ -11,7 +11,6 @@ import fs from "fs";
 import mongoose from "mongoose";
 import { zodResponseFormat } from "openai/helpers/zod";
 import path from "path";
-import pdf from "pdf-parse";
 import { dynamicImport } from "tsimportlib";
 import { z } from "zod";
 import { CaseModel, NameOfDiseaseByIcdCode } from "../models/case.model";
@@ -20,7 +19,11 @@ import {
   DocumentModel,
   ExtractionStatus,
 } from "../models/document.model";
-import { addOcrExtractionBackgroundJob, addOcrExtractionStatusPollingJob, cancelOcrExtractionPolling } from "../utils/queue/producer";
+import {
+  addOcrExtractionBackgroundJob,
+  addOcrExtractionStatusPollingJob,
+  cancelOcrExtractionPolling,
+} from "../utils/queue/producer";
 import { textractClient } from "../utils/textract";
 import OpenAIService from "./openai.service";
 
@@ -497,12 +500,6 @@ Please ensure the output is clear, structured, and easy to parse.
   }
 
   async splitPdf(pdfBuffer: Uint8Array, documentUrl: string) {
-    // Load PDF using pdf-lib
-    // const pdfDoc = await PDFDocument.load(pdfBuffer);
-    // const numberOfPages = pdfDoc.getPageCount(); // Get total pages
-
-    // Extract text using pdfjs-dist
-    // const pdfData = new Uint8Array(pdfBuffer);
     try {
       const pdfjsLib = await this.loadPdfJs();
       const loadingTask = pdfjsLib.getDocument({ data: pdfBuffer });
@@ -518,12 +515,17 @@ Please ensure the output is clear, structured, and easy to parse.
           .map((item: any) => item.str)
           .join(" ");
 
-        pageContents[i + 1] = pageText; // Store text for each page
+        if (pageText) pageContents[i + 1] = pageText; // Store text for each page
+      }
+
+      if (Object.keys(pageContents).length === 0) {
+        console.log(`pageContents is empty`, pageContents);
+        throw new Error("pageContents is empty");
       }
 
       return pageContents;
     } catch (error) {
-      console.log(`splitPdf error`, error);
+      console.log(`Cannot split this pdf`, error);
       return null;
     }
   }
@@ -550,14 +552,14 @@ Please ensure the output is clear, structured, and easy to parse.
 
       const pdfBuffer = new Uint8Array(response.data);
       const pageContents = await this.splitPdf(pdfBuffer, documentUrl);
-      console.log("pageContents", pageContents);
-      if (!pageContents) return "";
+      // console.log("pageContents", pageContents);
+      if (!pageContents) throw new Error("");
       // Combine all pages into a single string with page headers
       this.processPageContents(pageContents, "document_output.txt");
 
       const filteredPages = await this.filterQuestionPages(pageContents);
 
-      console.log("filteredPages", filteredPages);
+      // console.log("filteredPages", filteredPages);
 
       // Write filtered content to file
       let content = this.processPageContents(
@@ -723,11 +725,12 @@ Please ensure the output is clear, structured, and easy to parse.
 
           // console.log("pagesWithCheckboxes", pagesWithCheckboxes);
           for (const block of response.Blocks) {
+            // console.log("selection elements", JSON.stringify(block));
             if (pagesWithCheckboxes.has(block.Page)) {
               // Optional: skip the page or process differently
-              // console.log(
-              //   `Skipping line on page ${block.Page} because it has checkboxes ${block.BlockType}`
-              // );
+              console.log(
+                `Skipping line on page ${block.Page} because it has checkboxes ${block.BlockType}`
+              );
               continue;
             }
             if (block.BlockType === "LINE") {
@@ -799,7 +802,10 @@ Please ensure the output is clear, structured, and easy to parse.
     }
   }
 
-  async extractCaseDocumentData(caseId: string) {
+  async extractCaseDocumentData(
+    caseId: string,
+    updateProgressFn: (caseId: string) => Promise<void>
+  ) {
     try {
       // Get documents from the database that do not have content extracted
       const documents = await DocumentModel.find({
@@ -822,12 +828,14 @@ Please ensure the output is clear, structured, and easy to parse.
           await DocumentModel.findByIdAndUpdate(document._id, {
             extractedData: content,
           });
+          await updateProgressFn(caseId);
         }
         return { ...document, extractedData: content };
       });
 
       // Wait for all updates to complete
       const updatedDocuments = await Promise.all(updatePromises);
+      await updateProgressFn(caseId);
       // Return updated documents
       return { extractCaseDocumentData: updatedDocuments, hasError };
     } catch (error) {
@@ -927,7 +935,10 @@ Please ensure the output is clear, structured, and easy to parse.
     }
   }
 
-  async extractCaseDocumentWithoutContent(caseId: string): Promise<any> {
+  async extractCaseDocumentWithoutContent(
+    caseId: string,
+    updateProgressFn: (caseId: string) => Promise<void>
+  ): Promise<any> {
     try {
       // Get document from the database that do not have content
       const documents = await DocumentModel.find({
@@ -950,11 +961,14 @@ Please ensure the output is clear, structured, and easy to parse.
           status: ExtractionStatus.SUCCESS,
           isCompleted: true,
         });
+        await updateProgressFn(caseId);
         return { ...document, content };
       });
 
       // Wait for all updates to complete
       const updatedDocuments = await Promise.all(updatePromises);
+
+      await updateProgressFn(caseId);
 
       // Return updated documents
       return updatedDocuments;

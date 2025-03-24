@@ -34,6 +34,11 @@ router.get(
   isAuthenticated,
   caseController.getCaseByIdWithBodyParts
 );
+router.get(
+  "/:id/status",
+  isAuthenticated,
+  caseController.getCaseExtractionStatus
+);
 router.post("/:id/share", isAuthenticated, caseController.shareCaseWithUsers);
 router.get("/user", isAuthenticated, caseController.getUserCases);
 router.get("/:id", isAuthenticated, caseController.getById);

@@ -82,7 +82,9 @@ export class CaseService {
       await Promise.all(documentPromises);
 
       await session.commitTransaction();
-      return newCase;
+      return CaseModel.findById(newCase._id)
+        .lean()
+        .populate("user", "name profilePicture");
     } catch (error) {
       await session.abortTransaction();
       throw error;
@@ -172,6 +174,20 @@ export class CaseService {
     return { ...caseResponse, reports: newReports };
   }
 
+  async getCaseExtractionStatus(id: string) {
+    const caseData = await CaseModel.findById(
+      id,
+      "caseNumber plaintiff user cronStatus percentageCompletion"
+    )
+      .lean()
+      .populate("user", "name profilePicture");
+    if (!caseData) {
+      return null;
+    }
+
+    return caseData;
+  }
+
   async cacheCaseData(caseId: string) {
     const response = await this.getCaseByIdWithBodyParts(caseId);
     // await redis.set(caseId, JSON.stringify(response), "EX", CACHE_TTL);
@@ -258,8 +274,8 @@ export class CaseService {
   }) {
     const user = await UserModel.findById(userId).lean();
     if (!user) throw new Error("User not found");
-    console.log("role", query);
-    if (user.role === "admin") {
+    // console.log("role", query);
+    if (user.role === "super_admin") {
       const adminQuery: mongoose.FilterQuery<any> = {};
 
       if (query?.claimStatus) {
@@ -267,7 +283,7 @@ export class CaseService {
       }
 
       if (query?.showFav) {
-        adminQuery["isFavorite"] = query.showFav == 'true';
+        adminQuery["isFavorite"] = query.showFav == "true";
       }
 
       return CaseModel.find(
@@ -288,7 +304,11 @@ export class CaseService {
       const casesQuery: mongoose.FilterQuery<any> = {
         $and: [
           {
-            $or: [{ user: userId }, { _id: { $in: invitedCaseIds } }],
+            $or: [
+              { user: userId },
+              { _id: { $in: invitedCaseIds } },
+              { organization: user.organization },
+            ],
           },
         ],
       };
@@ -297,7 +317,10 @@ export class CaseService {
         casesQuery["claimStatus"] = query.claimStatus;
       }
 
-      return CaseModel.find(casesQuery).sort({ createdAt: -1 }).lean();
+      return CaseModel.find(casesQuery)
+        .populate("user", "name profilePicture")
+        .sort({ createdAt: -1 })
+        .lean();
     }
   }
 
@@ -487,6 +510,7 @@ export class CaseService {
       ).flat();
 
       if (flattenedResults.length) {
+        await this.updateCaseCompletion(caseId);
         await this.updateCaseReports(caseId, flattenedResults);
       }
 
@@ -502,10 +526,13 @@ export class CaseService {
     try {
       console.log("processCase... ⌛");
       const reponse = await this.documentService.extractCaseDocumentData(
-        caseId
+        caseId,
+        () => this.updateCaseCompletion(caseId)
       );
       console.log("extractCaseDocumentData... ✅");
-      await this.documentService.extractCaseDocumentWithoutContent(caseId);
+      await this.documentService.extractCaseDocumentWithoutContent(caseId, () =>
+        this.updateCaseCompletion(caseId)
+      );
       console.log("extractCaseDocumentWithoutContent... ✅");
       await this.populateReportFromCaseDocuments(caseId);
       console.log("populateReportFromCaseDocuments... ✅");
@@ -513,6 +540,31 @@ export class CaseService {
     } catch (error) {
       console.error("Error processing case:", error);
     }
+  }
+
+  async updateCaseCompletion(caseId: string) {
+    const caseItem = await CaseModel.findById(caseId);
+    if (!caseItem) return;
+    const progressSteps: Record<number, number> = {
+      5: 13,
+      13: 21,
+      21: 34,
+      34: 37,
+      37: 46,
+      46: 58,
+      58: 65,
+      65: 84,
+      84: 93,
+      93: 97,
+    };
+    console.log(
+      "updateCaseCompletion",
+      progressSteps[caseItem.percentageCompletion]
+    );
+    caseItem.percentageCompletion =
+      progressSteps[caseItem.percentageCompletion];
+
+    await caseItem.save();
   }
 
   async processCases() {
@@ -535,6 +587,7 @@ export class CaseService {
     try {
       // Process the case
       caseItem.cronStatus = CronStatus.Processing;
+      caseItem.percentageCompletion = 5;
       await caseItem.save();
       const hasError = await this.processCase(caseItem._id);
       console.log(`Processed case: ${caseItem?._id}`, { hasError });
@@ -546,7 +599,7 @@ export class CaseService {
           // Update to processed
           await CaseModel.findByIdAndUpdate(
             caseItem._id,
-            { cronStatus: CronStatus.Processed },
+            { cronStatus: CronStatus.Processed, percentageCompletion: 100 },
             { new: true }
           );
         }
@@ -1249,6 +1302,8 @@ export class CaseService {
       return null;
     }
 
+    await this.updateCaseCompletion(document.case.toString());
+
     // Update document with extracted content and status
     const updatedDoc = await DocumentModel.findByIdAndUpdate(
       document._id,
@@ -1269,6 +1324,8 @@ export class CaseService {
       updatedDoc
     );
 
+    await this.updateCaseCompletion(document.case.toString());
+
     if (results.length) {
       updatedDoc.isCompleted = true;
       await updatedDoc.save();
@@ -1282,10 +1339,11 @@ export class CaseService {
     );
 
     if (!pendingCaseDoc) {
-      const updatedCase = await CaseModel.findByIdAndUpdate(
+      await CaseModel.findByIdAndUpdate(
         document.case,
         {
           cronStatus: CronStatus.Processed,
+          percentageCompletion: 100,
         },
         { new: true }
       );
