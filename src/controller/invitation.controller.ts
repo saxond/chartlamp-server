@@ -7,14 +7,28 @@ const invitationService = new InvitationService();
 
 export class InvitationController {
   // Create a new invitation
-   async createInvitation(req: AuthRequest, res: Response) {
-     try {
+  async createInvitation(req: AuthRequest, res: Response) {
+    try {
       console.log("req.body", req.body);
       const { email, role } = req.body;
-      const invitation = await invitationService.createInvitation(req?.user?.id as string, email, role);
+      const invitation = await invitationService.createInvitation(
+        req?.user?.id as string,
+        email,
+        role
+      );
       res.status(201).json(invitation);
     } catch (error) {
-        res.status(400).json(formatResponse(false, (error as Error).message));
+      res.status(400).json(formatResponse(false, (error as Error).message));
+    }
+  }
+
+  async sendInvitationReminder(req: Request, res: Response) {
+    try {
+      const { email } = req.body;
+      const user = await invitationService.sendInvitationReminder(email);
+      res.status(200).json(user);
+    } catch (error) {
+      res.status(400).json(formatResponse(false, (error as Error).message));
     }
   }
 
@@ -25,7 +39,7 @@ export class InvitationController {
       const user = await invitationService.acceptInvitation(token, password);
       res.status(200).json(user);
     } catch (error) {
-        res.status(400).json(formatResponse(false, (error as Error).message));
+      res.status(400).json(formatResponse(false, (error as Error).message));
     }
   }
 
@@ -36,17 +50,19 @@ export class InvitationController {
       const invitation = await invitationService.declineInvitation(token);
       res.status(200).json(invitation);
     } catch (error) {
-        res.status(400).json(formatResponse(false, (error as Error).message));
+      res.status(400).json(formatResponse(false, (error as Error).message));
     }
   }
 
   //team member and invitation
   async getInvitations(req: AuthRequest, res: Response) {
     try {
-      const invitations = await invitationService.getUsersAndInvitations(req?.user?.id as string);
+      const invitations = await invitationService.getUsersAndInvitations(
+        req?.user?.id as string
+      );
       res.status(200).json(invitations);
     } catch (error) {
-        res.status(400).json(formatResponse(false, (error as Error).message));
+      res.status(400).json(formatResponse(false, (error as Error).message));
     }
   }
 }
