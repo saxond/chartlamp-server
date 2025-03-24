@@ -7,6 +7,7 @@ const invitationController = new InvitationController();
 
 router.post('/',isAuthenticated, invitationController.createInvitation);
 router.get('/', isAuthenticated, invitationController.getInvitations);
+router.post("/reminder", invitationController.sendInvitationReminder);
 router.post('/accept', invitationController.acceptInvitation);
 router.post('/decline', invitationController.declineInvitation);
 

@@ -2,7 +2,7 @@ import bcrypt from "bcrypt";
 import { v4 as uuidv4 } from "uuid";
 import { InvitationModel } from "../models/invitation.model"; // Ensure this path is correct
 import { Organization } from "../models/organization.model";
-import { UserModel } from "../models/user.model"; // Ensure this path is correct
+import { User, UserModel } from "../models/user.model"; // Ensure this path is correct
 import notificationService from "./notification.service";
 
 export class InvitationService {
@@ -15,7 +15,7 @@ export class InvitationService {
     expiresAt.setDate(expiresAt.getDate() + 7); // Set expiration date to 7 days from now
 
     const user = await UserModel.findById(userId)
-      .select("organization")
+      // .select("organization")
       .populate<{ organization: Organization }>("organization")
       .lean();
 
@@ -24,7 +24,7 @@ export class InvitationService {
     }
 
     const inviteExists = await InvitationModel.findOne({
-      email: user.email,
+      email,
     }).lean();
 
     if (inviteExists) {
@@ -47,7 +47,10 @@ export class InvitationService {
       email,
       "You have been invited to Chartlamp",
       `<p>Hello,</p>
-          <p>You have been invited to chartlmp by <strong>${user.organization.name}</strong>.</p>
+          <p>You have been invited to chartlmp by <strong>${
+            user.name
+          }</strong>.</p>
+          <p>Your invitation will expire on <strong>${invitation.expiresAt.toDateString()}</strong>.</p>
           <p>To  accept the invitation, please click the link below:</p>
           <p><a href="${url}" style="color: #007bff; text-decoration: none;">Accept Invitation</a></p>
           <p>Thank you,</p>
@@ -56,6 +59,48 @@ export class InvitationService {
     );
 
     return invitation;
+  }
+
+  async sendInvitationReminder(email: string) {
+    const invite = await InvitationModel.findOne({
+      email,
+      status: "pending",
+    })
+      .populate<{ invitedBy: User }>("invitedBy")
+      .lean();
+
+    if (!invite) throw new Error("Invite not found or expired");
+
+    let updatedExpiration = new Date(invite.expiresAt);
+
+    // If the invite has expired, extend it by 3 days
+    if (new Date() > invite.expiresAt) {
+      updatedExpiration = new Date();
+      updatedExpiration.setDate(updatedExpiration.getDate() + 3);
+
+      await InvitationModel.updateOne(
+        { _id: invite._id },
+        { expiresAt: updatedExpiration }
+      );
+    }
+    const url = `${process.env.FRONTEND_URL}/auth/signup?token=${invite.token}`;
+
+    await this.notificationService.sendEmailV2(
+      invite.email,
+      "Reminder: Invitation to Join Chartlamp",
+      `<p>Hello,</p>
+     <p>This is a friendly reminder that you have been invited to <strong>Chartlamp</strong> by ${
+       invite.invitedBy.name
+     }.</p>
+     <p>Your invitation will expire on <strong>${invite.expiresAt.toDateString()}</strong>.</p>
+     <p>Please accept the invitation before it expires by clicking the link below:</p>
+     <p><a href="${url}" style="color: #007bff; text-decoration: none;">Accept Invitation</a></p>
+     <p>Thank you,</p>
+     <p>Chartlamp</p>
+    `
+    );
+
+    return true;
   }
 
   // Find an invitation by token
