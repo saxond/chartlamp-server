@@ -124,7 +124,8 @@ export class ProcessorService {
         // await this.splitTiffToMultiplePages(pdfBytes);
       } else {
         const pdfDoc = await PDFDocument.load(pdfBytes);
-        const numberOfPages = pdfDoc.getPages().slice(0, 11).length;
+        // const numberOfPages = pdfDoc.getPages().length;
+        const numberOfPages = pdfDoc.getPages().slice(0, 10).length;
         let hasOcr = false;
         for (let i = 0; i < numberOfPages; i++) {
           const subDocument = await PDFDocument.create();

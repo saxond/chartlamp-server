@@ -61,7 +61,7 @@ export async function addOcrExtractionStatusPollingJob(jobId: string) {
   );
 }
 
-export async function addOcrPageExtractorBackgroundJob(jobId: string) {
+export async function addOcrPageExtractorBackgroundJobV2(jobId: string) {
   console.log("adding job to backgrounds...", jobId);
   try {
     await ocrPageExtractorQueue.upsertJobScheduler(
@@ -76,6 +76,35 @@ export async function addOcrPageExtractorBackgroundJob(jobId: string) {
         data: { jobId },
       }
     );
+  } catch (error) {
+    console.error("Error adding job to background:", error);
+    throw error;
+  }
+}
+
+export async function addOcrPageExtractorBackgroundJob(jobId: string) {
+  console.log("Adding job to background queue...", jobId);
+  try {
+    const jobKey = `ocr-${jobId}`;
+
+    const existingJob = await ocrPageExtractorQueue.getJob(jobKey);
+    if (existingJob) {
+      console.log("Job already exists in the queue:", jobKey);
+      return;
+    }
+
+    await ocrPageExtractorQueue.add(
+      "ocrPageExtractor",
+      { jobId },
+      {
+        jobId: jobKey,
+        // repeat: { every: 60000 }, // Repeat every minute
+        removeOnComplete: true,
+        removeOnFail: true,
+      }
+    );
+
+    console.log("Job successfully added:", jobKey);
   } catch (error) {
     console.error("Error adding job to background:", error);
     throw error;

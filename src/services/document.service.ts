@@ -779,6 +779,11 @@ Please ensure the output is clear, structured, and easy to parse.
       if (!jobStatus) return "";
       if (jobStatus === "IN_PROGRESS") {
         console.log("⏳ Textract job still processing...");
+        const tempDoc = await TempPageDocumentModel.findOne({ jobId }).lean();
+        if (tempDoc && tempDoc?.pdfS3Key) {
+          console.log(`Job ${jobId} added again to queue`);
+          await this.extractContentFromDocumentUsingTextract(tempDoc.pdfS3Key);
+        }
         return ""; // Exit early since the job isn't done
       }
       if (jobStatus === "SUCCEEDED") {
