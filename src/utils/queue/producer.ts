@@ -3,6 +3,7 @@ import { redisOptions } from "../redis/config";
 import { createIcdcodeClassificationQueue } from "./icdcodeClassification/queue";
 import { createOcrQueue } from "./ocrExtraction/queue";
 import { createOcrStatusQueue } from "./ocrExtractionStatus/queue";
+import { createOcrPageExtractorQueue } from "./ocrPageExtractor/queue";
 import { caseQueueName } from "./types";
 
 const casePopulationQueue = new Queue(caseQueueName, {
@@ -12,6 +13,7 @@ const casePopulationQueue = new Queue(caseQueueName, {
 const ocrExtractionQueue = createOcrQueue();
 const ocrExtractionStatusQueue = createOcrStatusQueue();
 const icdcodeClassificationQueue = createIcdcodeClassificationQueue();
+const ocrPageExtractorQueue = createOcrPageExtractorQueue();
 
 export async function addOcrExtractionBackgroundJob(
   jobName: string,
@@ -59,8 +61,33 @@ export async function addOcrExtractionStatusPollingJob(jobId: string) {
   );
 }
 
+export async function addOcrPageExtractorBackgroundJob(jobId: string) {
+  console.log("adding job to backgrounds...", jobId);
+  try {
+    await ocrPageExtractorQueue.upsertJobScheduler(
+      `scheduler-${jobId}`,
+      {
+        every: 60000, // 1 min
+        limit: 100,
+        immediately: false,
+      },
+      {
+        name: "ocrPageExtractor",
+        data: { jobId },
+      }
+    );
+  } catch (error) {
+    console.error("Error adding job to background:", error);
+    throw error;
+  }
+}
+
 export async function cancelOcrExtractionPolling(jobId: string) {
   await ocrExtractionStatusQueue.removeJobScheduler(`scheduler-${jobId}`);
+  console.log("🛑 Stopped polling job");
+}
+export async function cancelOcrPageExtractorPolling(jobId: string) {
+  await ocrPageExtractorQueue.removeJobScheduler(`scheduler-${jobId}`);
   console.log("🛑 Stopped polling job");
 }
 
