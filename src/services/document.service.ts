@@ -25,6 +25,7 @@ import {
 import {
   addOcrExtractionBackgroundJob,
   addOcrExtractionStatusPollingJob,
+  addOcrPageExtractorBackgroundJob,
   cancelOcrPageExtractorPolling,
 } from "../utils/queue/producer";
 import { textractClient } from "../utils/textract";
@@ -782,13 +783,14 @@ Please ensure the output is clear, structured, and easy to parse.
         const tempDoc = await TempPageDocumentModel.findOne({ jobId }).lean();
         if (tempDoc && tempDoc?.pdfS3Key) {
           console.log(`Job ${jobId} added again to queue`);
-          await this.extractContentFromDocumentUsingTextract(tempDoc.pdfS3Key);
+          // await this.extractContentFromDocumentUsingTextract(tempDoc.pdfS3Key);
+          await addOcrPageExtractorBackgroundJob(jobId);
         }
         return ""; // Exit early since the job isn't done
       }
       if (jobStatus === "SUCCEEDED") {
         console.log("✅ Textract job completed successfully");
-        cancelOcrPageExtractorPolling(jobId);
+        // cancelOcrPageExtractorPolling(jobId);
         // cancelOcrExtractionPolling(jobId);
       }
 
