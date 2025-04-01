@@ -6,11 +6,11 @@ import speakeasy from "speakeasy";
 import { UserRegistrationInput } from "../interfaces/user";
 import { BodyPartToImageModel } from "../models/bodyPartToImage.model";
 import { Organization, OrganizationModel } from "../models/organization.model";
+import { User, UserModel } from "../models/user.model";
 import {
   TwoFactorAuth,
   TwoFactorAuthModel,
 } from "../models/twoFactorAuth.model";
-import { User, UserModel } from "../models/user.model";
 import { signJwt } from "../utils/jwt";
 import notificationService from "./notification.service"; // Import the instance directly
 
@@ -44,7 +44,7 @@ class UserService {
     await user.save();
     // Subscribe user to 2FA
     await this.generateTwoFactorSecret({ user, method: "email" });
-    
+
     await this.sendNewUserMailToAdmin(name, userOrganizationName);
     return user;
   }

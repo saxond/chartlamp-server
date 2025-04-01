@@ -81,7 +81,7 @@ const start = async (): Promise<void> => {
       console.log(`Server started on port ${PORT}`);
     });
   } catch (error) {
-    console.error(error);
+    // console.error(error);
     process.exit(1);
   }
 };

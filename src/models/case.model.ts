@@ -73,6 +73,9 @@ class Report {
   public providerName?: string;
 
   @prop()
+  public pageNumber?: string;
+
+  @prop()
   public doctorName?: string;
 
   // @prop()
@@ -180,7 +183,7 @@ export class Case {
   @prop({ default: false })
   public isFavorite!: boolean;
 
-  @prop({ default: 5, max: 100, min: 0 })
+  @prop({ default: 0, max: 100, min: 0 })
   public percentageCompletion!: number;
 
   @prop({ type: () => [Report], default: [] })
