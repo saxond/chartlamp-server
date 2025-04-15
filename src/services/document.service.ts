@@ -11,6 +11,7 @@ import fs from "fs";
 import mongoose from "mongoose";
 import { zodResponseFormat } from "openai/helpers/zod";
 import path from "path";
+import { PDFDocument } from "pdf-lib";
 import { dynamicImport } from "tsimportlib";
 import { z } from "zod";
 import { CaseModel, NameOfDiseaseByIcdCode } from "../models/case.model";
@@ -18,11 +19,14 @@ import {
   Document,
   DocumentModel,
   ExtractionStatus,
+  TempPageDocument,
+  TempPageDocumentModel,
 } from "../models/document.model";
 import {
   addOcrExtractionBackgroundJob,
   addOcrExtractionStatusPollingJob,
-  cancelOcrExtractionPolling,
+  addOcrPageExtractorBackgroundJob,
+  cancelOcrPageExtractorPolling,
 } from "../utils/queue/producer";
 import { textractClient } from "../utils/textract";
 import OpenAIService from "./openai.service";
@@ -271,6 +275,8 @@ Extracted document:
             result.diagnosis
           );
 
+          if (!nameOfDisease) return [];
+
           // typeof result.diseaseName === "string"
           //   ? result.diseaseName
           //   : Array.isArray(result.diseaseName)
@@ -280,6 +286,10 @@ Extracted document:
           const icdCodes = await this.getIcdCodeFromDescription(
             nameOfDisease + " " + result.medicalNote
           );
+
+          if (icdCodes.join("") == "") return [];
+          if (!icdCodes.length || !/[a-zA-Z0-9]/.test(icdCodes.join("")))
+            return [];
 
           const diseaseNameByIcdCode = await this.getStreamlinedDiseaseName({
             icdCodes,
@@ -335,11 +345,11 @@ Extracted document:
           nameOfDisease: z.string(),
           summary: z.string(),
           excerpt: z.string(),
-          pageNumber: z.number(),
         })
       ),
     });
 
+    // - The **pageNumber** where the match occurs.
     const basePrompt = `
 Your task:
 1. From this list of disease names: ${diseaseNames}, please match these disease names to their respective ICD codes: ${icdCodes.join(
@@ -351,7 +361,6 @@ Your task:
 
 For each matched ICD code, extract the following:
 - An **excerpt** that includes the **exact line where the match is found**, along with **10 words before and 10 words after**.
-- The **pageNumber** where the match occurs.
 - A brief **summary** explaining why this ICD code is relevant in the context of the provided text.
 
 Please ensure the output is clear, structured, and easy to parse.
@@ -383,6 +392,31 @@ Please ensure the output is clear, structured, and easy to parse.
       })
     );
     return diseaseNameByIcdCode;
+  }
+
+  // Create report from document
+  async generateReportForTempPageDocument(
+    doc: TempPageDocument
+  ): Promise<any[]> {
+    try {
+      const content = doc.pageText?.trim();
+      if (!content) {
+        return []; // Skip to the next document
+      }
+
+      const results = await this.processDocumentContent(content);
+
+      // console.log("generateReportForDocument", results);
+
+      // Add document ID to each result
+      return results.map((result) => ({
+        ...result,
+        document: doc.document as string,
+      }));
+    } catch (error) {
+      console.log("Error generating report for document:", error);
+      return [];
+    }
   }
 
   // Create report from document
@@ -491,6 +525,50 @@ Please ensure the output is clear, structured, and easy to parse.
     }
   }
 
+  async fetchPdfFromUrl(documentUrl: string) {
+    try {
+      const response = await axios.get(documentUrl, {
+        responseType: "arraybuffer", // Important to get binary data
+      });
+      return response.data;
+    } catch (err) {
+      console.error("Error fetching PDF from URL:", err);
+      throw err;
+    }
+  }
+
+  async writePdfBytesToFile(fileName: string, pdfBytes: any) {
+    await fs.promises.writeFile(fileName, pdfBytes);
+    console.log(`Saved: ${fileName}`);
+  }
+
+  async splitPdfV2(documentUrl: string) {
+    try {
+      // Fetch PDF from the URL
+      const pdfBytes = await this.fetchPdfFromUrl(documentUrl);
+
+      // Load the PDFDocument from bytes
+      const pdfDoc = await PDFDocument.load(pdfBytes);
+
+      const numberOfPages = pdfDoc.getPages().length;
+      console.log(`Number of pages: ${numberOfPages}`);
+
+      for (let i = 0; i < numberOfPages; i++) {
+        // Create a new "sub" document
+        const subDocument = await PDFDocument.create();
+        // Copy the page at the current index
+        const [copiedPage] = await subDocument.copyPages(pdfDoc, [i]);
+        subDocument.addPage(copiedPage);
+        const subPdfBytes = await subDocument.save();
+
+        // Save the split page as a separate file
+        await this.writePdfBytesToFile(`file-${i + 1}.pdf`, subPdfBytes);
+      }
+    } catch (err) {
+      console.error("Error splitting PDF:", err);
+    }
+  }
+
   async loadPdfJs() {
     const pdfjsLib = await dynamicImport(
       "pdfjs-dist/legacy/build/pdf.mjs",
@@ -499,7 +577,7 @@ Please ensure the output is clear, structured, and easy to parse.
     return pdfjsLib;
   }
 
-  async splitPdf(pdfBuffer: Uint8Array, documentUrl: string) {
+  async splitPdf(pdfBuffer: Uint8Array) {
     try {
       const pdfjsLib = await this.loadPdfJs();
       const loadingTask = pdfjsLib.getDocument({ data: pdfBuffer });
@@ -515,7 +593,12 @@ Please ensure the output is clear, structured, and easy to parse.
           .map((item: any) => item.str)
           .join(" ");
 
-        if (pageText) pageContents[i + 1] = pageText; // Store text for each page
+        if (pageText) {
+          pageContents[i + 1] = pageText;
+        } else {
+          console.log("==============>Contains OCR ==============>", i + 1);
+          throw new Error("contains ocr");
+        }
       }
 
       if (Object.keys(pageContents).length === 0) {
@@ -551,8 +634,8 @@ Please ensure the output is clear, structured, and easy to parse.
       });
 
       const pdfBuffer = new Uint8Array(response.data);
-      const pageContents = await this.splitPdf(pdfBuffer, documentUrl);
-      // console.log("pageContents", pageContents);
+      const pageContents = await this.splitPdf(pdfBuffer);
+      console.log("pageContents", pageContents);
       if (!pageContents) throw new Error("");
       // Combine all pages into a single string with page headers
       this.processPageContents(pageContents, "document_output.txt");
@@ -593,6 +676,7 @@ Please ensure the output is clear, structured, and easy to parse.
         if (doc) {
           await addOcrExtractionBackgroundJob("extractOcr", {
             documentId: doc._id,
+            isSinglePage: true,
           });
           await addOcrExtractionStatusPollingJob(content);
         }
@@ -696,11 +780,18 @@ Please ensure the output is clear, structured, and easy to parse.
       if (!jobStatus) return "";
       if (jobStatus === "IN_PROGRESS") {
         console.log("⏳ Textract job still processing...");
+        const tempDoc = await TempPageDocumentModel.findOne({ jobId }).lean();
+        if (tempDoc && tempDoc?.pdfS3Key) {
+          console.log(`Job ${jobId} added again to queue`);
+          // await this.extractContentFromDocumentUsingTextract(tempDoc.pdfS3Key);
+          await addOcrPageExtractorBackgroundJob(jobId);
+        }
         return ""; // Exit early since the job isn't done
       }
       if (jobStatus === "SUCCEEDED") {
         console.log("✅ Textract job completed successfully");
-        cancelOcrExtractionPolling(jobId);
+        // cancelOcrPageExtractorPolling(jobId);
+        // cancelOcrExtractionPolling(jobId);
       }
 
       console.log("⏳ Running loop to get ocr content");
@@ -727,10 +818,6 @@ Please ensure the output is clear, structured, and easy to parse.
           for (const block of response.Blocks) {
             // console.log("selection elements", JSON.stringify(block));
             if (pagesWithCheckboxes.has(block.Page)) {
-              // Optional: skip the page or process differently
-              console.log(
-                `Skipping line on page ${block.Page} because it has checkboxes ${block.BlockType}`
-              );
               continue;
             }
             if (block.BlockType === "LINE") {
@@ -1101,6 +1188,10 @@ Please ensure the output is clear, structured, and easy to parse.
   }
 
   async deleteAllCaseDocument(caseId: string) {
-    return DocumentModel.deleteMany({ case: caseId });
+    const alldocs = await DocumentModel.find({ case: caseId }).lean();
+    const alldocIds = alldocs.map((item) => item._id);
+    await DocumentModel.deleteMany({ case: caseId });
+    await TempPageDocumentModel.deleteMany({ document: { $in: alldocIds } });
+    return true;
   }
 }

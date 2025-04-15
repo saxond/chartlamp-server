@@ -5,8 +5,10 @@ import { CaseModel } from "../models/case.model";
 import { UserModel } from "../models/user.model";
 import { CaseService } from "../services/case.service"; // Ensure this path is correct
 import { DocumentService } from "../services/document.service";
+import { ProcessorService } from "../services/processor.service";
 
 const caseService = new CaseService();
+const processorService = new ProcessorService();
 const documentService = new DocumentService();
 
 const handleError = (res: Response, error: any) => {
@@ -98,7 +100,7 @@ export class CaseController {
       const caseData = await caseService.updateCaseDetails({
         caseId: id,
         user: req?.user?.id,
-        ...req.body
+        ...req.body,
       });
       if (!caseData) {
         return res.status(404).json({ message: "Case not found" });
@@ -120,8 +122,9 @@ export class CaseController {
 
   async processCases(req: Request, res: Response) {
     try {
-      const cases = await caseService.processCases();
-      res.status(200).json(cases);
+      // const cases = await caseService.processCases();
+      await processorService.processCase();
+      res.status(200).json([]);
     } catch (error) {
       handleError(res, error);
     }

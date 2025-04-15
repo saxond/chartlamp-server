@@ -1,1582 +1,1740 @@
---- Page 7 ---
-To:
-Page: 07 of 54
-2024-10-01 17:34:50 CDT
-16613282390
-From: Bahamas Surgery Center
-BSC
-BAHAMAS SURGERY CEN I ER, LLC
-Dear Patient,
-As of January 1, 2005, the State of California, Office of Statewide Health Planning and
-Development (OSHPD) mandates that ambulatory surgery centers collect individual
-Encounter data (California Health and Safety Code, Division 107, Part 5 - Health Data,
-Section 128737). The data will be used for health and planning projects, including
-management of state health care delivery and public health programs, efficient
-administration of healthcare services, continuous improvement in the quality of care provided
-by hospitals and ambulatory surgery centers, effective procurement of healthcare access and
-outcomes. Individually identifiable patient information is protected and encrypted within the
-state system.
-In addition to information collected at the time when surgery is scheduled, we also need you to
-select your race and ethnicity:
-RACE:
-R1 - American Indian or Alaskan Native
-R2- Asian
-R3- Black or African American
-R4- Native Hawaiian or other Pacific
-R5- White
-R9- Other Race
-ETHNICITY:
-E1 - Hispanic or Latino
-E2- Non- Hispanic or Non-Latino
-** Have you ever been treated for your condition at an emergency room, hospital, or surgery center
-before today? (Your doctor's office does not count)
-YES / NO
-If you have any questions, please contact the Patient Data Section of OSHPD at (916) 324-6147.
-Additional information is available on the internet at www.oshpd.ca.gov/mircal
-Thank you very much
-ALLERGIC TO:
-PENICILLIN
-CODEINE
-12/14/23
-SULFA
-NKA
-
---- Page 36 ---
-To:
-Page: 36 of 54
-2024-10-01 17:34:50 CDT
-16613282390
-From: Bahamas Surgery Center
-COVID-19/ MPOX SCREENING TOOL
-TO BE COMPLETED BY ALL PATIENTS AND VISITORS UPON ENTRY TO THE FACILITY
-COVID-19 SCREENING
-97.5
-1. Are you fully vaccinated and/or fully recovered from a confirmed case of COVID-19 within the past 90
-days?
-Wes
-No
-2. If fully vaccinated, have you received a booster?
-1
+--- Page 3 ---
+MEDICAL RECORDS SUMMARY  Patient Name: Jesus Prado Maldonado   Date of Injury: 5/16/2023  List all ICD-10 codes diagnosed: F43.0, G44.309, G47.00, G89.11, M25.512, M40.202, M54.2, M54.6, M54.9, M99.01, M99.02, R42, S09.90XA, S46.012A, V43.52XA, V89.2XXA, Y92.410  Is the   Supplemental CMS1500   form being used so that more than 12 ICD-9/ICD-10 codes would be identified?   Yes   No  List all CPT codes used: 70450, 71046, 72052, 72070, 72125, 73030, 97012, 97014, 98941, 99204, 99358  Total number of treatment dates: 5   Initial Treatment Date: 5/16/2023   Last Treatment Date: 6/28/2023  Which of the following items were identified throughout the treatment:  Range of Motion  Headaches  Dizziness  Spasms  Visual Disturbance  Radiating Pain  TMJ - Bruxation – Grinding - Clenching  Anxiety/Depression  Sleep Disturbance  Stiffness  Pain  Atrophy   Body parts ______________________________________________________________  Bed Rest  Check all that apply:   Home Exercise   Massage   Physical Therapy   Gym   Short   Prolonged   Intensive   Regular  Check all that apply:   Medication   Check all that apply :   Short   Prolonged   Intensive   Regular  Check all that apply:   Tests   X-ray   MRI   DMX   C-scan   Check all that apply:   Positive   Negative  All documented injuries and symptoms are related to the instant accident.   Yes  Documented prior injuries or conditions only aggravated or exacerbated injuries caused by the instant accident:   Yes  Is your final prognosis, “Ongoing Complaints with Ongoing Treatment”:   Yes   No  Ongoing treatment would include   both Passive and Active   Treatments  What future treatment is determined necessary as either   Probable (51 to 75% medically certain of it occurring)  or   Definite (76 to 100% medically certain.)  State the estimated cost of future treatment over the next two years.   Total cost of expected future treatment $  Indicate   which body part   has reached   static   MMI: Cervical Spine   % Whole Body Impairment Rating: 3%  Duties Under Duress:  Work   Study   Domestic Duties   Household Duties   Hobbies  Loss of Enjoyment:  Work   Study   Domestic Duties   Household Duties   Hobbies   Sport  Sport Categories: (indicate type patient cannot perform:  Regionally Playing   Competitive   Social   Any Sport  Completed by Medical Resource Services on 12/19/2024
+--- Page 37 ---
+Legal Copy  MEMORIAL MEDICAL CTR  MODESTO  1700 Coffee Road  Modesto CA 95355-2803  Prado, Jesus  MRN: 64572229, DOB: 2/24/1975, Sex: M  Adm: 5/16/2023, D/C: 5/16/2023  05/16/2023 - ED in Memorial Medical Center Emergency Department (continued)  Flowsheets - Other (continued)  Columbia-Suicide Severity Rating Scale (C-SSRS Short Version)  Row Name   05/16/23 1048  Columbia-Suicide Severity Rating Scale (Past Month)  1. In the past  month, have you  wished you were  dead or wished  you could go to  sleep and not  wake up?  No   -GF  2. In the past  month, have you  had any actual  thoughts of killing  yourself?  No   -GF  6. Have you ever  done anything,  started to do  anything, or  prepared to do  anything to end  your life?  No   -GF  Suicide Risk Update  Does Suicide  Risk Need  Updating  No   -GF  Custom Formula Data  Row Name   05/16/23 1048   05/16/23 1046  OTHER  Adult Low Range  VT  —   438 mL   -GF  Adult Moderate  Range VT  —   584 mL   -GF  Adult High Range  VT  —   730 mL   -GF  Goal Weight of   —   126.45   -GF  Goal Weight of   —   278.83   -GF  BMI (Calculated)   —   27.26   -GF  Nutritional Screening Tool (modified PG-SGA) If Total: Calculated Risk Score for Cancer is 4 or greater, intervention by dietitian, in  conjunction with nurse or physician, is strongly indicated.  Percent weight  Change  —   0 %   -GF  Score For  Calculated %  weight Change  Value  —   0   -GF  Length and Weight  % wt change  since birth  —   0 %   -GF  Anthropometrics  IBW   —   75.3   -GF  Weight Information  IBW (Calculated -  kg)  —   75.3 kg   -GF  Printed by [S338673] at 4/12/2024 1:16 PM   Page   30
+--- Page 3 ---
+MEDICAL RECORDS SUMMARY  Patient Name: Jesus Prado Maldonado   Date of Injury: 5/16/2023  List all ICD-10 codes diagnosed: F43.0, G44.309, G47.00, G89.11, M25.512, M40.202, M54.2, M54.6, M54.9, M99.01, M99.02, R42, S09.90XA, S46.012A, V43.52XA, V89.2XXA, Y92.410  Is the   Supplemental CMS1500   form being used so that more than 12 ICD-9/ICD-10 codes would be identified?   Yes   No  List all CPT codes used: 70450, 71046, 72052, 72070, 72125, 73030, 97012, 97014, 98941, 99204, 99358  Total number of treatment dates: 5   Initial Treatment Date: 5/16/2023   Last Treatment Date: 6/28/2023  Which of the following items were identified throughout the treatment:  Range of Motion  Headaches  Dizziness  Spasms  Visual Disturbance  Radiating Pain  TMJ - Bruxation – Grinding - Clenching  Anxiety/Depression  Sleep Disturbance  Stiffness  Pain  Atrophy   Body parts ______________________________________________________________  Bed Rest  Check all that apply:   Home Exercise   Massage   Physical Therapy   Gym   Short   Prolonged   Intensive   Regular  Check all that apply:   Medication   Check all that apply :   Short   Prolonged   Intensive   Regular  Check all that apply:   Tests   X-ray   MRI   DMX   C-scan   Check all that apply:   Positive   Negative  All documented injuries and symptoms are related to the instant accident.   Yes  Documented prior injuries or conditions only aggravated or exacerbated injuries caused by the instant accident:   Yes  Is your final prognosis, “Ongoing Complaints with Ongoing Treatment”:   Yes   No  Ongoing treatment would include   both Passive and Active   Treatments  What future treatment is determined necessary as either   Probable (51 to 75% medically certain of it occurring)  or   Definite (76 to 100% medically certain.)  State the estimated cost of future treatment over the next two years.   Total cost of expected future treatment $  Indicate   which body part   has reached   static   MMI: Cervical Spine   % Whole Body Impairment Rating: 3%  Duties Under Duress:  Work   Study   Domestic Duties   Household Duties   Hobbies  Loss of Enjoyment:  Work   Study   Domestic Duties   Household Duties   Hobbies   Sport  Sport Categories: (indicate type patient cannot perform:  Regionally Playing   Competitive   Social   Any Sport  Completed by Medical Resource Services on 12/19/2024
+--- Page 37 ---
+Legal Copy  MEMORIAL MEDICAL CTR  MODESTO  1700 Coffee Road  Modesto CA 95355-2803  Prado, Jesus  MRN: 64572229, DOB: 2/24/1975, Sex: M  Adm: 5/16/2023, D/C: 5/16/2023  05/16/2023 - ED in Memorial Medical Center Emergency Department (continued)  Flowsheets - Other (continued)  Columbia-Suicide Severity Rating Scale (C-SSRS Short Version)  Row Name   05/16/23 1048  Columbia-Suicide Severity Rating Scale (Past Month)  1. In the past  month, have you  wished you were  dead or wished  you could go to  sleep and not  wake up?  No   -GF  2. In the past  month, have you  had any actual  thoughts of killing  yourself?  No   -GF  6. Have you ever  done anything,  started to do  anything, or  prepared to do  anything to end  your life?  No   -GF  Suicide Risk Update  Does Suicide  Risk Need  Updating  No   -GF  Custom Formula Data  Row Name   05/16/23 1048   05/16/23 1046  OTHER  Adult Low Range  VT  —   438 mL   -GF  Adult Moderate  Range VT  —   584 mL   -GF  Adult High Range  VT  —   730 mL   -GF  Goal Weight of   —   126.45   -GF  Goal Weight of   —   278.83   -GF  BMI (Calculated)   —   27.26   -GF  Nutritional Screening Tool (modified PG-SGA) If Total: Calculated Risk Score for Cancer is 4 or greater, intervention by dietitian, in  conjunction with nurse or physician, is strongly indicated.  Percent weight  Change  —   0 %   -GF  Score For  Calculated %  weight Change  Value  —   0   -GF  Length and Weight  % wt change  since birth  —   0 %   -GF  Anthropometrics  IBW   —   75.3   -GF  Weight Information  IBW (Calculated -  kg)  —   75.3 kg   -GF  Printed by [S338673] at 4/12/2024 1:16 PM   Page   30
+--- Page 3 ---
+MEDICAL RECORDS SUMMARY  Patient Name: Jesus Prado Maldonado   Date of Injury: 5/16/2023  List all ICD-10 codes diagnosed: F43.0, G44.309, G47.00, G89.11, M25.512, M40.202, M54.2, M54.6, M54.9, M99.01, M99.02, R42, S09.90XA, S46.012A, V43.52XA, V89.2XXA, Y92.410  Is the   Supplemental CMS1500   form being used so that more than 12 ICD-9/ICD-10 codes would be identified?   Yes   No  List all CPT codes used: 70450, 71046, 72052, 72070, 72125, 73030, 97012, 97014, 98941, 99204, 99358  Total number of treatment dates: 5   Initial Treatment Date: 5/16/2023   Last Treatment Date: 6/28/2023  Which of the following items were identified throughout the treatment:  Range of Motion  Headaches  Dizziness  Spasms  Visual Disturbance  Radiating Pain  TMJ - Bruxation – Grinding - Clenching  Anxiety/Depression  Sleep Disturbance  Stiffness  Pain  Atrophy   Body parts ______________________________________________________________  Bed Rest  Check all that apply:   Home Exercise   Massage   Physical Therapy   Gym   Short   Prolonged   Intensive   Regular  Check all that apply:   Medication   Check all that apply :   Short   Prolonged   Intensive   Regular  Check all that apply:   Tests   X-ray   MRI   DMX   C-scan   Check all that apply:   Positive   Negative  All documented injuries and symptoms are related to the instant accident.   Yes  Documented prior injuries or conditions only aggravated or exacerbated injuries caused by the instant accident:   Yes  Is your final prognosis, “Ongoing Complaints with Ongoing Treatment”:   Yes   No  Ongoing treatment would include   both Passive and Active   Treatments  What future treatment is determined necessary as either   Probable (51 to 75% medically certain of it occurring)  or   Definite (76 to 100% medically certain.)  State the estimated cost of future treatment over the next two years.   Total cost of expected future treatment $  Indicate   which body part   has reached   static   MMI: Cervical Spine   % Whole Body Impairment Rating: 3%  Duties Under Duress:  Work   Study   Domestic Duties   Household Duties   Hobbies  Loss of Enjoyment:  Work   Study   Domestic Duties   Household Duties   Hobbies   Sport  Sport Categories: (indicate type patient cannot perform:  Regionally Playing   Competitive   Social   Any Sport  Completed by Medical Resource Services on 12/19/2024
+--- Page 37 ---
+Legal Copy  MEMORIAL MEDICAL CTR  MODESTO  1700 Coffee Road  Modesto CA 95355-2803  Prado, Jesus  MRN: 64572229, DOB: 2/24/1975, Sex: M  Adm: 5/16/2023, D/C: 5/16/2023  05/16/2023 - ED in Memorial Medical Center Emergency Department (continued)  Flowsheets - Other (continued)  Columbia-Suicide Severity Rating Scale (C-SSRS Short Version)  Row Name   05/16/23 1048  Columbia-Suicide Severity Rating Scale (Past Month)  1. In the past  month, have you  wished you were  dead or wished  you could go to  sleep and not  wake up?  No   -GF  2. In the past  month, have you  had any actual  thoughts of killing  yourself?  No   -GF  6. Have you ever  done anything,  started to do  anything, or  prepared to do  anything to end  your life?  No   -GF  Suicide Risk Update  Does Suicide  Risk Need  Updating  No   -GF  Custom Formula Data  Row Name   05/16/23 1048   05/16/23 1046  OTHER  Adult Low Range  VT  —   438 mL   -GF  Adult Moderate  Range VT  —   584 mL   -GF  Adult High Range  VT  —   730 mL   -GF  Goal Weight of   —   126.45   -GF  Goal Weight of   —   278.83   -GF  BMI (Calculated)   —   27.26   -GF  Nutritional Screening Tool (modified PG-SGA) If Total: Calculated Risk Score for Cancer is 4 or greater, intervention by dietitian, in  conjunction with nurse or physician, is strongly indicated.  Percent weight  Change  —   0 %   -GF  Score For  Calculated %  weight Change  Value  —   0   -GF  Length and Weight  % wt change  since birth  —   0 %   -GF  Anthropometrics  IBW   —   75.3   -GF  Weight Information  IBW (Calculated -  kg)  —   75.3 kg   -GF  Printed by [S338673] at 4/12/2024 1:16 PM   Page   30
+--- Page 8 ---
+STATE OF CALIFORNIA
+DEPARTMENT OF CALIFORNIA HIGHWAY PATROL
+INJURED / WITNESS / PASSENGERS
+CHP 555 Page 3 (Rev. 2-22) OPI 060
+Page 3
+of 5
+CRASH DATE (MO. DAY YEAR)
+CRASH TIME (2400)
+NCIC
+OFFICER ID
+NUMBER
+05/16/2023
+0553
+9265
+020313
+9265-2023-01587
+WITNESS
+PASSENGER
+EXTENT OF INJURY ("X" ONE)
+INJURED WAS ("X" ONE)
+AGE
+SEX
+PARTY
+SEAT
+AIR
+SAFETY
+ONLY
+ONLY
+EJECTED
+FATAL
+SUSPECTED SERIOUS
+SUSPECTED MINOR
+POSSIBLE
+NUMBER
+POS.
+BAG
+EQUIP.
+DRIVER
+PASS.
+PED.
+BICYCLIST
+INJURY
+OTHER
+OPER.
+INJURY
+INJURY
+INJURY
+#
+48
+M
 2
-If boosted, date of most recent booster
-3, Have you OR anyone you are in close contact with been in contact with anyone that has been diagnosed
-or is being monitored by the CDC for COVID-19 in the last 10 days?
-No
-Yes
-4, Are you OR anyone you are in close contact with currently experiending ANY of the following symptoms?
-Please circle Y for yes and N for no
-Y/O
-Fever (greater than 37.8°C or 100.0°F);
-Y
-N
-Unexplained Hemorrhage (bleeding or bruising)
-Y/N
-Chills and/or Shaking with Chills
-Y /
-N
-Sore Throat/Cough/Respiratory Illness
-Y
-N
-Headache: Moderate and Severe
-Y / (
-N
-Rash/Skin Irritation
-Y
-N
-Muscle Pain
-Y/N
-Allergy Symptoms: Runny nose, etc.
-Y / N
-Weakness
-Y/ N
-Diarrhea/Vomiting/Abdominal Pain
-Y
-N
-New Loss of Taste or Smell
-Other:
-MPOX SCREENING
-Have you been vaccinated for Mpox?
-Yes)
-No If vaccinated, date received
-Screening Question
-Do you have a rash on your body including the genital/perineal area?
-Y / N
-Have you experienced additional symptoms, which may Include fever, chills, distinctive rash* or new
-Y / N
-lymphadenopathy (swollen lymph nodes)?
-Have you traveled recently to central or west African countries, parts of Europe or other areas where an
-Y N
-outbreak is occurring?
-Have you had recent exposure to Individual with confirmed or suspected impox?
-Y / N
-*Rash consistent with impox involves vesicles or pustules that are deep-seated, firm, or hard and well-
+1
+M
+G
+0
+NAME D. O.B. / ADDRESS
+TELEPHONE
+JESUS PRADO MALDONADO (02/24/1975) 9930 ERNST ROAD COUTERVILLE CA 95311
+(209) 484-2837
+(INJURED ONLY) TRANSPORTED BY:
+EMS RUN NUMBER:
+TAKEN TO:
+WILL SEEK OWN AID
+DESCRIBE INJURIES
+NECK AND BACK PAIN
+VICTIM OF VIOLENT CRIME NOTIFIED
+#
+46
+F
+2
+3
+M
+G
+0
+NAME D. O, B. ADDRESS
+TELEPHONE
+CARLOTA BIRRUETA (01/27/1977) 3542 SIERRA STREET RIVERBANK CA 95367
+UNKNOWN
+(INJURED ONLY) TRANSPORTED BY:
+EMS RUN NUMBER:
+TAKEN TO:
+WILL SEEK OWN AID
+DESCRIBE INJURIES
+NECK AND BACK PAIN
+VICTIM OF VIOLENT CRIME NOTIFIED
+#
+NAME / D. O.B. ADDRESS
+TELEPHONE
+(INJURED ONLY) TRANSPORTED BY:
+EMS RUN NUMBER:
+TAKEN TO:
+DESCRIBE INJURIES
+VICTIM OF VIOLENT CRIME NOTIFIED
+#
+NAME / D. O.B./ ADDRESS
+TELEPHONE
+(INJURED ONLY) TRANSPORTED BY:
+EMS RUN NUMBER:
+TAKEN TO:
+DESCRIBE INJURIES
+VICTIM OF VIOLENT CRIME NOTIFIED
+#
+NAME / D. O. B. ADDRESS
+TELEPHONE
+(INJURED ONLY) TRANSPORTED BY:
+EMS RUN NUMBER:
+TAKEN TO:
+DESCRIBE INJURIES
+VICTIM OF VIOLENT CRIME NOTIFIED
+#
+NAME D. O. B, ADDRESS
+TELEPHONE
+(INJURED ONLY) TRANSPORTED BY:
+EMS RUN NUMBER:
+TAKEN TO:
+DESCRIBE INJURIES
+VICTIM OF VIOLENT CRIME NOTIFIED
+PREPARER'S NAME
+ID NUMBER
+MO.
+DAY
+YEAR
+REVIEWER'S NAME
+MO.
+DAY
+YEAR
+HEATHER LUNDBOM
+020313
+05/16/2023
+A G SMITH, 017198
+05/18/2023
+An Internationally Accredited Agency
 
 --- Page 37 ---
-To:
-Page: 37 of 54
-2024-10-01 17:34:50 CDT
-16613282390
-From: Bahamas Surgery Center
-Bahamas
-SURGERY CENTER
-ID / Visit: 3004573
-DOS: 12/6/2023
-PREOPERATIVE CALL RECORD
-SHARP, HENRY
-Sex: M
-DOB: 5/15/1976
-Age: 47
-Phys: Wahba, David
-PATIENT INFORMATION
-Name
-HENRY SHARP
-Spanish
-Other :
-Bring interpreter, if possible
-Phone #
-661-496-3624
-661-301-9219
-Time Surgery/Arrival
-915/815
-Surgery <45minutes planned
-Surgery >45minutes planned2 Procedure
-BILATERAL TRANSFORAMINAL LUMBAR EPIDURAL STEROID INJECTION AT L5-S1
-DIAGNOSTICS
-Labs:
-Yes
-No
-EKG:
-Yes
-No
-CHEST X-Ray:
-Yes
-No
-COVID-19
-Yes
-No Location:
-History Obtained from :
-Patient
-Spouse
-Other
-41-60 years old¹
-161-74 years old 2
-75 years old 3 Ht: S Wt: 280
-BMI
-BMI >25 >40* see guidelines
-Allergies to medication?
-Yes
-No Reaction:
-Latex Allergy?
-Yes
-No Reaction:
-Vanco ORDER
-No
-YES, if yes bring 2 hours prior to surgery
-Food Allergies?
-Yes
-No
-If so, please list:
-SOCIAL HISTORY
-Do you smoke/use tobacco
-Yes
-No
-If so, how much?
-Do you drink?
-Yes
-No
-If so, how much?
-Do you use recreational drugs?
-Yes
-No
-If so, what drugs?
-Are you or do you think you may be pregnant?
-Yes
-No
-Taking Birth Control
-SURGICAL HISTORY
-What previous surgeries have you had?
-Hip or knee replacement in last month 5
-ICentral/PICC Line in last Month2
-ave you or a family member ever had any problems with Anesthesia?
-Yes
-No
-MEDICATION
-Are you currently taking prescription medication and/or over the counter medication?
-Yes (if yes, list medication/dose/route)
-No
-Are you taking Blood thinners?
-Yes
-DIABETIC: hold ORAL meds, if insulin please take 1/2 of dose
-RESPIRATORY
-CARDIOVASCULAR
-Asthma
-Sleep Apnea
-Recent Cold or Cough
-Hypertension
-Swollen Legs1
-MI
-CHF 1
-Pace Maker/AICD
-Lung Disease(emphysema/COPD)
-Irregular heart rhythm
-Stroke in last month 5
-Varicose Veins1
-BLOOD DISORDERS
+Legal Copy
+MEMORIAL MEDICAL CTR
+Prado, Jesus
+Sutter Health
+MODESTO
+MRN: 64572229, DOB: 2/24/1975, Sex: M
+1700 Coffee Road
+Adm: 5/16/2023, D/C: 5/16/2023
+Modesto CA 95355-2803
+05/16/2023 - ED in Memorial Medical Center Emergency Department (continued)
+Flowsheets - Other (continued)
+Columbia-Suicide Severity Rating Scale (C-SSRS Short Version)
+Row Name
+05/16/23 1048
+Columbia-Suicide Severity Rating Scale (Past Month)
+1. In the past
+No -GF
+month, have you
+wished you were
+dead or wished
+you could go to
+sleep and not
+wake up?
+2. In the past
+No -GF
+month, have you
+had any actual
+thoughts of killing
+yourself?
+6. Have you ever
+No -GF
+done anything,
+started to do
+anything, or
+prepared to do
+anything to end
+your life?
+Suicide Risk Update
+Does Suicide
+No -GF
+Risk Need
+Updating
+Custom Formula Data
+Row Name
+05/16/23 1048
+05/16/23 1046
 OTHER
-Anemia
-History of DVT/PE3
-Family HX Clots3
-Diabetes
-Hypoglycemic
-Serious Infection
-Thyroid disease
-Family HX of +test for risk of clotting
-Kidney/Bladder
-Hepatitis/HIV/AIDS
-Bowel disease¹
-Current/Past Malignancies/chemo 3
-MRSA
-MUSCULOSKELTAL
-OTHER
-Broken hip/pelvis/leg in last month
-Bedrest for <72hrs ¹
-Bedrest for >72hrs2
-Serious trauma in last month
-Do you have any other medical concerns I should know about?
-No
-Spinal cord injury resulting in paralysis in last month 5
-Leg Immobility for last month2
-PREOPERATIVE INSTRUCTIONS:
-NPO After:
-No Smoking, chewing tobacco, gum
-No eye makeup/lotion
-life savers, mints(etc) after midnight
-Contact Lenses
-Please remove jewelry /piercings
-Comfortable clothes/ Slippers
-If inhaler is used: bring
-Bring: Patient Packet, AMD, Living Will,
-Adult Driver / Care Giver recommended 24 hrs
-Identification Card, Insurance Card, any Post-Operative Aides
-Total patient score
-(greater than 8 place DVT orders on chart for physician)
-RN Signature:
-ky
-Date:
-12-5-23
-Time:
-1230
+Adult Low Range
+-
+438 mL -GF
+VT
+Adult Moderate
+-
+584 mL -GF
+Range VT
+Adult High Range
+-
+730 mL -GF
+VT
+Goal Weight of
+-
+126.45 -GF
+Goal Weight of
+-
+278.83 -GF
+BMI (Calculated)
+-
+27.26 -GF
+Nutritional Screening Tool (modified PG-SGA) If Total: Calculated Risk Score for Cancer is 4 or greater, intervention by dietitian, in
+conjunction with nurse or physician, is strongly indicated.
+Percent weight
+-
+0 % -GF
+Change
+Score For
+-
+0 -GF
+Calculated %
+weight Change
+Value
+Length and Weight
+% wt change
+-
+0 % -GF
+since birth
+Anthropometrics
+IBW
+-
+75.3 -GF
+Weight Information
+IBW (Calculated -
+-
+75.3 kg -GF
+kg)
+Printed by [S338673] at 4/12/2024 1:16 PM
+Page 30
 
---- Page 45 ---
-To:
-Page: 45 of 54
-2024-10-01 17:34:50 CDT
-16613282390
-From: Bahamas Surgery Center
-hamas Surgery C ter
-2400 Bahamas Dr. # 100
-Bakersfield, CA 93309
-MORSE FALL SCALE
-PATIENT
-LABEL
-Item
-Item Score
-Pre-Op
-PACU
-Score
-Score
-1, History of falling (immediate or previous) within
-No
+--- Page 53 ---
+The Rivermead Post-Concussion Symptoms Questionnaire*
+After a head injury or accident some people experience symptoms which can cause worry or
+nuisance. We would like to know if you now suffer from any of the symptoms given below.
+As many of these symptoms occur normally, we would like you to compare yourself now with
+before the accident. For each one, please circle the number closest to your answer.
 0
-last 3 Months?
-Yes
-25
-2. Greater than 1 Active Medical Diagnoses in chart?
-No
+= Not experienced at all
+1
+= No more of a problem
+2
+= A mild problem
+3 = A moderate problem
+4 = A severe problem
+Compared with before the accident, do you now (i.e., over the last 24 hours) suffer from:
+Headaches
 0
-Yes
-15
-3. Ambulatory Aid
-None/Bedrest/Nurse Assist-
-0
-Crutches/cane/walker-
-15
-Furniture (stair glides, lift chairs, or holding on to
-30
-Furniture)-
-4. Intravenous therapy/Heparin lock?
-No
-0
-Yes
-20
-20
-20
-5. GAIT- See below
-*Normal/bedrest/Wheelchair-
-0
-*Weak-
-10
-*Impaired-
-20
-6. Mental Status
-Oriented to own ability-
-0
-Overestimates/forgets limitations-
-15
-Total score: Tally the patient score and record
-Total=
-20
-20
-<25: Low Risk-No action
-25-45: Moderate Risk-Apply Yellow Fall Risk Sticker on ID band
->45: High Risk-Apply Yellow Fall Risk Sticker on ID band
-Comments:
-Comments:
-*Normal gait: Walks with head erect, arms swinging freely at the side, striding without hesitation
-Weak gait: Stooped, but able to lift head without losing balance, If furniture is needed, uses it as a
-guide (feather-weight touch). Short steps; may shuffle
-*Impaired gait: difficulty rising from a chair (needs to use arms; several attempts
-To rise). Head down; watches ground while walking. Cannot walk without assist; grabs furniture or
-whatever is available. Short, shuffling gait
-Pre-OP RN:
-PACU RN:
-Suggested scoring based on Morse JM, Black C, Oberle K,
-Handoff communication to all providers of the patient-see multi-
-et al. A prospective study to identify the fall-prone patient.
-factoral interventions.
-1989. Other source-AAATIC Patient Safety Toolkit.
-Ambulatory Surgery and Preventing falls.
-REV. BSC 8.15.2022
-
---- Page 86 ---
-To:
-Page: 32 of 48
-2024-10-02 11:28:17 CDT
-16613282390
-From: Bahamas Surgery Center
-COVID-19/ MPOX SCREENING TOOL
-TO BE COMPLETED BY ALL PATIENTS AND VISITORS UPON ENTRY TO THE FACILITY
-COVID-19 SCREENING
-97.5
-1. Are you fully vaccinated and/or fully recovered from a confirmed case of COVID-19 within the past 90
-days?> Yes
-No
-2. If fully vaccinated, have you received a booster?
 1
 2
-If boosted, date of most recent booster
-3.
-Have you OR anyone you are in close contact with been In contact with anyone that has been diagnosed
-or is being monitored by the CDC for COVID-19 in the last 10 days?
-No
-Yes
-4. Are you OR anyone you are in close contact with currently experiencing ANY of the following symptoms?
-Please circle Y for yes and N) for no
-Y
-N
-Fever (greater than 37,8°C or 100.0°F);
-Y
-N
-Unexplained Hemorrhage (bleeding or bruising)
-Y IN
-Chills and/or Shaking with Chills
-Y N
-Sore Throat/Cough/Respiratory Illness
-Y
-N
-Headache: Moderate and Severe
-Y
-N
-Rash/Skin Irritation
-Y
-N
-Muscle Pain
-Y
-N
-Allergy Symptoms: Runny nose, etc.
-Y
-N
-Weakness
-Y N
-Diarrhea/Vomiting/Abdomina Pain
-Y
-N
-New Loss of Taste or Smell
-Other:
-MPOX SCREENING
-Have you been vaccinated for Mpox?
-Yes
-No If vaccinated, date received
-Screening Question
-Do you have a rash on your body including the genital/perineal area?
-Y / N
-Have you experienced additional symptoms, which may include fever, chills, distinctive rash* or new
-Y
-N
-lymphadenopathy (swollen lymph nodes)?
-Have you traveled recently to central or west African countries, parts of Europe or other areas where an
-Y / N
-outbreak is occurring?
-Have you had recent exposure to individual with confirmed or suspected impox?
-Y
-N
-*Rash consistent with impox Involves vesicles or pustules that are deep-seated, firm, or hard and well-
-circumscribed; the lesions may umbilicated or become confluent and progress to scabs over time
-Henry Shay
-Patient Name
-Visitor Name
-12/18/23 C 9:45 AM
-Signature of Patient/Visitor
-Date/Time
-ID / Visit: 3004573 /
-DOS: 12/18/2023
-SHARP, HENRY
-Sex: M
-DOB: 5/15/1976
-Age: 47
-Phys: Wahba, David
-
---- Page 88 ---
-To:
-Page: 34 of 48
-2024-10-02 11:28:17 CDT
-16613282390
-From: Bahamas Surgery Center
-BSC HOME ME
-CATION RECONCII TION LIST
-.llergies to: Medications?
-No
-Yes
-Latex?
-No
-Yes
-Shellfish or Iodine?
-No
-Yes
-answered YES to any of the above questions, please list allergy and reaction.
-ID / Visit: 3004573 /
-DOS: 12/18/2023
-SHARP, HENRY
-Sex: M
-DOB: 5/15/1976
-Age: 47
-Phys: Wahba, David
-Are you currently taking any medications (prescription, over-the-counter,
-Allergies Reviewed
-GREY AREAS FOR
-or vitamins)
-No Home Medications
-Yes, please fill out below.
-NKDA
-STAFF USE ONLY
-Medication / Name / Dose
-Frequency
-Date & Time
-RN Initial
-Continue on
-Reason for
-of Last Dose
-Reviewed
-Discharge
-Taking
-Name: Aleve
-Daily
-Bedtime
-Yes
-No
-New Med
-2x a day
-3 X a day
-Dose: 2 Capsuls
-Other
-(24/17)
-Name: Aleve Pn
-Daily
-Bedtime
-Yes
-No
-New Med
-2 x # day
-3 x a day
-Dose: Capsules
-Other
-[24]
-Name:
-Daily
-Bedtime
-Yes
-No
-New Med
-2 x a day
-3 % a day
-Dose:
-Other
-Name:
-Daily
-Bedtime
-Yes
-No
-New Med
-2x 8 day
-3 X a day
-Dose:
-Other
-Daily
-Bedtime
-Name:
-Yes
-No
-New Med
-2 x a day
-3 X a day
-Dose:
-Other
-Name:
-Daily
-Bedtime
-Yes
-No
-New Med
-2 X a day
-3 X a day
-Dose:
-Other
-Name:
-Daily
-Bedtime
-Yes
-No
-New Med
-2 X a day
-3 X a day
-Dose:
-Other
-Daily
-Bedtime
-Name:
-
---- Page 89 ---
-To:
-Page: 35 of 48
-2024-10-02 11:28:17 CDT
-16613282390
-From: Bahamas Surgery Center
-Bahamas
-LM
-SURGERY CENTER
-ID / Visit: 3004573 / DOS: 12/18/2023
-SHARP, HENRY
-Sex: M
-REOPERATIVE CALL RECORD
-DOB: 5/15/1976
-Age: 47
-Phys: Wahba, David
-PATIENT INFORMATION
-Name
-HENRY SHARP
-Spanish Other :
-Bring interpreter, if possible
-Phone #
-661-496-3624
-Cell #
-Time Surgery/Arrival
-1115/1015
-Surgery <45minutes planned
-Surgery >45minutes planned2 Procedure
-CERVICAL CENTRAL INTRALAMINAR EPIDURAL STEROID INJECTION AT C5-C6
-DIAGNOSTICS
-Labs:
-Yes
-No
-EKG:
-Yes
-No
-CHEST X-Ray:
-Yes
-No
-COVID-19
-Yes
-No Location:
-History Obtained from :
-Patient
-Spouse
-Other
-141-60 years old
-61-74 years old
->75 years old 3 Ht: 5'11 Wt: 274 BMI
-IBMI
->25 >40* see guidelines
-Allergies to medication?
-Yes
-No Reaction:
-Latex Allergy?
-Yes
-No Reaction:
-Vanco ORDER
-No
-YES, if yes bring 2 hours prior to surgery
-Food Allergies?
-Yes
-No
-If so, please list:
-SOCIAL HISTORY
-Do you smoke/use tobacco
-Yes
-No
-If so, how much?
-Do you drink?
-Yes
-No
-If so, how much?
-our
-Do you use recreational drugs?
-Yes
-No
-If so, what drugs?
-Are you or do you think you may be pregnant?
-Yes
-No
-Taking Birth Control
-SURGICAL HISTORY
-What previous surgeries have you had?
-Hip or knee replacement in last month5
-Yes
-Central/PICC Line in last Month²
-Ive you or a family member ever had any problems with Anesthesia?
-Yes
-No
-MEDICATION
-Are you currently taking prescription medication and/or over the counter medication?
-Yes (if yes, list medication/dose/route)
-No
-Are you taking Blood thinners?
-Yes
-Aleve
-DIABETIC: hold ORAL meds, if insulin please take 1/2 of dose
-RESPIRATORY
-CARDIOVASCULAR
-Asthma
-Sleep Apnea
-Recent Cold or Cough
-Hypertension
-Swollen Legs
-MI
-CHF
-Pace Maker/AICD
-Lung Disease(emphysema/COPD)
-Irregular heart rhythm
-Stroke in last month 5
-Varicose Veins
-BLOOD DISORDERS
-OTHER
-Anemia
-History of DVT/PE3
-Family HX Clots3
-Diabetes
-Hypoglycemic
-Serious Infection
-Thyroid disease
-Family HX of +test for risk of clotting
-Kidney/Bladdor
-Hepatitis/HIV/AIDS
-Bowel disease
-Current/Past Malignancies/chemo²
-MRSA
-MUSCULOSKELTAL
-OTHER
-Broken hip/pelvis/leg in last month
-Bedrest for
-2hrs1
-Bedrest for >72hrs2
-Serious trauma in last month
-Do you have any other medical concerns I should know about?
-No
-Spinal cord injury resulting in paralysis in last month
-Leg Immobility for last month2
-PREOPERATIVE INSTRUCTIONS:
-NPO After:
-mid
-No Smoking, chewing tobacco, gum
-No eye makeup/lotion
-life savers, mints(etc) after midnight
-Contact Lenses
-Please remove jewelry /piercings
-Comfortable clothes/ Slippers
-If inhaler is used: bring
-Bring: Patient Packet, AMD, Living Will,
-(Adult Driver / Care Giver recommended 24 hrs
-Identification Card, Insurance Card, any Post-Operative Aides
-friend
-Total patient score
-(greater than 8 place DVT orders on chart for physician)
-RN Signature:
-may
-Date: 12/14/23
-Time: 132g
-
---- Page 111 ---
-To:
-Page: 07 of 55
-2024-10-02 17:47:17 CDT
-16613282390
-From: Bahamas Surgery Center
-At Bahamas Surgery Center patient perception and satisfaction is important to us. Responses from our
-patients help to focus on areas that need improvement.
-We would like to ask that in the days following surgery you participate in a patient survey. Results are
-anonymous unless you prefer to leave your name.
-Please select your method of survey,
-Prefer to respond via email only. I do not consent to text messages from Bahamas Surgery Center
-Email address: hankshappeme.com
-ID / Visit: 3004573 /
-DOS: 7/8/2024
-SHARP, HENRY
-Sex: M
-DOB: 5/15/1976
-Prefer to respond via text. Must sign consent below.
-Age: 48
-Phys: Wahba, David
-Mobile Phone Number: 661 496 3624
-I prefer not to participate in the patient survey. Please exclude from survey.
-Consent to Receive Text Messages from BAHAMAS SURGERY CENTER
-By signing below, I authorize BAHAMAS SURGERY CENTER through its partner PRESS GANEY to contact me by
-SMS text message to support my health. BAHAMAS SURGERY CENTER may send me text messages for several
-purposes, including:
-Timely reminders about needed or upcoming doctor or dental visits
-Requests to participate in patient experience surveys related to my recent health care encounters
-Information to help manage illnesses
-I understand that message/data rates may apply to messages sent through BAHAMAS SURGERY CENTER to my cell
-phone and that I may receive up to 2 texts per month.
-I know that I am under no obligation to authorize BAHAMAS SURGERY CENTER to send me text messages as part of
-this program. I may opt out of receiving these communications from BAHAMAS SURGERY CENTER at any time by
-calling BAHAMAS SURGERY CENTER at 661-328-2333 or by texting 'STOP' to the received text.
-Signature: Henry May
-Name: Shorp
-Date: 7/8/24
-Surveys are sent from independent firm.
-Thank you for your time in filling out our survey and Thank You for choosing Bahamas Surgery Center.
-Patricia Gorman, RN BSN
-Director of Nursing
-Bahamas Surgery Center
-Rev. 6/21/23
-
---- Page 142 ---
-To:
-Page: 38 of 55
-2024-10-02 17:47:17 CDT
-16613282390
-From: Bahamas Surgery Center
-COVID-19/ MPOX SCREENING TOOL
-TO BE COMPLETED BY ALL PATIENTS AND VISITORS UPON ENTRY TO THE FACILITY
-COVID-19 SCREENING
-97.2
-1. Are you fully vaccinated and/or fully recovered from a confirmed case of COVID-19 within the past 90
-days?
-Yes
-No
-2. If fully vaccinated, have you received a booster?
-1
-
---- Page 143 ---
-To:
-Page: 39 of 55
-2024-10-02 17:47:17 CDT
-16613282390
-From: Bahamas Surgery Center
-Bahamas
-SURGERY CENTER
-ID / Visit: 3004573 /
-DOS: 7/8/2024
-Pre-Operative Evaluation
-SHARP, HENRY
-Sex: M
-DOB: 5/15/1976
-Age: 48
-Patient Name:
-Phys: Wahba, David
-Height:
-Weight:
-Check if history of:
-NEURO
-RESPIRATORY
-Stroke: When
-Recent Cold / Pneumonia
-Transient Ischemic Attack
-Lung Disease
-Seizures
-COPD / Asthma / Emphysema
-Headaches / Migraines
-Sleep Apnea
-Paralysis / Weakness
-Tuberculosis
-Fainting
-Abnormal Chest X-Ray
-MUSCULAR SKELETAL
-Smoking
-Packs Per Day
-Arthritis / Joint Pain / Swelling
-CARDIOVASCULAR
-Fractured Bones
-Heart attack: When
-Plates or Implants
-Congestive Heart Failure
-Back or Disc Pain
-Heart Murmurs
-ENDOCRINE
-Chest Pain / Angina
-Diabetes
-Pacemaker / AICD
-Insulin Dependant
-High Blood Pressure
-Hyperthyroid or Hypothyroid
-Mitral Valve Prolapse
-PSYCHIATRIC/SOCIAL
-GI/GU
-Mental Illness
-Ulcers/ Reflux
-Depression
-Irritable Bowel
-BLOOD DISORDERS
-Constipation Diarrhea
-Bleeding Disorder
-Po ssibly Von Willenbored
-Nausea / Vomiting
-Blood Disease (Anemia)
-Hepatitis: Type
-Blood Transfusions
-Liver Problems / Jaundice
-Sickle Cell Trair
-Kidney Disease
-HIV/AIDS
-Prostate Problems
-DO YOU?
-Possibility of Pregnancy
-Wear Contact Lenses
-Last Menstrual Cycle
-Wear a Hearing Aid
-Hysterectomy
-Wear Dentures / Partials Plates / Bridge
-INFECTIONS
-Have Capped / Loose Teeth
-2-3 drinks
-Staph
-Do you drink alcohol? If yes, amount week
-Other
-Recreational Drugs (BD for Painwation need &
-Smoke / Chew Tobacco? If yes, amount
-PREVIOUS SURGICAL HISTORY
-$
-Date of Last Anesthesia 6/4/24 colonoscopy
-Surgeries Vasecture, 2 where serve, toesils
-Any history of abnormal reaction to anesthesia
-Family history of reaction to anesthesia
-Do you have an Advance Directive?
-as
-If yes, please provide copy to center
-I received the information on patient rights, responsibilities, physician disclosure, notice of patient privacy and
-HIPAA, advance directive information and grievance policy, in advance of my surgery, I understand that if an
-adverse event occurs during my treatment at the surgery center, the personnel at the surgery center will initiate
-resuscitative or other stabilizing measures and transfer me to an acute care facility for further evaluation.
-Patient Signature Her
-BSC-101 (3/21) MM
-
---- Page 150 ---
-To:
-Page: 46 of 55
-2024-10-02 17:47:17 CDT
-16613282390
-From: Bahamas Surgery Center
-B
-namas Surgery Ce
-er
-2400 Bahamas Dr. #100 Bakersfield, CA 93309
-MORSE FALL SCALE
-PATIENT
-LABEL
-Item
-Item Score
-Pre-Op
-PACU
-Score
-Score
-1. History of falling (immediate or previous) within
-No
+3
+4
+Feelings of Dizziness
 0
-last 3 Months?
-Yes 25
-A
-to
-2. Greater than 1 Active Medical Diagnoses in chart?
-No
-0
-O
-Yes
-15
-O
-3. Ambulatory Aid
-None/Bedrest/Nurse Assist-
-0
-Crutches/cane/walker-
-15
-Furniture (stair glides, lift chairs, or holding on to
-30
-&
-I
-Furniture)-
-4. Intravenous therapy/Heparin lock?
-No
-0
-20
-Yes
-20
-20
-5. GAIT- See below
-*Normal/bedrest/Wheelchair-
-0
-0
-*Weak-
-10
-0
-*Impaired-
-20
-6. Mental Status
-Oriented to own ability-
-0
-0
-0
-Overestimates/forgets limitations-
-15
-Total score: Tally the patient score and record
-Total=
-20
-20
-<25: Low Risk-No action
-25-45: Moderate Risk-Apply Yellow Fall Risk Sticker on ID band
-can
-for
->45: High Risk-Apply Yellow Fall Risk Sticker on ID band
-Comments:
-Comments:
-*Normal gait: Walks with head erect, arms swinging freely at the side, striding without hesitation
-*Weak gait: Stooped, but able to lift head without losing balance. If furniture is needed, uses it as a
-guide (feather-weight touch). Short steps; may shuffle
-*Impaired gait: difficulty rising from a chair (needs to use arms; several attempts
-To rise). Head down; watches ground while walking. Cannot walk without assist; grabs furniture or
-whatever is available. Short, shuffling gait
-Pre-OP RN: amy/es
-PACU RN: June
-Suggested scoring based on Morse JM, Black C, Oberle K.
-Handoff communication to all providers of the patient-see multi-
-et al. A prospective study to identify the fall-prone patient.
-factoral interventions.
-1989. Other source-AAAHC Patient Safety Toolkit.
-Ambulatory Surgery and Preventing falls.
-REV. BSC 8.15.2022
-ID / Visit: 3004573 /
-DOS: 7/8/2024
-SHARP, HENRY
-Sex: M
-DOB: 5/15/1976
-Age: 48
-Phys: Wahba, David
-
---- Page 198 ---
-To:
-Page: 39 of 55
-2024-10-03 12:13:49 CDT
-16613282390
-From: Bahamas Surgery Center
-BSC HOME MEL R CATION RECONCILI
-TION LIST
-Allergies to: Medications?
-No
-Yes
-Latex?
-No
-Yes
-Shellfish or lodine?
-No
-Yes
-If answered YES to any of the above questions, please list allergy and reaction.
-ID / Visit: 3004573 /
-DOS: 7/22/2024
-SHARP, HENRY
-Sex: M
-DOB: 5/15/1976
-Age: 48
-
---- Page 199 ---
-To:
-Page: 40 of 55
-2024-10-03 12:13:49 CDT
-16613282390
-From: Bahamas Surgery Center
-COVID-19/ MPOX SCREENING TOOL
-TO BE COMPLETED BY ALL PATIENTS AND VISITORS UPON ENTRY TO THE FACILITY
-COVID-19 SCREENING
-97.8
-1. Are you fully vaccinated and/or fully recovered from a confirmed case of COVID-19 within the past 90
-days?
-Yes
-No
-2. If fully vaccinated, have you received a booster?
 1
 2
-If boosted, date of most recent booster
-3.
-Have you OR anyone you are in close contact with been in contact with anyone that has been diagnosed
-or is being monitored by the CDC for COVID-19 in the last 10 days?
-No
-Yes
-4. Are you OR anyone you are in close contact with currently experiencing ANY of the following symptoms?
-Please circle Y for yes and N for no
-Y/ N
-Fever (greater than 37.8°C or 100.0°F);
-Y / N
-Unexplained Hemorrhage (bleeding or bruising)
-Y /
-Chills and/or Shaking with Chills
-Y
-N
-Sore Throat/Cough/Respiratory Illness
-Y
-N
-Headache: Moderate and Severe
-Y
-N
-Rash/Skin Irritation
-Y
-L
-N
-Muscle Pain
-Y
-N
-Allergy Symptoms: Runny nose, etc.
-Y
-N
-Weakness
-Y N
-Dlarrhea/Vomiting/Abdominal Pain
-Y
-N
-New Loss of Taste or Smell
-Other:
-MPOX SCREENING
-Have you been vaccinated for Mpox?
-Yes
-No If vaccinated, date received
-Screening Question
-Do you have a rash on your body including the genital/perineal area?
-Y
-N
-Have you experienced additional symptoms, which may Include fever, chills, distinctive rash* or new
-Yr
-N
-lymphadenopathy (swollen lymph nodes)?
-Have you traveled recently to central or west African countries, parts of Europe or other areas where an
-Y// N.
-
---- Page 201 ---
-To:
-Page: 41 of 55
-2024-10-03 12:44:06 CDT
-16613282390
-From: Bahamas Surgery Center
-SHARP, HENR'
-Sex: M
-Bahamas
-DOB: 5/15/1976
-Age: 48
-Phys: Wahba, David
-SURGERY CENTER
-PREOPERATIVE CALL RECORD
-DOB: 05/15/1976
-DR.WAHBA
-DOS 7/22/24
-PATIENT INFORMATION
-Name
-SHARP, HENRY
-Spanish
-Other
-:
-Bring interpreter, if possible
-Phone #
-661-496-3624
-Cell #
-Time Surgery/Arrival
-1330 /1230
-Surgery <45minutes planned
-Surgery >45minutes planned2 Procedure TRANSFORAMINAL LUMBAR EPIDURAL
-STEROID INJECTION AT RIGHT L5-S1
-DIAGNOSTICS
-Labs:
-Yes
-No
-EKG:
-Yes
-No
-CHEST X-Ray:
-Yes
-No
-COVID-19
-Yes
-No Location:
-History Obtained from :
-Patient
-Spouse
-Other
-141-60 years old'
-61-74 years old 2
->75 years old 3 Ht: 5'11" Wt: 262 BMI
-BMI >25 >40* see guidelines
-Allergies to medication?
-Yes
-No Reaction:
-Latex Allergy?
-Yes
-No Reaction:
-Vanco ORDER
-No
-YES, if yes bring 2 hours prior to surgery
-Food Allergies?
-Yes
-No
-If so, please list:
-SOCIAL HISTORY
-Do you smoke/use tobacco
-Yes
-No
-If so, how much?
-Do you drink?
-Yes
-No
-If so, how much?
-Do you use recreational drugs?
-Yes
-No
-If so, what drugs?
-Are you or do you think you may be pregnant?
-Yes
-No
-Taking Birth Control1
-SURGICAL HISTORY
-What previous surgeries have you had?
-Hip or knee replacement in last month 5
-S
-CCentral/PICC Line in last Month2
-Have you or a family member ever had any problems with Anesthesia
-Yes
-No
-MEDICATION
-Are you currently taking prescription medication and/or over the counter medication?
-Yes (if yes, list medication/dose/route)
-No
-Are you taking Blood thinners?
-Yes
-DIABETIC: hold ORAL meds, if insulin please take 1/2 of dose
-RESPIRATORY
-CARDIOVASCULAR
-Asthma
-Sleep Apnca
-Recent Cold or Cough
-Hypertension
-Swollen Legs
-MI'
-CHF'
-Pace Maker/AICD
-Lung Disease(emphysema/COPD)'
-Irregular heart rhythm
-Stroke in last month
-Varicose Veins
-BLOOD DISORDERS
-OTHER
-Anemia
-History of DVT/PE3
-Family HX Clots3
-Diabetes
-Hypoglycemic
-Serious Infection
-Thyroid disease
-Family HX of +test for risk of clotting
-Kidney/Bladder
-Hepatitis/HIV/AIDS
-Bowel disease
-Current/Past Malignancies/chemo?
-MRSA
-MUSCULOSKELTAL
-OTHER
-Broken hip/pelvis/leg in last month
-Bedrest for <72hrs'
-Bedrest for >72hrs2
-Serious trauma in last month
-Do you have any other medical concerns I should know about?
-No
-Spinal cord injury resulting in paralysis in last month
-Leg Immobility for last month²
-PREOPERATIVE INSTRUCTIONS:
-NPO After:
-0430
-No Smoking, chewing tobacco, gum
-No eye makeup/lotion
-life savers, mints(etc) after midnight
-Contact Lenses
-Please remove jewelry /piercings
-Comfortable clothes/ Slippers
-If inhaler is used: bring
-Bring: Patient Packet, AMD, Living Will,
-Adult Driver / Care Giver recommended 24 hrs
-Identification Card, Insurance Card, any Post-Operative Aides
-Friend
-Total patient score
-(greater than 8 place DVT orders on chart for physician)
-RN Signature:
-R
-Date: 07-22-24
-Time: 0920
-
---- Page 207 ---
-To:
-Page: 47 of 55
-2024-10-03 12:44:06 CDT
-16613282390
-From: Bahamas Surgery Center
-Bahamas Surgery enter
-2400 Bahamas Dr. # 100
-Bakersfield, CA 93309
-MORSE FALL SCALE
-PATIENT
-LABEL
-Item
-Item Score
-Pre-Op
-PACU
-Score
-Score
-1. History of falling (immediate or previous) within
-No 0
-O
-O
-last 3 Months?
-Yes
-25
-2. Greater than 1 Active Medical Diagnoses in chart?
-No
+3
+4
+Nausea and/or Vomiting
 0
-Yes
-IS
-15
-15
-3. Ambulatory Aid
-None/Bedrest/Nurse Assist-
-0
-6
-Crutches/cane/walker-
-15
-Furniture (stair glides, lift chairs, or holding on to
-30
-Furniture)-
-4. Intravenous therapy/Heparin lock?
-No
-0
-Yes
-20
-20
-20
-5. GAIT- See below
-*Normal/bedrest/Wheelchair-
-0
-*Weak-
-10
-s
-U
-*Impaired-
-20
-6. Mental Status
-Oriented to own ability-
-0
-s
-U
-Overestimates/forgets limitations-
-15
-Total score: Tally the patient score and record
-Total=
+1
 2
-35
-<25: Low Risk-No action
-25-45: Moderate Risk-Apply Yellow Fall Risk Sticker on ID band
->45: High Risk-Apply Yellow Fall Risk Sticker on ID band
-Comments:
-Comments:
-*Normal gait: Walks with head erect, arms swinging freely at the side, striding without hesitation
-* Weak gait: Stooped, but able to lift head without losing balance. If furniture is needed, uses it as a
-guide (feather-weight touch). Short steps; may shuffle
-*Impaired gait: difficulty rising from a chair (needs to use arms; several attempts
-To rise). Head down; watches ground while walking. Cannot walk without assist; grabs furniture or
-whatever is available. Short shuffling gait
-Pre-OP RN:
-PACU RN:
-Suggested scoring based on Morse JM, Black C, Oberle K,
-Handoff communication to all providers of the patient-see malti-
-et al. A prospective study to identify the fall-prone patient.
-factoral interventions.
-1989. Other source-AAAHC Patient Safety Toolkit.
-Ambulatory Surgery and Preventing falls.
-REV. BSC 8.15.2022
-DOS: 7/22/2024
-/ Visit: 3004573 /
-Sex: M
-ID SHARP. HENRY
-Age: 48
-DOB: 5/15/1976
-Phys: Wahba, David
+3
+4
+Noise Sensitivity,
+easily upset by loud noise
+@
+1
+2
+3
+4
+Sleep Disturbance
+0
+1
+2
+3
+4
+Fatigue, tiring more easily
+0
+1
+2
+3
+4
+Being Irritable, easily angered
+0
+1
+2
+3
+4
+Feeling Depressed or Tearful
+0
+1
+2
+3
+4
+Feeling Frustrated or Impatient
+0
+1
+2
+3
+4
+Forgetfulness, poor memory
+1
+2
+3
+4
+Poor Concentration
+1
+2
+3
+4
+Taking Longer to Think
+1
+2
+3
+4
+Blurred Vision
+1
+2
+3
+4
+Light Sensitivity,
+Easily upset by bright light
+1
+2
+3
+4
+Double Vision
+1
+2
+3
+4
+Restlessness
+0
+1
+2
+3
+4
+Are you experiencing any other difficulties?
+1.
+0
+1
+2
+3
+4
+2.
+0
+1
+2
+3
+4
+*King, N., Crawford, S., Wenden, F., Moss, N., and Wade, D. (1995) J. Neurology 242: 587-592
+06/23/08
 
---- Page 9 ---
-To:
-Page: 37 of 54
-2024-10-01 17:34:50 CDT
-16613282390
-From: Bahamas Surgery Center
-Bahamas
-SURGERY CENTER
-ID / Visit: 3004573
-DOS: 12/6/2023
-PREOPERATIVE CALL RECORD
-SHARP, HENRY
-Sex: M
-DOB: 5/15/1976
-Age: 47
-Phys: Wahba, David
-PATIENT INFORMATION
-Name
-HENRY SHARP
-Spanish
-Other :
-Bring interpreter, if possible
-Phone #
-661-496-3624
-661-301-9219
-Time Surgery/Arrival
-915/815
-Surgery <45minutes planned
-Surgery >45minutes planned2 Procedure
-BILATERAL TRANSFORAMINAL LUMBAR EPIDURAL STEROID INJECTION AT L5-S1
-DIAGNOSTICS
-Labs:
-Yes
-No
-EKG:
-Yes
-No
-CHEST X-Ray:
-Yes
-No
-COVID-19
-Yes
-No Location:
-History Obtained from :
-Patient
-Spouse
-Other
-41-60 years old¹
-161-74 years old 2
-75 years old 3 Ht: S Wt: 280
-BMI
-BMI >25 >40* see guidelines
-Allergies to medication?
-Yes
-No Reaction:
-Latex Allergy?
-Yes
-No Reaction:
-Vanco ORDER
-No
-YES, if yes bring 2 hours prior to surgery
-Food Allergies?
-Yes
-No
-If so, please list:
-SOCIAL HISTORY
-Do you smoke/use tobacco
-Yes
-No
-If so, how much?
-Do you drink?
-Yes
-No
-If so, how much?
-Do you use recreational drugs?
-Yes
-No
-If so, what drugs?
-Are you or do you think you may be pregnant?
-Yes
-No
-Taking Birth Control
-SURGICAL HISTORY
-What previous surgeries have you had?
-Hip or knee replacement in last month 5
-ICentral/PICC Line in last Month2
-ave you or a family member ever had any problems with Anesthesia?
-Yes
-No
-MEDICATION
-Are you currently taking prescription medication and/or over the counter medication?
-Yes (if yes, list medication/dose/route)
-No
-Are you taking Blood thinners?
-Yes
-DIABETIC: hold ORAL meds, if insulin please take 1/2 of dose
-RESPIRATORY
-CARDIOVASCULAR
-Asthma
-Sleep Apnea
-Recent Cold or Cough
-Hypertension
-Swollen Legs1
-MI
-CHF 1
-Pace Maker/AICD
-Lung Disease(emphysema/COPD)
-Irregular heart rhythm
-Stroke in last month 5
-Varicose Veins1
-BLOOD DISORDERS
+--- Page 37 ---
+Legal Copy
+MEMORIAL MEDICAL CTR
+Prado, Jesus
+Sutter Health
+MODESTO
+MRN: 64572229, DOB: 2/24/1975, Sex: M
+1700 Coffee Road
+Adm: 5/16/2023, D/C: 5/16/2023
+Modesto CA 95355-2803
+05/16/2023 - ED in Memorial Medical Center Emergency Department (continued)
+Flowsheets - Other (continued)
+Columbia-Suicide Severity Rating Scale (C-SSRS Short Version)
+Row Name
+05/16/23 1048
+Columbia-Suicide Severity Rating Scale (Past Month)
+1. In the past
+No -GF
+month, have you
+wished you were
+dead or wished
+you could go to
+sleep and not
+wake up?
+2. In the past
+No -GF
+month, have you
+had any actual
+thoughts of killing
+yourself?
+6. Have you ever
+No -GF
+done anything,
+started to do
+anything, or
+prepared to do
+anything to end
+your life?
+Suicide Risk Update
+Does Suicide
+No -GF
+Risk Need
+Updating
+Custom Formula Data
+Row Name
+05/16/23 1048
+05/16/23 1046
 OTHER
-Anemia
-History of DVT/PE3
-Family HX Clots3
-Diabetes
-Hypoglycemic
-Serious Infection
-Thyroid disease
-Family HX of +test for risk of clotting
-Kidney/Bladder
-Hepatitis/HIV/AIDS
-Bowel disease¹
-Current/Past Malignancies/chemo 3
-MRSA
-MUSCULOSKELTAL
-OTHER
-Broken hip/pelvis/leg in last month
-Bedrest for <72hrs ¹
-Bedrest for >72hrs2
-Serious trauma in last month
-Do you have any other medical concerns I should know about?
-No
-Spinal cord injury resulting in paralysis in last month 5
-Leg Immobility for last month2
-PREOPERATIVE INSTRUCTIONS:
-NPO After:
-No Smoking, chewing tobacco, gum
-No eye makeup/lotion
-life savers, mints(etc) after midnight
-Contact Lenses
-Please remove jewelry /piercings
-Comfortable clothes/ Slippers
-If inhaler is used: bring
-Bring: Patient Packet, AMD, Living Will,
-Adult Driver / Care Giver recommended 24 hrs
-Identification Card, Insurance Card, any Post-Operative Aides
-Total patient score
-(greater than 8 place DVT orders on chart for physician)
-RN Signature:
+Adult Low Range
+-
+438 mL -GF
+VT
+Adult Moderate
+-
+584 mL -GF
+Range VT
+Adult High Range
+-
+730 mL -GF
+VT
+Goal Weight of
+-
+126.45 -GF
+Goal Weight of
+-
+278.83 -GF
+BMI (Calculated)
+-
+27.26 -GF
+Nutritional Screening Tool (modified PG-SGA) If Total: Calculated Risk Score for Cancer is 4 or greater, intervention by dietitian, in
+conjunction with nurse or physician, is strongly indicated.
+Percent weight
+-
+0 % -GF
+Change
+Score For
+-
+0 -GF
+Calculated %
+weight Change
+Value
+Length and Weight
+% wt change
+-
+0 % -GF
+since birth
+Anthropometrics
+IBW
+-
+75.3 -GF
+Weight Information
+IBW (Calculated -
+-
+75.3 kg -GF
+kg)
+Printed by [S338673] at 4/12/2024 1:16 PM
+Page 30
 
---- Page 10 ---
-To:
-Page: 38 of 54
-2024-10-01 17:34:50 CDT
-16613282390
-From: Bahamas Surgery Center
-Bahamas
-SURGERY CENTER
-Pre-Operative Evaluation
-ID / Visit: 3004573
-SHARP, HENRY
-DOS: 12/6/2023
-Patient Name:
-DOB: 5/15/1976
-Sex: M
-Phys: Wahba, David
-Age: 47
-Height:
-Weight:
-Check if history of:
-NEURO
-RESPIRATORY
-Stroke: When
-Recent Cold / Pneumonia
-Transient Ischemic Attack
-Lung Disease
-Seizures
-COPD / Asthma / Emphysema
-Headaches / Migraines
-Sleep Apnea
-Paralysis / Weakness
-Tuberculosis
-Fainting
-Abnormal Chest X-Ray
-MUSCULAR SKELETAL
-Smoking
-Packs Per Day
-Arthritis / Joint Pain / Swelling
-CARDIOVASCULAR
-Fractured Bones
-Heart attack: When
-Plates or Implants
-Congestive Heart Failure
-Back or Disc Pain
-Heart Murmurs
-ENDOCRINE
-Chest Pain / Angina
-Diabetes
-Pacemaker / AICD
-Insulin Dependant
-High Blood Pressure
-Hyperthyroid or Hypothyroid
-Mitral Valve Prolapse
-PSYCHIATRIC/SOCIAL
-GI/GU
-Mental Illness
-Ulcers/ Reflux
-Depression
-Irritable Bowel
-BLOOD DISORDERS
-Constipation Diarrhea
-Bleeding Disorder
-Nausea / Vomiting
-Blood Disease (Anemia)
-Hepatitis: Type
-Blood Transfusions
-Liver Problems / Jaundice
-Sickle Cell Trait
-Kidney Disease
-HIV/AIDS
-Prostate Problems
-DO YOU?
-Possibility of Pregnancy
-Wear Contact Lenses
-Last Menstrual Cycle
-Wear a Hearing Aid
-Hysterectomy
-Wear Dentures / Partials Plates / Bridge
-INFECTIONS
-Have Capped / Loose Teeth
-Staph
-Do you drink alcohol? If yes, amount 2-4 druk,
-Other
-Recreational Drugs
-aweek
-Smoke / Chew Tobacco? If yes, amount
-PREVIOUS SURGICAL HISTORY
-Date of Last Anesthesia 8/7/27
-Surgeries Septaplatory Nerve left orm (trive), verectomy
-Any history of abnormal reaction to anesthesia
-Family history of reaction to anesthesia
-Do you have an Advance Directive? No
-If yes, please provide copy to center
-I received the information on patient rights, responsibilities, physician disclosure, notice of patient privacy and
-HIPAA, advance directive information and grievance policy, in advance of my surgery. I understand that if an
-adverse event occurs during my treatment at the surgery center, the personnel at the surgery center will initiate
-resuscitative or other stabilizing measures and transfer me to an acute care facility for further evaluation.
-Patient Signature Hyz
-BSC-101 (3/21) MM
+--- Page 53 ---
+The Rivermead Post-Concussion Symptoms Questionnaire*
+After a head injury or accident some people experience symptoms which can cause worry or
+nuisance. We would like to know if you now suffer from any of the symptoms given below.
+As many of these symptoms occur normally, we would like you to compare yourself now with
+before the accident. For each one, please circle the number closest to your answer.
+0
+= Not experienced at all
+1
+= No more of a problem
+2
+= A mild problem
+3 = A moderate problem
+4 = A severe problem
+Compared with before the accident, do you now (i.e., over the last 24 hours) suffer from:
+Headaches
+0
+1
+2
+3
+4
+Feelings of Dizziness
+0
+1
+2
+3
+4
+Nausea and/or Vomiting
+0
+1
+2
+3
+4
+Noise Sensitivity,
+easily upset by loud noise
+@
+1
+2
+3
+4
+Sleep Disturbance
+0
+1
+2
+3
+4
+Fatigue, tiring more easily
+0
+1
+2
+3
+4
+Being Irritable, easily angered
+0
+1
+2
+3
+4
+Feeling Depressed or Tearful
+0
+1
+2
+3
+4
+Feeling Frustrated or Impatient
+0
+1
+2
+3
+4
+Forgetfulness, poor memory
+1
+2
+3
+4
+Poor Concentration
+1
+2
+3
+4
+Taking Longer to Think
+1
+2
+3
+4
+Blurred Vision
+1
+2
+3
+4
+Light Sensitivity,
+Easily upset by bright light
+1
+2
+3
+4
+Double Vision
+1
+2
+3
+4
+Restlessness
+0
+1
+2
+3
+4
+Are you experiencing any other difficulties?
+1.
+0
+1
+2
+3
+4
+2.
+0
+1
+2
+3
+4
+*King, N., Crawford, S., Wenden, F., Moss, N., and Wade, D. (1995) J. Neurology 242: 587-592
+06/23/08
+
+--- Page 8 ---
+STATE OF CALIFORNIA
+DEPARTMENT OF CALIFORNIA HIGHWAY PATROL
+INJURED / WITNESS / PASSENGERS
+CHP 555 Page 3 (Rev. 2-22) OPI 060
+Page 3
+of 5
+CRASH DATE (MO. DAY YEAR)
+CRASH TIME (2400)
+NCIC
+OFFICER ID
+NUMBER
+05/16/2023
+0553
+9265
+020313
+9265-2023-01587
+WITNESS
+PASSENGER
+EXTENT OF INJURY ("X" ONE)
+INJURED WAS ("X" ONE)
+AGE
+SEX
+PARTY
+SEAT
+AIR
+SAFETY
+ONLY
+ONLY
+EJECTED
+FATAL
+SUSPECTED SERIOUS
+SUSPECTED MINOR
+POSSIBLE
+NUMBER
+POS.
+BAG
+EQUIP.
+DRIVER
+PASS.
+PED.
+BICYCLIST
+INJURY
+OTHER
+OPER.
+INJURY
+INJURY
+INJURY
+#
+48
+M
+2
+1
+M
+G
+0
+NAME D. O.B. / ADDRESS
+TELEPHONE
+JESUS PRADO MALDONADO (02/24/1975) 9930 ERNST ROAD COUTERVILLE CA 95311
+(209) 484-2837
+(INJURED ONLY) TRANSPORTED BY:
+EMS RUN NUMBER:
+TAKEN TO:
+WILL SEEK OWN AID
+DESCRIBE INJURIES
+NECK AND BACK PAIN
+VICTIM OF VIOLENT CRIME NOTIFIED
+#
+46
+F
+2
+3
+M
+G
+0
+NAME D. O, B. ADDRESS
+TELEPHONE
+CARLOTA BIRRUETA (01/27/1977) 3542 SIERRA STREET RIVERBANK CA 95367
+UNKNOWN
+(INJURED ONLY) TRANSPORTED BY:
+EMS RUN NUMBER:
+TAKEN TO:
+WILL SEEK OWN AID
+DESCRIBE INJURIES
+NECK AND BACK PAIN
+VICTIM OF VIOLENT CRIME NOTIFIED
+#
+NAME / D. O.B. ADDRESS
+TELEPHONE
+(INJURED ONLY) TRANSPORTED BY:
+EMS RUN NUMBER:
+TAKEN TO:
+DESCRIBE INJURIES
+VICTIM OF VIOLENT CRIME NOTIFIED
+#
+NAME / D. O.B./ ADDRESS
+TELEPHONE
+(INJURED ONLY) TRANSPORTED BY:
+EMS RUN NUMBER:
+TAKEN TO:
+DESCRIBE INJURIES
+VICTIM OF VIOLENT CRIME NOTIFIED
+#
+NAME / D. O. B. ADDRESS
+TELEPHONE
+(INJURED ONLY) TRANSPORTED BY:
+EMS RUN NUMBER:
+TAKEN TO:
+DESCRIBE INJURIES
+VICTIM OF VIOLENT CRIME NOTIFIED
+#
+NAME D. O. B, ADDRESS
+TELEPHONE
+(INJURED ONLY) TRANSPORTED BY:
+EMS RUN NUMBER:
+TAKEN TO:
+DESCRIBE INJURIES
+VICTIM OF VIOLENT CRIME NOTIFIED
+PREPARER'S NAME
+ID NUMBER
+MO.
+DAY
+YEAR
+REVIEWER'S NAME
+MO.
+DAY
+YEAR
+HEATHER LUNDBOM
+020313
+05/16/2023
+A G SMITH, 017198
+05/18/2023
+An Internationally Accredited Agency
+
+--- Page 37 ---
+Legal Copy
+MEMORIAL MEDICAL CTR
+Prado, Jesus
+Sutter Health
+MODESTO
+MRN: 64572229, DOB: 2/24/1975, Sex: M
+1700 Coffee Road
+Adm: 5/16/2023, D/C: 5/16/2023
+Modesto CA 95355-2803
+05/16/2023 - ED in Memorial Medical Center Emergency Department (continued)
+Flowsheets - Other (continued)
+Columbia-Suicide Severity Rating Scale (C-SSRS Short Version)
+Row Name
+05/16/23 1048
+Columbia-Suicide Severity Rating Scale (Past Month)
+1. In the past
+No -GF
+month, have you
+wished you were
+dead or wished
+you could go to
+sleep and not
+wake up?
+2. In the past
+No -GF
+month, have you
+had any actual
+thoughts of killing
+yourself?
+6. Have you ever
+No -GF
+done anything,
+started to do
+anything, or
+prepared to do
+anything to end
+your life?
+Suicide Risk Update
+Does Suicide
+No -GF
+Risk Need
+Updating
+Custom Formula Data
+Row Name
+05/16/23 1048
+05/16/23 1046
+OTHER
+Adult Low Range
+-
+438 mL -GF
+VT
+Adult Moderate
+-
+584 mL -GF
+Range VT
+Adult High Range
+-
+730 mL -GF
+VT
+Goal Weight of
+-
+126.45 -GF
+Goal Weight of
+-
+278.83 -GF
+BMI (Calculated)
+-
+27.26 -GF
+Nutritional Screening Tool (modified PG-SGA) If Total: Calculated Risk Score for Cancer is 4 or greater, intervention by dietitian, in
+conjunction with nurse or physician, is strongly indicated.
+Percent weight
+-
+0 % -GF
+Change
+Score For
+-
+0 -GF
+Calculated %
+weight Change
+Value
+Length and Weight
+% wt change
+-
+0 % -GF
+since birth
+Anthropometrics
+IBW
+-
+75.3 -GF
+Weight Information
+IBW (Calculated -
+-
+75.3 kg -GF
+kg)
+Printed by [S338673] at 4/12/2024 1:16 PM
+Page 30
+
+--- Page 53 ---
+The Rivermead Post-Concussion Symptoms Questionnaire*
+After a head injury or accident some people experience symptoms which can cause worry or
+nuisance. We would like to know if you now suffer from any of the symptoms given below.
+As many of these symptoms occur normally, we would like you to compare yourself now with
+before the accident. For each one, please circle the number closest to your answer.
+0
+= Not experienced at all
+1
+= No more of a problem
+2
+= A mild problem
+3 = A moderate problem
+4 = A severe problem
+Compared with before the accident, do you now (i.e., over the last 24 hours) suffer from:
+Headaches
+0
+1
+2
+3
+4
+Feelings of Dizziness
+0
+1
+2
+3
+4
+Nausea and/or Vomiting
+0
+1
+2
+3
+4
+Noise Sensitivity,
+easily upset by loud noise
+@
+1
+2
+3
+4
+Sleep Disturbance
+0
+1
+2
+3
+4
+Fatigue, tiring more easily
+0
+1
+2
+3
+4
+Being Irritable, easily angered
+0
+1
+2
+3
+4
+Feeling Depressed or Tearful
+0
+1
+2
+3
+4
+Feeling Frustrated or Impatient
+0
+1
+2
+3
+4
+Forgetfulness, poor memory
+1
+2
+3
+4
+Poor Concentration
+1
+2
+3
+4
+Taking Longer to Think
+1
+2
+3
+4
+Blurred Vision
+1
+2
+3
+4
+Light Sensitivity,
+Easily upset by bright light
+1
+2
+3
+4
+Double Vision
+1
+2
+3
+4
+Restlessness
+0
+1
+2
+3
+4
+Are you experiencing any other difficulties?
+1.
+0
+1
+2
+3
+4
+2.
+0
+1
+2
+3
+4
+*King, N., Crawford, S., Wenden, F., Moss, N., and Wade, D. (1995) J. Neurology 242: 587-592
+06/23/08
+
+--- Page 37 ---
+Legal Copy
+MEMORIAL MEDICAL CTR
+Prado, Jesus
+Sutter Health
+MODESTO
+MRN: 64572229, DOB: 2/24/1975, Sex: M
+1700 Coffee Road
+Adm: 5/16/2023, D/C: 5/16/2023
+Modesto CA 95355-2803
+05/16/2023 - ED in Memorial Medical Center Emergency Department (continued)
+Flowsheets - Other (continued)
+Columbia-Suicide Severity Rating Scale (C-SSRS Short Version)
+Row Name
+05/16/23 1048
+Columbia-Suicide Severity Rating Scale (Past Month)
+1. In the past
+No -GF
+month, have you
+wished you were
+dead or wished
+you could go to
+sleep and not
+wake up?
+2. In the past
+No -GF
+month, have you
+had any actual
+thoughts of killing
+yourself?
+6. Have you ever
+No -GF
+done anything,
+started to do
+anything, or
+prepared to do
+anything to end
+your life?
+Suicide Risk Update
+Does Suicide
+No -GF
+Risk Need
+Updating
+Custom Formula Data
+Row Name
+05/16/23 1048
+05/16/23 1046
+OTHER
+Adult Low Range
+-
+438 mL -GF
+VT
+Adult Moderate
+-
+584 mL -GF
+Range VT
+Adult High Range
+-
+730 mL -GF
+VT
+Goal Weight of
+-
+126.45 -GF
+Goal Weight of
+-
+278.83 -GF
+BMI (Calculated)
+-
+27.26 -GF
+Nutritional Screening Tool (modified PG-SGA) If Total: Calculated Risk Score for Cancer is 4 or greater, intervention by dietitian, in
+conjunction with nurse or physician, is strongly indicated.
+Percent weight
+-
+0 % -GF
+Change
+Score For
+-
+0 -GF
+Calculated %
+weight Change
+Value
+Length and Weight
+% wt change
+-
+0 % -GF
+since birth
+Anthropometrics
+IBW
+-
+75.3 -GF
+Weight Information
+IBW (Calculated -
+-
+75.3 kg -GF
+kg)
+Printed by [S338673] at 4/12/2024 1:16 PM
+Page 30
+
+--- Page 53 ---
+The Rivermead Post-Concussion Symptoms Questionnaire*
+After a head injury or accident some people experience symptoms which can cause worry or
+nuisance. We would like to know if you now suffer from any of the symptoms given below.
+As many of these symptoms occur normally, we would like you to compare yourself now with
+before the accident. For each one, please circle the number closest to your answer.
+0
+= Not experienced at all
+1
+= No more of a problem
+2
+= A mild problem
+3 = A moderate problem
+4 = A severe problem
+Compared with before the accident, do you now (i.e., over the last 24 hours) suffer from:
+Headaches
+0
+1
+2
+3
+4
+Feelings of Dizziness
+0
+1
+2
+3
+4
+Nausea and/or Vomiting
+0
+1
+2
+3
+4
+Noise Sensitivity,
+easily upset by loud noise
+@
+1
+2
+3
+4
+Sleep Disturbance
+0
+1
+2
+3
+4
+Fatigue, tiring more easily
+0
+1
+2
+3
+4
+Being Irritable, easily angered
+0
+1
+2
+3
+4
+Feeling Depressed or Tearful
+0
+1
+2
+3
+4
+Feeling Frustrated or Impatient
+0
+1
+2
+3
+4
+Forgetfulness, poor memory
+1
+2
+3
+4
+Poor Concentration
+1
+2
+3
+4
+Taking Longer to Think
+1
+2
+3
+4
+Blurred Vision
+1
+2
+3
+4
+Light Sensitivity,
+Easily upset by bright light
+1
+2
+3
+4
+Double Vision
+1
+2
+3
+4
+Restlessness
+0
+1
+2
+3
+4
+Are you experiencing any other difficulties?
+1.
+0
+1
+2
+3
+4
+2.
+0
+1
+2
+3
+4
+*King, N., Crawford, S., Wenden, F., Moss, N., and Wade, D. (1995) J. Neurology 242: 587-592
+06/23/08
+
+--- Page 37 ---
+Legal Copy
+MEMORIAL MEDICAL CTR
+Prado, Jesus
+Sutter Health
+MODESTO
+MRN: 64572229, DOB: 2/24/1975, Sex: M
+1700 Coffee Road
+Adm: 5/16/2023, D/C: 5/16/2023
+Modesto CA 95355-2803
+05/16/2023 - ED in Memorial Medical Center Emergency Department (continued)
+Flowsheets - Other (continued)
+Columbia-Suicide Severity Rating Scale (C-SSRS Short Version)
+Row Name
+05/16/23 1048
+Columbia-Suicide Severity Rating Scale (Past Month)
+1. In the past
+No -GF
+month, have you
+wished you were
+dead or wished
+you could go to
+sleep and not
+wake up?
+2. In the past
+No -GF
+month, have you
+had any actual
+thoughts of killing
+yourself?
+6. Have you ever
+No -GF
+done anything,
+started to do
+anything, or
+prepared to do
+anything to end
+your life?
+Suicide Risk Update
+Does Suicide
+No -GF
+Risk Need
+Updating
+Custom Formula Data
+Row Name
+05/16/23 1048
+05/16/23 1046
+OTHER
+Adult Low Range
+-
+438 mL -GF
+VT
+Adult Moderate
+-
+584 mL -GF
+Range VT
+Adult High Range
+-
+730 mL -GF
+VT
+Goal Weight of
+-
+126.45 -GF
+Goal Weight of
+-
+278.83 -GF
+BMI (Calculated)
+-
+27.26 -GF
+Nutritional Screening Tool (modified PG-SGA) If Total: Calculated Risk Score for Cancer is 4 or greater, intervention by dietitian, in
+conjunction with nurse or physician, is strongly indicated.
+Percent weight
+-
+0 % -GF
+Change
+Score For
+-
+0 -GF
+Calculated %
+weight Change
+Value
+Length and Weight
+% wt change
+-
+0 % -GF
+since birth
+Anthropometrics
+IBW
+-
+75.3 -GF
+Weight Information
+IBW (Calculated -
+-
+75.3 kg -GF
+kg)
+Printed by [S338673] at 4/12/2024 1:16 PM
+Page 30
+
+--- Page 53 ---
+The Rivermead Post-Concussion Symptoms Questionnaire*
+After a head injury or accident some people experience symptoms which can cause worry or
+nuisance. We would like to know if you now suffer from any of the symptoms given below.
+As many of these symptoms occur normally, we would like you to compare yourself now with
+before the accident. For each one, please circle the number closest to your answer.
+0
+= Not experienced at all
+1
+= No more of a problem
+2
+= A mild problem
+3 = A moderate problem
+4 = A severe problem
+Compared with before the accident, do you now (i.e., over the last 24 hours) suffer from:
+Headaches
+0
+1
+2
+3
+4
+Feelings of Dizziness
+0
+1
+2
+3
+4
+Nausea and/or Vomiting
+0
+1
+2
+3
+4
+Noise Sensitivity,
+easily upset by loud noise
+@
+1
+2
+3
+4
+Sleep Disturbance
+0
+1
+2
+3
+4
+Fatigue, tiring more easily
+0
+1
+2
+3
+4
+Being Irritable, easily angered
+0
+1
+2
+3
+4
+Feeling Depressed or Tearful
+0
+1
+2
+3
+4
+Feeling Frustrated or Impatient
+0
+1
+2
+3
+4
+Forgetfulness, poor memory
+1
+2
+3
+4
+Poor Concentration
+1
+2
+3
+4
+Taking Longer to Think
+1
+2
+3
+4
+Blurred Vision
+1
+2
+3
+4
+Light Sensitivity,
+Easily upset by bright light
+1
+2
+3
+4
+Double Vision
+1
+2
+3
+4
+Restlessness
+0
+1
+2
+3
+4
+Are you experiencing any other difficulties?
+1.
+0
+1
+2
+3
+4
+2.
+0
+1
+2
+3
+4
+*King, N., Crawford, S., Wenden, F., Moss, N., and Wade, D. (1995) J. Neurology 242: 587-592
+06/23/08
+
+--- Page 8 ---
+STATE OF CALIFORNIA
+DEPARTMENT OF CALIFORNIA HIGHWAY PATROL
+INJURED / WITNESS / PASSENGERS
+CHP 555 Page 3 (Rev. 2-22) OPI 060
+Page 3
+of 5
+CRASH DATE (MO. DAY YEAR)
+CRASH TIME (2400)
+NCIC
+OFFICER ID
+NUMBER
+05/16/2023
+0553
+9265
+020313
+9265-2023-01587
+WITNESS
+PASSENGER
+EXTENT OF INJURY ("X" ONE)
+INJURED WAS ("X" ONE)
+AGE
+SEX
+PARTY
+SEAT
+AIR
+SAFETY
+ONLY
+ONLY
+EJECTED
+FATAL
+SUSPECTED SERIOUS
+SUSPECTED MINOR
+POSSIBLE
+NUMBER
+POS.
+BAG
+EQUIP.
+DRIVER
+PASS.
+PED.
+BICYCLIST
+INJURY
+OTHER
+OPER.
+INJURY
+INJURY
+INJURY
+#
+48
+M
+2
+1
+M
+G
+0
+NAME D. O.B. / ADDRESS
+TELEPHONE
+JESUS PRADO MALDONADO (02/24/1975) 9930 ERNST ROAD COUTERVILLE CA 95311
+(209) 484-2837
+(INJURED ONLY) TRANSPORTED BY:
+EMS RUN NUMBER:
+TAKEN TO:
+WILL SEEK OWN AID
+DESCRIBE INJURIES
+NECK AND BACK PAIN
+VICTIM OF VIOLENT CRIME NOTIFIED
+#
+46
+F
+2
+3
+M
+G
+0
+NAME D. O, B. ADDRESS
+TELEPHONE
+CARLOTA BIRRUETA (01/27/1977) 3542 SIERRA STREET RIVERBANK CA 95367
+UNKNOWN
+(INJURED ONLY) TRANSPORTED BY:
+EMS RUN NUMBER:
+TAKEN TO:
+WILL SEEK OWN AID
+DESCRIBE INJURIES
+NECK AND BACK PAIN
+VICTIM OF VIOLENT CRIME NOTIFIED
+#
+NAME / D. O.B. ADDRESS
+TELEPHONE
+(INJURED ONLY) TRANSPORTED BY:
+EMS RUN NUMBER:
+TAKEN TO:
+DESCRIBE INJURIES
+VICTIM OF VIOLENT CRIME NOTIFIED
+#
+NAME / D. O.B./ ADDRESS
+TELEPHONE
+(INJURED ONLY) TRANSPORTED BY:
+EMS RUN NUMBER:
+TAKEN TO:
+DESCRIBE INJURIES
+VICTIM OF VIOLENT CRIME NOTIFIED
+#
+NAME / D. O. B. ADDRESS
+TELEPHONE
+(INJURED ONLY) TRANSPORTED BY:
+EMS RUN NUMBER:
+TAKEN TO:
+DESCRIBE INJURIES
+VICTIM OF VIOLENT CRIME NOTIFIED
+#
+NAME D. O. B, ADDRESS
+TELEPHONE
+(INJURED ONLY) TRANSPORTED BY:
+EMS RUN NUMBER:
+TAKEN TO:
+DESCRIBE INJURIES
+VICTIM OF VIOLENT CRIME NOTIFIED
+PREPARER'S NAME
+ID NUMBER
+MO.
+DAY
+YEAR
+REVIEWER'S NAME
+MO.
+DAY
+YEAR
+HEATHER LUNDBOM
+020313
+05/16/2023
+A G SMITH, 017198
+05/18/2023
+An Internationally Accredited Agency
+
+--- Page 37 ---
+Legal Copy
+MEMORIAL MEDICAL CTR
+Prado, Jesus
+Sutter Health
+MODESTO
+MRN: 64572229, DOB: 2/24/1975, Sex: M
+1700 Coffee Road
+Adm: 5/16/2023, D/C: 5/16/2023
+Modesto CA 95355-2803
+05/16/2023 - ED in Memorial Medical Center Emergency Department (continued)
+Flowsheets - Other (continued)
+Columbia-Suicide Severity Rating Scale (C-SSRS Short Version)
+Row Name
+05/16/23 1048
+Columbia-Suicide Severity Rating Scale (Past Month)
+1. In the past
+No -GF
+month, have you
+wished you were
+dead or wished
+you could go to
+sleep and not
+wake up?
+2. In the past
+No -GF
+month, have you
+had any actual
+thoughts of killing
+yourself?
+6. Have you ever
+No -GF
+done anything,
+started to do
+anything, or
+prepared to do
+anything to end
+your life?
+Suicide Risk Update
+Does Suicide
+No -GF
+Risk Need
+Updating
+Custom Formula Data
+Row Name
+05/16/23 1048
+05/16/23 1046
+OTHER
+Adult Low Range
+-
+438 mL -GF
+VT
+Adult Moderate
+-
+584 mL -GF
+Range VT
+Adult High Range
+-
+730 mL -GF
+VT
+Goal Weight of
+-
+126.45 -GF
+Goal Weight of
+-
+278.83 -GF
+BMI (Calculated)
+-
+27.26 -GF
+Nutritional Screening Tool (modified PG-SGA) If Total: Calculated Risk Score for Cancer is 4 or greater, intervention by dietitian, in
+conjunction with nurse or physician, is strongly indicated.
+Percent weight
+-
+0 % -GF
+Change
+Score For
+-
+0 -GF
+Calculated %
+weight Change
+Value
+Length and Weight
+% wt change
+-
+0 % -GF
+since birth
+Anthropometrics
+IBW
+-
+75.3 -GF
+Weight Information
+IBW (Calculated -
+-
+75.3 kg -GF
+kg)
+Printed by [S338673] at 4/12/2024 1:16 PM
+Page 30
+
+--- Page 53 ---
+The Rivermead Post-Concussion Symptoms Questionnaire*
+After a head injury or accident some people experience symptoms which can cause worry or
+nuisance. We would like to know if you now suffer from any of the symptoms given below.
+As many of these symptoms occur normally, we would like you to compare yourself now with
+before the accident. For each one, please circle the number closest to your answer.
+0
+= Not experienced at all
+1
+= No more of a problem
+2
+= A mild problem
+3 = A moderate problem
+4 = A severe problem
+Compared with before the accident, do you now (i.e., over the last 24 hours) suffer from:
+Headaches
+0
+1
+2
+3
+4
+Feelings of Dizziness
+0
+1
+2
+3
+4
+Nausea and/or Vomiting
+0
+1
+2
+3
+4
+Noise Sensitivity,
+easily upset by loud noise
+@
+1
+2
+3
+4
+Sleep Disturbance
+0
+1
+2
+3
+4
+Fatigue, tiring more easily
+0
+1
+2
+3
+4
+Being Irritable, easily angered
+0
+1
+2
+3
+4
+Feeling Depressed or Tearful
+0
+1
+2
+3
+4
+Feeling Frustrated or Impatient
+0
+1
+2
+3
+4
+Forgetfulness, poor memory
+1
+2
+3
+4
+Poor Concentration
+1
+2
+3
+4
+Taking Longer to Think
+1
+2
+3
+4
+Blurred Vision
+1
+2
+3
+4
+Light Sensitivity,
+Easily upset by bright light
+1
+2
+3
+4
+Double Vision
+1
+2
+3
+4
+Restlessness
+0
+1
+2
+3
+4
+Are you experiencing any other difficulties?
+1.
+0
+1
+2
+3
+4
+2.
+0
+1
+2
+3
+4
+*King, N., Crawford, S., Wenden, F., Moss, N., and Wade, D. (1995) J. Neurology 242: 587-592
+06/23/08
 
