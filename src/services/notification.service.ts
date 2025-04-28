@@ -1,6 +1,6 @@
-import sgMail from '@sendgrid/mail';
-import twilio from 'twilio';
-import { config } from '../utils/config';
+import sgMail from "@sendgrid/mail";
+import twilio from "twilio";
+import { config } from "../utils/config";
 
 sgMail.setApiKey(config.sendGridApiKey);
 const twilioClient = twilio(config.twilioAccountSid, config.twilioAuthToken);
@@ -35,7 +35,27 @@ class NotificationService {
     try {
       await sgMail.send(msg);
     } catch (error: any) {
-      console.error("Error sending email:", error.response.body.errors);
+      console.error("Error sending email:", error.response);
+      throw new Error("Failed to send email");
+    }
+  }
+
+  public async sendEmailV2(
+    to: string,
+    subject: string,
+    html: string
+  ): Promise<void> {
+    const msg = {
+      to,
+      from: config.fromEmail,
+      subject,
+      html,
+    };
+
+    try {
+      await sgMail.send(msg);
+    } catch (error: any) {
+      console.log("Error sending email:", error);
       throw new Error("Failed to send email");
     }
   }

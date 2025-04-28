@@ -141,7 +141,7 @@ export class DiseaseClassificationService {
         .split(" ")
         .filter((word) => word.length > 2); // Filter out short words
 
-      console.log("keywords", keywords);
+      // console.log("keywords", keywords);
 
       // Search for images where the affected body part includes the file name
       const results = await BodyPartToImageModel.find(
@@ -188,29 +188,36 @@ export class DiseaseClassificationService {
     // return DiseaseClassificationModel.findOne({ icdCode }).lean();
     icdCode = icdCode.replace(/\./g, "").toUpperCase();
 
-    let diseaseC = await DiseaseClassificationModel.findOne({ icdCode }).lean();
+    let diseaseC = await DiseaseClassificationModel.findOne({
+      icdCode,
+      affectedBodyPartD: { $exists: true },
+    }).lean();
 
     if (!diseaseC) {
       diseaseC = await DiseaseClassificationModel.findOne({
         icdCode: new RegExp(`^${icdCode}`),
+        affectedBodyPartD: { $exists: true },
       }).lean();
     }
 
     if (!diseaseC) {
       diseaseC = await DiseaseClassificationModel.findOne({
         icdCode: new RegExp(`${icdCode}$`),
+        affectedBodyPartD: { $exists: true },
       }).lean();
     }
 
     if (!diseaseC) {
       diseaseC = await DiseaseClassificationModel.findOne({
         icdCode: icdCode.slice(0, -1),
+        affectedBodyPartD: { $exists: true },
       }).lean();
     }
 
     if (!diseaseC) {
       diseaseC = await DiseaseClassificationModel.findOne({
         icdCode: icdCode.slice(0, -2),
+        affectedBodyPartD: { $exists: true },
       }).lean();
     }
 
@@ -218,7 +225,12 @@ export class DiseaseClassificationService {
       const part = icdCode.slice(0, 3);
       diseaseC = await DiseaseClassificationModel.findOne({
         icdCode: new RegExp(`^${part}`),
+        affectedBodyPartD: { $exists: true },
       }).lean();
+    }
+
+    if (!diseaseC) {
+      return null;
     }
 
     return diseaseC;
@@ -230,7 +242,7 @@ export class DiseaseClassificationService {
       let diseaseC = await this.getDiseaseClassificationByIcdCode(icdCode);
 
       if (!diseaseC) {
-        throw new Error("Disease classification not found");
+        throw new Error("Disease classification not found!");
       }
 
       return [diseaseC.affectedBodyPartB];
@@ -417,10 +429,10 @@ export class DiseaseClassificationService {
               model: "o1-preview",
             });
 
-            console.log(
-              `${diseaseClassification.icdCode} ${diseaseClassification.description}`,
-              response
-            );
+            // console.log(
+            //   `${diseaseClassification.icdCode} ${diseaseClassification.description}`,
+            //   response
+            // );
 
             await DiseaseClassificationModel.findByIdAndUpdate(
               diseaseClassification._id,
@@ -480,7 +492,7 @@ export class DiseaseClassificationService {
     };
   }
 
-  async getImagesByIcdCodesTwo(icdCodes: string[]) {
+  async getImagesByIcdCodesTwo(icdCodes: string[], reportId?: string) {
     // Use Promise.all to process ICD codes in parallel
     const results = await Promise.all(
       icdCodes.map(async (icdCode) => {
@@ -489,14 +501,16 @@ export class DiseaseClassificationService {
             icdCode
           );
           const affectedBodyPartData =
-            affectedBodyPart?.affectedBodyPartD || "";
+            affectedBodyPart?.affectedBodyPartD || null;
 
           if (!affectedBodyPartData) {
             return {
               images: [],
-              bodyParts: "unspecified",
-              description: affectedBodyPart?.description || "",
+              bodyParts: "Unspecified",
+              description: "Unspecified",
               icdCode,
+              _id: "",
+              reportId,
             };
           }
 
@@ -520,12 +534,22 @@ export class DiseaseClassificationService {
               : affectedBodyPartData
           );
 
-          console.log("affectedBodyPartData", images);
+          // console.log("affectedBodyPartData", images);
+          const updatedImages = images.map((item) => {
+            return {
+              ...item,
+              reportId,
+              icdCode,
+              classificationId: affectedBodyPart?._id,
+            };
+          });
           return {
-            images,
+            images: updatedImages,
             bodyParts: affectedBodyPartData,
             description: affectedBodyPart?.description || "",
             icdCode,
+            _id: affectedBodyPart?._id,
+            reportId,
           };
         } catch (error) {
           console.error(`Error fetching data for ICD code ${icdCode}:`, error);
@@ -539,7 +563,7 @@ export class DiseaseClassificationService {
   }
 
   async getImagesByIcdCodes(icdCodes: string) {
-    console.log("getImagesByIcdCodes", icdCodes);
+    // console.log("getImagesByIcdCodes", icdCodes);
     const diseaseClassification = await DiseaseClassificationModel.find({
       icdCode: {
         $in: icdCodes,
@@ -593,7 +617,7 @@ export class DiseaseClassificationService {
       const response = await axios.get(
         `https://clinicaltables.nlm.nih.gov/api/icd10cm/v3/search?sf=code,name&terms=${terms}`
       );
-      console.log("searchByDisease", response.data);
+      // console.log("searchByDisease", response.data);
       return response.data;
     } catch (error) {
       console.error("getProperty - Error", error);

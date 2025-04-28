@@ -1,10 +1,14 @@
 import { Request, Response } from "express";
 import { Types } from "mongoose";
 import { AuthRequest } from "../middleware/isAuth";
+import { CaseModel } from "../models/case.model";
+import { UserModel } from "../models/user.model";
 import { CaseService } from "../services/case.service"; // Ensure this path is correct
 import { DocumentService } from "../services/document.service";
+import { ProcessorService } from "../services/processor.service";
 
 const caseService = new CaseService();
+const processorService = new ProcessorService();
 const documentService = new DocumentService();
 
 const handleError = (res: Response, error: any) => {
@@ -56,10 +60,48 @@ export class CaseController {
     }
   }
 
-  async getCaseByIdWithBodyParts(req: Request, res: Response) {
+  async getCaseExtractionStatus(req: AuthRequest, res: Response) {
+    try {
+      const { id } = req.params;
+      const caseData = await caseService.getCaseExtractionStatus(id);
+      if (!caseData) {
+        return res.status(404).json({ message: "Case not found" });
+      }
+      res.status(200).json(caseData);
+    } catch (error) {
+      handleError(res, error);
+    }
+  }
+
+  async getCaseByIdWithBodyParts(req: AuthRequest, res: Response) {
     try {
       const { id } = req.params;
       const caseData = await caseService.getCaseByIdWithBodyParts(id);
+      if (!caseData) {
+        return res.status(404).json({ message: "Case not found" });
+      }
+      if (req?.user?.id) {
+        await UserModel.findByIdAndUpdate(req?.user?.id, {
+          lastViewedCase: id,
+        });
+      }
+      res.status(200).json(caseData);
+    } catch (error) {
+      handleError(res, error);
+    }
+  }
+
+  async updateCaseDetails(req: AuthRequest, res: Response) {
+    try {
+      const { id } = req.params;
+      if (!req?.user?.id) {
+        throw new Error("User not found");
+      }
+      const caseData = await caseService.updateCaseDetails({
+        caseId: id,
+        user: req?.user?.id,
+        ...req.body,
+      });
       if (!caseData) {
         return res.status(404).json({ message: "Case not found" });
       }
@@ -80,8 +122,9 @@ export class CaseController {
 
   async processCases(req: Request, res: Response) {
     try {
-      const cases = await caseService.processCases();
-      res.status(200).json(cases);
+      // const cases = await caseService.processCases();
+      await processorService.processCase();
+      res.status(200).json([]);
     } catch (error) {
       handleError(res, error);
     }
@@ -94,7 +137,7 @@ export class CaseController {
       }
       const cases = await caseService.getUserCases({
         userId: req?.user?.id,
-        query: req.query,
+        query: req.query as any,
       });
       res.status(200).json(cases);
     } catch (error) {
@@ -192,10 +235,33 @@ export class CaseController {
       if (!req?.user) {
         return res.status(401).json({ message: "Unauthorized" });
       }
-      const lastViewed = await caseService.getLastViewedCaseByUser(
-        req?.user?.id
-      );
-      res.status(200).json(lastViewed);
+
+      const userDoc = await UserModel.findById(
+        req?.user?.id,
+        "lastViewedCase"
+      ).lean();
+
+      if (!userDoc) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      if (userDoc?.lastViewedCase) {
+        const caseData = await caseService.getCaseByIdWithBodyParts(
+          userDoc.lastViewedCase
+        );
+        return res.status(200).json(caseData);
+      } else {
+        const userCases = await CaseModel.find({ user: req?.user?.id }, "_id")
+          .lean()
+          .sort({ lastViewed: -1 });
+        if (userCases.length) {
+          const caseData = await caseService.getCaseByIdWithBodyParts(
+            userCases[0]._id
+          );
+          return res.status(200).json(caseData);
+        }
+      }
+      return res.status(200).json(null);
     } catch (error) {
       handleError(res, error);
     }
@@ -211,6 +277,18 @@ export class CaseController {
         caseId: req.params.id,
         reportId: req.params.reportId,
       });
+      res.status(200).json(response);
+    } catch (error) {
+      handleError(res, error);
+    }
+  }
+
+  async updateCaseReportMultipleTags(req: AuthRequest, res: Response) {
+    try {
+      if (!req?.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const response = await caseService.updateCaseReportMultipleTags(req.body);
       res.status(200).json(response);
     } catch (error) {
       handleError(res, error);
@@ -329,6 +407,66 @@ export class CaseController {
         return res.status(401).json({ message: "Unauthorized" });
       }
       const response = await caseService.getCaseTags({
+        caseId: req.params.id,
+      });
+      res.status(200).json(response);
+    } catch (error) {
+      handleError(res, error);
+    }
+  }
+
+  async getDcTagMapping(req: AuthRequest, res: Response) {
+    try {
+      if (!req?.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const response = await caseService.getDcTagMapping({
+        reportId: req.params.reportId,
+        caseId: req.params.id,
+        ...req.body,
+      });
+      res.status(200).json(response);
+    } catch (error) {
+      handleError(res, error);
+    }
+  }
+
+  async getCaseDcTagMapping(req: AuthRequest, res: Response) {
+    try {
+      if (!req?.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const response = await caseService.getCaseDcTagMapping({
+        caseId: req.params.id,
+      });
+      res.status(200).json(response);
+    } catch (error) {
+      handleError(res, error);
+    }
+  }
+
+  async getReportsByDcTagMapping(req: AuthRequest, res: Response) {
+    try {
+      if (!req?.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const response = await caseService.getReportsByDcTagMapping({
+        ...req.body,
+        caseId: req.params.id,
+      });
+      res.status(200).json(response);
+    } catch (error) {
+      handleError(res, error);
+    }
+  }
+
+  async getReportsByTagMapping(req: AuthRequest, res: Response) {
+    try {
+      if (!req?.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const response = await caseService.getReportsByTagMapping({
+        ...req.body,
         caseId: req.params.id,
       });
       res.status(200).json(response);
@@ -474,8 +612,11 @@ export class CaseController {
   //runOcrDocumentExtraction
   async runOcrDocumentExtraction(req: Request, res: Response) {
     try {
-      const response = await caseService.runOcrDocumentExtraction();
-      res.status(200).json(response);
+      // const doc = await caseService.getOcrDocumentToProcess();
+      // if (doc) addBackgroundJob("extractOcr", { documentId: doc._id });
+      // if (doc) addBackgroundJob("extractOcr", { documentId: '123' });
+      // const result = await caseService.runOcrDocumentExtraction2();
+      res.status(200).json({});
     } catch (error) {
       handleError(res, error);
     }

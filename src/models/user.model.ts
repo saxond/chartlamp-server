@@ -1,7 +1,12 @@
-import { getModelForClass, modelOptions, prop, Ref } from "@typegoose/typegoose";
-import { v4 as uuidv4 } from 'uuid';
-import { Organization } from "./organization.model"; // Ensure this path is correct
+import {
+  getModelForClass,
+  modelOptions,
+  prop,
+  Ref,
+} from "@typegoose/typegoose";
+import { v4 as uuidv4 } from "uuid";
 import { TwoFactorAuth } from "./twoFactorAuth.model"; // Ensure this path is correct
+import { Organization } from "./organization.model"; // Ensure this path is correct
 
 @modelOptions({
   schemaOptions: {
@@ -43,7 +48,11 @@ export class User {
   })
   public status!: string;
 
-  @prop({ required: true, enum: ["admin", "user", "guest"], default: "user" })
+  @prop({
+    required: true,
+    enum: ["admin", "user", "guest", "super_admin"],
+    default: "user",
+  })
   public role!: string;
 
   @prop({ ref: () => Organization, required: false })
@@ -51,6 +60,9 @@ export class User {
 
   @prop({ ref: () => TwoFactorAuth, required: false, default: null })
   public twoFactorAuth?: Ref<TwoFactorAuth> | null;
+
+  @prop()
+  public lastViewedCase?: string;
 
   @prop({ required: false })
   public resetPasswordToken?: string;

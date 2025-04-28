@@ -1,4 +1,8 @@
-import { PutObjectCommand, S3 } from "@aws-sdk/client-s3";
+import {
+  PutObjectCommand,
+  S3Client,
+  DeleteObjectCommand,
+} from "@aws-sdk/client-s3";
 
 const globalConfig = {
   region: process.env.AWS_REGION,
@@ -8,33 +12,48 @@ const globalConfig = {
   },
 } as any;
 
-const s3Client = new S3(globalConfig);
+const client = new S3Client(globalConfig);
 
-async function uploadSvgToS3(fileId: string, svgContent: string) {
+export const AppBucketName = "chartlamp";
+
+async function uploadToS3(
+  documentId: string,
+  tempDocId: string,
+  subPdfBytes: Uint8Array // Accepts PDF bytes as an argument
+): Promise<string> {
   try {
-    const key = `svgs/${fileId}`;
+    const key: string = `pdfs/${documentId}/${tempDocId}.pdf`;
+
     const command = new PutObjectCommand({
-      Bucket: process.env.AWS_BUCKET_NAME,
+      Bucket: process.env.AWS_BUCKET_NAME || "chartlamp",
       Key: key,
-      Body: svgContent,
-      ContentType: "image/svg+xml",
-      ACL: "public-read",
+      Body: subPdfBytes, // Use pdfBytes as the file content
+      ContentType: "application/pdf", // Set the correct MIME type
     });
 
-    const result = await s3Client.send(command);
-    console.log("Uploaded SVG to S3:", result);
-    // Construct the public URL
-    const url = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
-    console.log("SVG URL:", url);
-
-    return url;
+    await client.send(command);
+    console.log(`Successfully uploaded to S3 with key: ${key}`);
+    return key; // Return the key after successful upload
   } catch (error) {
-    console.error("Error uploading SVG to S3:", error);
+    console.error("Error uploading to S3:", error);
+    throw error;
+  }
+}
+
+async function deleteFromS3(key: string): Promise<void> {
+  try {
+    const command = new DeleteObjectCommand({
+      Bucket: process.env.AWS_BUCKET_NAME || "chartlamp",
+      Key: key,
+    });
+
+    await client.send(command);
+    console.log(`Successfully deleted from S3: ${key}`);
+  } catch (error) {
+    console.error("Error deleting from S3:", error);
     throw error;
   }
 }
 
 
-export {
-    uploadSvgToS3,
-}
+export { uploadToS3, deleteFromS3 };

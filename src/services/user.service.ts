@@ -6,11 +6,11 @@ import speakeasy from "speakeasy";
 import { UserRegistrationInput } from "../interfaces/user";
 import { BodyPartToImageModel } from "../models/bodyPartToImage.model";
 import { Organization, OrganizationModel } from "../models/organization.model";
+import { User, UserModel } from "../models/user.model";
 import {
   TwoFactorAuth,
   TwoFactorAuthModel,
 } from "../models/twoFactorAuth.model";
-import { User, UserModel } from "../models/user.model";
 import { signJwt } from "../utils/jwt";
 import notificationService from "./notification.service"; // Import the instance directly
 
@@ -45,6 +45,7 @@ class UserService {
     // Subscribe user to 2FA
     await this.generateTwoFactorSecret({ user, method: "email" });
 
+    await this.sendNewUserMailToAdmin(name, userOrganizationName);
     return user;
   }
 
@@ -136,6 +137,23 @@ class UserService {
     );
 
     return user.resetPasswordToken;
+  }
+
+  async sendNewUserMailToAdmin(userName: string, OrganizationName: string) {
+    const mailOptions = {
+      to: "justin@chartlamp.com",
+      // to: "veyrondavids@gmail.com",
+      subject: "Chartlamp - New user Alert",
+      text: `
+      Hello,\n
+      A new user ${userName} has been added to ${OrganizationName} organization.\n\n
+      `,
+    };
+    await this.notificationService.sendEmail(
+      mailOptions.to,
+      mailOptions.subject,
+      mailOptions.text
+    );
   }
 
   // Reset password

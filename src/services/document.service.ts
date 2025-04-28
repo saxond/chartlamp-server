@@ -1,19 +1,33 @@
 import {
+  AnalyzeDocumentCommand,
   FeatureType,
   GetDocumentAnalysisCommand,
+  GetDocumentAnalysisCommandOutput,
+  JobStatus,
   StartDocumentAnalysisCommand,
 } from "@aws-sdk/client-textract";
 import axios from "axios";
+import fs from "fs";
 import mongoose from "mongoose";
 import { zodResponseFormat } from "openai/helpers/zod";
-import pdf from "pdf-parse";
+import path from "path";
+import { PDFDocument } from "pdf-lib";
+import { dynamicImport } from "tsimportlib";
 import { z } from "zod";
+import { CaseModel, NameOfDiseaseByIcdCode } from "../models/case.model";
 import {
-  mergeEncounters,
-  patientRecordSchema,
-} from "../interfaces/PatientRecord";
-import { CaseModel } from "../models/case.model";
-import { Document, DocumentModel } from "../models/document.model";
+  Document,
+  DocumentModel,
+  ExtractionStatus,
+  TempPageDocument,
+  TempPageDocumentModel,
+} from "../models/document.model";
+import {
+  addOcrExtractionBackgroundJob,
+  addOcrExtractionStatusPollingJob,
+  addOcrPageExtractorBackgroundJob,
+  cancelOcrPageExtractorPolling,
+} from "../utils/queue/producer";
 import { textractClient } from "../utils/textract";
 import OpenAIService from "./openai.service";
 
@@ -174,7 +188,30 @@ export class DocumentService {
       date: z.string(),
     });
 
-    const prompt = `Here's the extracted document of a patient's medical record: ${chunk} I want you to process this text and provide me the information`;
+    // const prompt = `Here's the extracted document of a patient's medical record: ${chunk} I want you to process this text and provide me the information.
+    //  please ignore any questionnaire like content`;
+
+    const prompt = `
+You are processing a patient's medical document. Extract the following structured data:
+- Disease name(s)
+- Diagnosis(es)
+- Amount spent
+- Provider name
+- Doctor's name
+- Medical notes
+- Date
+
+❗️ Important Instructions:
+- Ignore any questionnaire-like content, such as sections with "Yes/No" questions, checkboxes, or form-style fields.
+- Do NOT extract sections like:
+  - "Do you smoke? Yes/No"
+  - "Are you taking medication? Yes/No"
+  - "What surgeries have you had?"
+  - Lists of conditions with checkboxes.
+
+Extracted document:
+"${chunk}"
+`;
 
     const response = await this.openAiService.completeChat({
       context: "Extract the patient report from the document",
@@ -184,8 +221,8 @@ export class DocumentService {
       response_format: zodResponseFormat(MedicalRecord, "report"),
     });
 
-    console.log("processContentChunk", response);
-    return response;
+    // console.log("processContentChunk", response);
+    return { ...response, chunk };
   }
 
   private getDiseaseName(
@@ -219,6 +256,7 @@ export class DocumentService {
         providerName: string;
         doctorName: string;
         medicalNote: string;
+        chunk: string;
       };
 
       // Flatten the results array
@@ -226,45 +264,61 @@ export class DocumentService {
 
       // Create report objects from flattened results
       const reportObjects = await Promise.all(
-        flattenedResults.map(async (result: ResultType) => {
+        flattenedResults.flatMap(async (result: ResultType) => {
           const amountSpent = await this.validateAmount(
             result.amountSpent || ""
           );
           const dateOfClaim = await this.validateDateStr(result.date || "");
+
           const nameOfDisease = this.getDiseaseName(
             result.diseaseName,
             result.diagnosis
           );
+
+          if (!nameOfDisease) return [];
+
           // typeof result.diseaseName === "string"
           //   ? result.diseaseName
           //   : Array.isArray(result.diseaseName)
           //   ? result.diseaseName.join(",")
           //   : "";
+
           const icdCodes = await this.getIcdCodeFromDescription(
             nameOfDisease + " " + result.medicalNote
           );
 
+          if (icdCodes.join("") == "") return [];
+          if (!icdCodes.length || !/[a-zA-Z0-9]/.test(icdCodes.join("")))
+            return [];
+
           const diseaseNameByIcdCode = await this.getStreamlinedDiseaseName({
             icdCodes,
             diseaseNames: nameOfDisease,
+            note: nameOfDisease + " " + result.medicalNote,
+            chunk: result.chunk,
           });
 
           //check to make sure
 
-          return {
-            icdCodes,
-            nameOfDisease: nameOfDisease || "",
-            amountSpent: amountSpent || 0,
-            providerName: result.providerName || "",
-            doctorName: result.doctorName || "",
-            medicalNote: result.medicalNote || "",
-            dateOfClaim,
-            nameOfDiseaseByIcdCode: diseaseNameByIcdCode,
-          };
+          if (nameOfDisease.toLowerCase() === "not specified") return [];
+
+          return [
+            {
+              icdCodes,
+              nameOfDisease: nameOfDisease || "",
+              amountSpent: amountSpent || 0,
+              providerName: result.providerName || "",
+              doctorName: result.doctorName || "",
+              medicalNote: result.medicalNote || "",
+              dateOfClaim,
+              nameOfDiseaseByIcdCode: diseaseNameByIcdCode,
+              chunk: result.chunk,
+            },
+          ];
         })
       );
 
-      return reportObjects;
+      return reportObjects.flat();
     } catch (error) {
       console.log("Error processing document content:", error);
       return [];
@@ -274,27 +328,50 @@ export class DocumentService {
   async getStreamlinedDiseaseName({
     icdCodes,
     diseaseNames,
+    note,
+    chunk,
   }: {
     icdCodes: string[];
     diseaseNames: string;
-  }): Promise<
-    {
-      icdCode: string;
-      nameOfDisease: string;
-    }[]
-  > {
+    chunk: string;
+    note?: string;
+  }): Promise<NameOfDiseaseByIcdCode[]> {
+    if (!icdCodes.length || !/[a-zA-Z0-9]/.test(icdCodes.join(""))) return [];
+
     const IcdCodesToDiseaseName = z.object({
       data: z.array(
         z.object({
           icdCode: z.string(),
           nameOfDisease: z.string(),
+          summary: z.string(),
+          excerpt: z.string(),
         })
       ),
     });
 
-    const prompt = `From this list of disease names: ${diseaseNames}, please match these disease names to their respective ICD codes: ${icdCodes.join(
+    // - The **pageNumber** where the match occurs.
+    const basePrompt = `
+Your task:
+1. From this list of disease names: ${diseaseNames}, please match these disease names to their respective ICD codes: ${icdCodes.join(
       ","
-    )}`;
+    )}.
+   
+2. Use the following text to find these matches:
+\n${chunk}\n
+
+For each matched ICD code, extract the following:
+- An **excerpt** that includes the **exact line where the match is found**, along with **10 words before and 10 words after**.
+- A brief **summary** explaining why this ICD code is relevant in the context of the provided text.
+
+Please ensure the output is clear, structured, and easy to parse.
+`;
+
+    // Important:
+    // - Only use the ICD codes provided.
+    // - If no match exists for a disease name, do not assign an ICD code.
+    // - Do not generate or assume additional ICD codes beyond the provided list.
+
+    const prompt = `${basePrompt}`.trim();
 
     const response = await this.openAiService.completeChat({
       context: "Match icd codes with disease names",
@@ -305,11 +382,41 @@ export class DocumentService {
     });
 
     if (!response?.data) return [];
-    const diseaseNameByIcdCode = response.data.map((item: any) => ({
-      icdCode: item.icdCode,
-      nameOfDisease: item.nameOfDisease,
-    }));
+    const diseaseNameByIcdCode: NameOfDiseaseByIcdCode[] = response.data.map(
+      (item: any) => ({
+        icdCode: item.icdCode,
+        nameOfDisease: item.nameOfDisease,
+        summary: item.summary,
+        excerpt: item.excerpt,
+        pageNumber: item.pageNumber,
+      })
+    );
     return diseaseNameByIcdCode;
+  }
+
+  // Create report from document
+  async generateReportForTempPageDocument(
+    doc: TempPageDocument
+  ): Promise<any[]> {
+    try {
+      const content = doc.pageText?.trim();
+      if (!content) {
+        return []; // Skip to the next document
+      }
+
+      const results = await this.processDocumentContent(content);
+
+      // console.log("generateReportForDocument", results);
+
+      // Add document ID to each result
+      return results.map((result) => ({
+        ...result,
+        document: doc.document as string,
+      }));
+    } catch (error) {
+      console.log("Error generating report for document:", error);
+      return [];
+    }
   }
 
   // Create report from document
@@ -322,70 +429,13 @@ export class DocumentService {
 
       const results = await this.processDocumentContent(content);
 
+      // console.log("generateReportForDocument", results);
+
       // Add document ID to each result
       return results.map((result) => ({
         ...result,
         document: doc._id as string,
       }));
-    } catch (error) {
-      console.log("Error generating report for document:", error);
-      return [];
-    }
-  }
-
-  // Create report from document
-  async generateReportForDocumentV2(doc: Document): Promise<any[]> {
-    try {
-      const encounters = doc.patientRecord;
-      console.log("encounters", encounters);
-
-      if (!encounters || !encounters.length) {
-        return []; // Skip to the next document
-      }
-
-      const results = await Promise.all(
-        encounters.map(async (encounter: any) => {
-          if (encounter.dateTime.toLowerCase() === "not provided") return null;
-
-          const icdCodes = (encounter.diagnoses || [])
-            .filter((d: any) => d.code.toLowerCase() !== "not provided")
-            .map((d: any) => d.code);
-
-          const nameOfDisease = (encounter.diagnoses || [])
-            .filter((d: any) => d.code.toLowerCase() !== "not provided")
-            .map((d: any) => d.diagnosis)
-            .join(",");
-
-          const diseaseNameByIcdCode = await this.getStreamlinedDiseaseName({
-            icdCodes,
-            diseaseNames: nameOfDisease,
-          });
-
-          const amountSpent =
-            encounter.claims?.[0]?.totalAmount.toLowerCase() !== "not provided"
-              ? encounter.claims?.[0]?.totalAmount
-              : 0;
-
-          return {
-            icdCodes,
-            nameOfDisease,
-            amountSpent,
-            providerName: encounter.location,
-            doctorName: encounter.careTeam?.[0]?.name || "",
-            medicalNote: encounter.medicalNote,
-            dateOfClaim: new Date(encounter.dateTime),
-            nameOfDiseaseByIcdCode: diseaseNameByIcdCode,
-          };
-        })
-      );
-
-      // Add document ID to each result
-      return results
-        .filter((item) => Boolean(item))
-        .map((result) => ({
-          ...result,
-          document: doc._id as string,
-        }));
     } catch (error) {
       console.log("Error generating report for document:", error);
       return [];
@@ -415,6 +465,9 @@ export class DocumentService {
       };
 
       //start document analysis
+      // const startDocumentAnalysisCommand = new StartDocumentAnalysisCommand(
+      //   params
+      // );
       const startDocumentAnalysisCommand = new StartDocumentAnalysisCommand(
         params
       );
@@ -442,12 +495,13 @@ export class DocumentService {
     }
   }
 
-  //get document analysis output
+  // //get document analysis output
   async getDocumentAnalysisOutput(
     jobId: string,
     nextToken?: string
-  ): Promise<any> {
+  ): Promise<GetDocumentAnalysisCommandOutput> {
     try {
+      // console.log("getDocumentAnalysisOutput", jobId);
       const params = {
         JobId: jobId,
         MaxResults: 1000,
@@ -455,16 +509,107 @@ export class DocumentService {
       };
 
       //get document analysis output
+      // const startDocumentAnalysisCommand = new GetDocumentAnalysisCommand(
+      //   params
+      // );
       const startDocumentAnalysisCommand = new GetDocumentAnalysisCommand(
         params
       );
-
+      AnalyzeDocumentCommand;
       const response = await textractClient.send(startDocumentAnalysisCommand);
 
       return response;
     } catch (error) {
       console.error("Error getting document analysis output:", error);
       throw new Error("Failed to get document analysis output");
+    }
+  }
+
+  async fetchPdfFromUrl(documentUrl: string) {
+    try {
+      const response = await axios.get(documentUrl, {
+        responseType: "arraybuffer", // Important to get binary data
+      });
+      return response.data;
+    } catch (err) {
+      console.error("Error fetching PDF from URL:", err);
+      throw err;
+    }
+  }
+
+  async writePdfBytesToFile(fileName: string, pdfBytes: any) {
+    await fs.promises.writeFile(fileName, pdfBytes);
+    console.log(`Saved: ${fileName}`);
+  }
+
+  async splitPdfV2(documentUrl: string) {
+    try {
+      // Fetch PDF from the URL
+      const pdfBytes = await this.fetchPdfFromUrl(documentUrl);
+
+      // Load the PDFDocument from bytes
+      const pdfDoc = await PDFDocument.load(pdfBytes);
+
+      const numberOfPages = pdfDoc.getPages().length;
+      console.log(`Number of pages: ${numberOfPages}`);
+
+      for (let i = 0; i < numberOfPages; i++) {
+        // Create a new "sub" document
+        const subDocument = await PDFDocument.create();
+        // Copy the page at the current index
+        const [copiedPage] = await subDocument.copyPages(pdfDoc, [i]);
+        subDocument.addPage(copiedPage);
+        const subPdfBytes = await subDocument.save();
+
+        // Save the split page as a separate file
+        await this.writePdfBytesToFile(`file-${i + 1}.pdf`, subPdfBytes);
+      }
+    } catch (err) {
+      console.error("Error splitting PDF:", err);
+    }
+  }
+
+  async loadPdfJs() {
+    const pdfjsLib = await dynamicImport(
+      "pdfjs-dist/legacy/build/pdf.mjs",
+      module
+    );
+    return pdfjsLib;
+  }
+
+  async splitPdf(pdfBuffer: Uint8Array) {
+    try {
+      const pdfjsLib = await this.loadPdfJs();
+      const loadingTask = pdfjsLib.getDocument({ data: pdfBuffer });
+      const pdf = await loadingTask.promise;
+      const numberOfPages = pdf.numPages;
+
+      const pageContents: Record<string, string> = {}; // Store page text
+
+      for (let i = 0; i < numberOfPages; i++) {
+        const page = await pdf.getPage(i + 1); // pdfjs-dist uses 1-based indexing
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items
+          .map((item: any) => item.str)
+          .join(" ");
+
+        if (pageText) {
+          pageContents[i + 1] = pageText;
+        } else {
+          console.log("==============>Contains OCR ==============>", i + 1);
+          throw new Error("contains ocr");
+        }
+      }
+
+      if (Object.keys(pageContents).length === 0) {
+        console.log(`pageContents is empty`, pageContents);
+        throw new Error("pageContents is empty");
+      }
+
+      return pageContents;
+    } catch (error) {
+      console.log(`Cannot split this pdf`, error);
+      return null;
     }
   }
 
@@ -476,38 +621,46 @@ export class DocumentService {
     try {
       console.log("Document URL:", documentUrl);
 
+      const isTiffDoc =
+        documentUrl.includes(".tiff") || documentUrl.includes(".tif");
+
+      if (isTiffDoc) {
+        throw new Error("Failed to extract content from document");
+      }
+
       // Download PDF from URL (S3 URL)
       const response = await axios.get(documentUrl, {
         responseType: "arraybuffer",
       });
-      const pdfBuffer = response.data;
 
-      // Extract content from PDF
-      const data = await pdf(pdfBuffer);
-      let content = data.text;
+      const pdfBuffer = new Uint8Array(response.data);
+      const pageContents = await this.splitPdf(pdfBuffer);
+      console.log("pageContents", pageContents);
+      if (!pageContents) throw new Error("");
+      // Combine all pages into a single string with page headers
+      this.processPageContents(pageContents, "document_output.txt");
 
-      // Remove empty lines and trim
-      content = content
-        .split("\n")
-        .map((line) => line.trim())
-        .filter((line) => line)
-        .join("\n");
+      const filteredPages = await this.filterQuestionPages(pageContents);
+
+      // console.log("filteredPages", filteredPages);
+
+      // Write filtered content to file
+      let content = this.processPageContents(
+        filteredPages,
+        "filtered_in_document_output.txt"
+      );
+
+      // // Remove empty lines and trim
+      // content = content
+      //   .split("\n")
+      //   .map((line) => line.trim())
+      //   .filter((line) => line)
+      //   .join("\n");
 
       // If the content is empty, try to extract using Textract
       if (!content) {
-        content = await this.extractContentFromDocumentUsingTextract(
-          documentUrl
-        );
-        // If documentId is provided, update the document with the jobId
-        if (documentId) {
-          await DocumentModel.findByIdAndUpdate(documentId, {
-            jobId: content,
-          });
-          content = "";
-        }
+        throw new Error("Failed to extract content from document");
       }
-
-      // console.log("Content:", content);
 
       // Return content
       return content;
@@ -517,39 +670,185 @@ export class DocumentService {
         (await this.extractContentFromDocumentUsingTextract(documentUrl)) || "";
       // If documentId is provided, update the document with the jobId
       if (documentId) {
-        await DocumentModel.findByIdAndUpdate(documentId, {
+        const doc = await DocumentModel.findByIdAndUpdate(documentId, {
           jobId: content,
         });
-        content = "";
+        if (doc) {
+          await addOcrExtractionBackgroundJob("extractOcr", {
+            documentId: doc._id,
+            isSinglePage: true,
+          });
+          await addOcrExtractionStatusPollingJob(content);
+        }
       }
-      return content;
+      content = "";
+      return "";
     }
   }
 
-  //get combine document content using jobId
+  async getTextractJobStatus(jobId: string): Promise<JobStatus | undefined> {
+    try {
+      const command = new GetDocumentAnalysisCommand({ JobId: jobId });
+      const response: GetDocumentAnalysisCommandOutput =
+        await textractClient.send(command);
+
+      console.log(`ℹ️ Textract Job ${jobId} Status:`, response.JobStatus);
+
+      return response.JobStatus;
+    } catch (error) {
+      console.error(
+        `❌ Error fetching Textract job status for ${jobId}:`,
+        error
+      );
+      throw new Error("Failed to get Textract job status");
+    }
+  }
+
+  async checkIfPageIsQuestionnaire(pageText: string) {
+    const prompt = `
+    You are an assistant that classifies pages of a document.
+
+    Analyze the following page text and determine if it looks like:
+    - A page containing a list of questions, quiz questions, interview questions, survey forms, or any questionnaire-like content.
+    - Or if it is a normal page with paragraphs, explanations, or general content.
+
+    Respond with "QUESTION" if the page is primarily question-like.
+    Respond with "CONTENT" if the page is normal content.
+
+    Page Text:
+    ${pageText}
+
+    Response (just "QUESTION" or "CONTENT", nothing else):
+    `;
+
+    const response = await this.openAiService.completeChat({
+      context: "You classify document pages.",
+      prompt,
+      model: "gpt-4o",
+      temperature: 0.4,
+    });
+
+    // console.log("checkIfPageIsQuestion", response);
+    const result = response;
+
+    return result === "QUESTION";
+  }
+
+  async filterQuestionPages(pageContents: { [key: string]: string }) {
+    const filteredPages: any = {};
+
+    for (const [page, content] of Object.entries(pageContents)) {
+      const isQuestionPage = await this.checkIfPageIsQuestionnaire(content);
+      if (!isQuestionPage) {
+        filteredPages[page] = content;
+      } else {
+        // console.log(`Page ${page} looks like a question page and was skipped.`);
+        let contentOut = "";
+        contentOut += `--- Page ${page} ---\n`;
+        contentOut += content + "\n";
+        fs.appendFileSync(
+          path.join(__dirname, "filtered_out_document_output.txt"),
+          contentOut
+        );
+      }
+    }
+
+    return filteredPages;
+  }
+
+  processPageContents(
+    pageContents: { [key: string]: string },
+    pathurl: string
+  ) {
+    let fileContent = "";
+    for (const [page, content] of Object.entries(pageContents)) {
+      fileContent += `--- Page ${page} ---\n`;
+      fileContent += content + "\n";
+    }
+
+    fs.writeFileSync(path.join(__dirname, pathurl), fileContent);
+    return fileContent;
+  }
+
   async getCombinedDocumentContent(jobId: string): Promise<string> {
     try {
-      let nextToken;
-      let combinedContent = "";
+      let nextToken: string | undefined = undefined;
+      console.log("Fetching combined document content for job:", jobId);
 
+      // 1️⃣ Check if Textract job is still running before fetching results
+      const jobStatus = await this.getTextractJobStatus(jobId);
+      if (!jobStatus) return "";
+      if (jobStatus === "IN_PROGRESS") {
+        console.log("⏳ Textract job still processing...");
+        const tempDoc = await TempPageDocumentModel.findOne({ jobId }).lean();
+        if (tempDoc && tempDoc?.pdfS3Key) {
+          console.log(`Job ${jobId} added again to queue`);
+          // await this.extractContentFromDocumentUsingTextract(tempDoc.pdfS3Key);
+          await addOcrPageExtractorBackgroundJob(jobId);
+        }
+        return ""; // Exit early since the job isn't done
+      }
+      if (jobStatus === "SUCCEEDED") {
+        console.log("✅ Textract job completed successfully");
+        // cancelOcrPageExtractorPolling(jobId);
+        // cancelOcrExtractionPolling(jobId);
+      }
+
+      console.log("⏳ Running loop to get ocr content");
+
+      // // 2️⃣ Fetch document content in pages
+
+      const pageContents: any = {}; // Keyed by page number
       do {
         const response = await this.getDocumentAnalysisOutput(jobId, nextToken);
-        const blocks = response.Blocks;
 
-        if (blocks) {
-          for (const block of blocks) {
+        if (response.Blocks) {
+          const selectionElements = response.Blocks.filter(
+            (b) => b.BlockType === "SELECTION_ELEMENT"
+            // &&
+            // b.SelectionStatus === SelectionStatus.NOT_SELECTED
+          );
+
+          // Example: build a set of page numbers that have checkboxes
+          const pagesWithCheckboxes = new Set(
+            selectionElements.map((b) => b.Page)
+          );
+
+          // console.log("pagesWithCheckboxes", pagesWithCheckboxes);
+          for (const block of response.Blocks) {
+            // console.log("selection elements", JSON.stringify(block));
+            if (pagesWithCheckboxes.has(block.Page)) {
+              continue;
+            }
             if (block.BlockType === "LINE") {
-              combinedContent += block.Text + "\n";
+              const pageNumber = block.Page || 1; // Defaults to page 1 if no page (shouldn't happen with PDFs)
+
+              if (!pageContents[pageNumber]) {
+                pageContents[pageNumber] = ""; // Initialize for each page
+              }
+
+              pageContents[pageNumber] += block.Text + "\n";
             }
           }
         }
 
-        nextToken = response.NextToken;
+        nextToken = response.NextToken; // Move to next set of blocks
       } while (nextToken);
 
-      return combinedContent;
+      // Combine all pages into a single string with page headers
+      this.processPageContents(pageContents, "document_output.txt");
+
+      const filteredPages = await this.filterQuestionPages(pageContents);
+
+      // Write filtered content to file
+      const filteredFileContent = this.processPageContents(
+        filteredPages,
+        "filtered_in_document_output.txt"
+      );
+
+      return filteredFileContent || "";
     } catch (error) {
-      console.error("Error getting combined document content:", error);
+      console.log("❌ Error getting combined document content:", error);
       throw new Error("Failed to get combined document content");
     }
   }
@@ -590,7 +889,10 @@ export class DocumentService {
     }
   }
 
-  async extractCaseDocumentData(caseId: string): Promise<any> {
+  async extractCaseDocumentData(
+    caseId: string,
+    updateProgressFn: (caseId: string) => Promise<void>
+  ) {
     try {
       // Get documents from the database that do not have content extracted
       const documents = await DocumentModel.find({
@@ -598,11 +900,9 @@ export class DocumentService {
         case: caseId,
       }).lean();
 
-      if (!documents.length) {
-        return [];
-      }
+      if (!documents.length) return null;
 
-      let hasError = false;
+      let hasError = true;
 
       // Extract content from each document
       const updatePromises = documents.map(async (document) => {
@@ -610,43 +910,24 @@ export class DocumentService {
           document.url,
           document._id
         );
-        if (!content) {
-          hasError = true;
+        if (content) {
+          hasError = false;
+          await DocumentModel.findByIdAndUpdate(document._id, {
+            extractedData: content,
+          });
+          await updateProgressFn(caseId);
         }
-        await DocumentModel.findByIdAndUpdate(document._id, {
-          extractedData: content,
-        });
         return { ...document, extractedData: content };
       });
 
       // Wait for all updates to complete
       const updatedDocuments = await Promise.all(updatePromises);
+      await updateProgressFn(caseId);
       // Return updated documents
       return { extractCaseDocumentData: updatedDocuments, hasError };
     } catch (error) {
       throw new Error("Failed to get documents without content");
     }
-  }
-
-  private getPrompt(content: string) {
-
-    return `
-    Extract relevant:
-    
-     Patient Details: Include name,
-     Date of the encounter. (e.g. 2018-05-24. Remove the time and leave just the date alone)
-     Location of the visit (e.g. hospital name, department).
-     Diagnoses made during the encounter (with codes if available or generate relevant icd-code if not available).
-     Claims: For each encounter, extract:
-     Total amount claimed.
-     Date of claim submission.
-     Status of the claim (e.g., approved, denied, pending).
-     Ensure no encounter or claim is missed.
-
- from the document below document. Where a data is not available in the document just mark it as not provided.
- document:
-${content}
-`;
   }
 
   // Pass the extractedData from the document to get the content in the above structure
@@ -684,7 +965,7 @@ ${content}
       // Process each chunk and collect responses
       const responses = await Promise.all(
         chunks.map(async (chunk) => {
-          const prompt = this.getPrompt(chunk);
+          const prompt = `Extract the patient details, encounters, and claims from the document below from each page and group them by page: ${chunk}`;
           const response = await this.openAiService.completeChat({
             context:
               "Extract the patient details, encounters, and claims from the document below:",
@@ -706,70 +987,6 @@ ${content}
     }
   }
 
-  async getContentFromDocumentV2(extractedData: string) {
-    try {
-      // Trim the extractedData and remove any empty strings
-      extractedData = extractedData?.trim();
-
-      if (!extractedData) {
-        return [];
-      }
-
-      const MAX_TOKENS = 4096; // Example token limit for GPT-3.5-turbo
-      const CHUNK_SIZE = 1000; // Adjust chunk size as needed
-
-      // Function to split text into chunks
-      const splitTextIntoChunks = (text: string, size: number): string[] => {
-        const chunks = [];
-        for (let i = 0; i < text.length; i += size) {
-          const chunk = text.slice(i, i + size).trim();
-          if (chunk) {
-            chunks.push(chunk);
-          }
-        }
-        return chunks;
-      };
-
-      // Split extractedData if it exceeds the token limit
-      const chunks =
-        extractedData.length > MAX_TOKENS
-          ? splitTextIntoChunks(extractedData, CHUNK_SIZE)
-          : [extractedData];
-
-      // Process each chunk and collect responses
-      const responses = await Promise.all(
-        chunks.map(async (chunk) => {
-          const prompt = this.getPrompt(chunk);
-          const response = await this.openAiService.completeChat({
-            context:
-              "Extract the patient details, encounters, and claims from the document below:",
-            prompt,
-            model: "gpt-4o",
-            temperature: 0.4,
-            response_format: zodResponseFormat(patientRecordSchema, "record"),
-          });
-          console.log("response", response);
-          return response;
-        })
-      );
-      // Return merged content
-      return responses;
-    } catch (error) {
-      throw new Error("Failed to get content from document");
-    }
-  }
-
-  private cleanAndParseJson(data: string) {
-    const cleanedData = data.replace(/^```json\s*/, "").replace(/```$/, "");
-
-    try {
-      return JSON.parse(cleanedData);
-    } catch (error) {
-      console.error("Failed to parse JSON:", error);
-      return null;
-    }
-  }
-
   async getDocumentWithoutContent(limit: number = 1): Promise<any> {
     try {
       // Get document from the database that do not have content
@@ -783,6 +1000,7 @@ ${content}
       if (!documents?.length) {
         return [];
       }
+
       // Extract content from each document
       const updatePromises = documents.map(async (document) => {
         const content = await this.getContentFromDocument(
@@ -804,7 +1022,10 @@ ${content}
     }
   }
 
-  async extractCaseDocumentWithoutContent(caseId: string): Promise<any> {
+  async extractCaseDocumentWithoutContent(
+    caseId: string,
+    updateProgressFn: (caseId: string) => Promise<void>
+  ): Promise<any> {
     try {
       // Get document from the database that do not have content
       const documents = await DocumentModel.find({
@@ -819,22 +1040,22 @@ ${content}
 
       // Extract content from each document
       const updatePromises = documents.map(async (document) => {
-        const patientRecord = await this.getContentFromDocumentV2(
+        const content = await this.getContentFromDocument(
           document.extractedData || ""
         );
-        const allEncounters = patientRecord.flatMap(
-          (record) => record.encounters
-        );
-        const encounters = mergeEncounters(allEncounters);
-        console.log("patientRecord", encounters);
         await DocumentModel.findByIdAndUpdate(document._id, {
-          patientRecord: encounters,
+          content: content,
+          status: ExtractionStatus.SUCCESS,
+          isCompleted: true,
         });
-        return { ...document, content: "" };
+        await updateProgressFn(caseId);
+        return { ...document, content };
       });
 
       // Wait for all updates to complete
       const updatedDocuments = await Promise.all(updatePromises);
+
+      await updateProgressFn(caseId);
 
       // Return updated documents
       return updatedDocuments;
@@ -964,5 +1185,13 @@ ${content}
       console.error("Error extracting report from document:", error);
       throw new Error("Failed to extract report from document");
     }
+  }
+
+  async deleteAllCaseDocument(caseId: string) {
+    const alldocs = await DocumentModel.find({ case: caseId }).lean();
+    const alldocIds = alldocs.map((item) => item._id);
+    await DocumentModel.deleteMany({ case: caseId });
+    await TempPageDocumentModel.deleteMany({ document: { $in: alldocIds } });
+    return true;
   }
 }

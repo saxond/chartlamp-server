@@ -5,6 +5,7 @@ import {
   prop,
   Ref,
 } from "@typegoose/typegoose";
+import { DiseaseClassification } from "./diseaseClassification.model";
 import { Organization } from "./organization.model"; // Ensure this path is correct
 import { User } from "./user.model"; // Ensure this path is correct
 
@@ -30,15 +31,26 @@ export enum TagsType {
   NOT_DECIDED = "yet_to_be_decided",
 }
 
-class NameOfDiseaseByIcdCode {
+export class NameOfDiseaseByIcdCode {
   @prop()
   public icdCode!: string;
 
   @prop()
   public nameOfDisease!: string;
+
+  @prop()
+  public summary?: string;
+
+  @prop()
+  public chunk?: string;
+
+  @prop()
+  public pageNumber?: number;
 }
 
-export class Report {
+class Report {
+  public _id?: string;
+
   @prop({ type: () => [String], default: [] })
   public icdCodes?: string[];
 
@@ -52,10 +64,16 @@ export class Report {
   public icdCode?: string;
 
   @prop()
+  public chunk?: string;
+
+  @prop()
   public amountSpent?: string;
 
   @prop()
   public providerName?: string;
+
+  @prop()
+  public pageNumber?: string;
 
   @prop()
   public doctorName?: string;
@@ -69,7 +87,6 @@ export class Report {
   @prop()
   public dateOfClaim?: Date | null;
 
-  // @prop({ default: [TagsType.NOT_DECIDED] })
   @prop({ default: [] })
   public tags?: string[];
 
@@ -166,6 +183,9 @@ export class Case {
   @prop({ default: false })
   public isFavorite!: boolean;
 
+  @prop({ default: 0, max: 100, min: 0 })
+  public percentageCompletion!: number;
+
   @prop({ type: () => [Report], default: [] })
   public reports!: Report[];
 
@@ -195,13 +215,34 @@ export const CaseModel = getModelForClass(Case);
 
 class CaseTag {
   @prop({ ref: () => Case, required: true })
-  public case!: Ref<Case>;
+  public case?: Ref<Case>;
 
   @prop()
   public tagName!: string;
 }
 
 export const CaseTagModel = getModelForClass(CaseTag);
+
+class DiseaseClassificationTagMapping {
+  @prop({ ref: () => CaseTag, required: true })
+  public caseTag!: Ref<CaseTag>;
+
+  @prop({ ref: () => Report, required: true })
+  public report!: Ref<Report>;
+
+  @prop({ ref: () => DiseaseClassification, required: false })
+  public dc?: Ref<DiseaseClassification>;
+
+  @prop({ required: false })
+  public icdCode?: string;
+
+  @prop()
+  public case!: string;
+}
+
+export const DiseaseClassificationTagMappingModel = getModelForClass(
+  DiseaseClassificationTagMapping
+);
 
 @modelOptions({
   schemaOptions: {

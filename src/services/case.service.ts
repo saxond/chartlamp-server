@@ -1,5 +1,4 @@
 import mongoose, { Types } from "mongoose";
-import { BodyPartToImageModel } from "../models/bodyPartToImage.model";
 import {
   CaseInvitationModel,
   CaseInvitationStatus,
@@ -8,11 +7,13 @@ import {
   CaseTagModel,
   CommentModel,
   CronStatus,
+  DiseaseClassificationTagMappingModel,
 } from "../models/case.model"; // Ensure this path is correct
 import { DocumentModel, ExtractionStatus } from "../models/document.model";
 import { Organization } from "../models/organization.model";
 import { UserModel } from "../models/user.model";
 // import { redis } from "../utils/redis";
+import { addIcdcodeClassificationBackgroundJob } from "../utils/queue/producer";
 import { DiseaseClassificationService } from "./diseaseClassification.service";
 import { DocumentService } from "./document.service";
 import notificationService from "./notification.service";
@@ -81,7 +82,9 @@ export class CaseService {
       await Promise.all(documentPromises);
 
       await session.commitTransaction();
-      return newCase;
+      return CaseModel.findById(newCase._id)
+        .lean()
+        .populate("user", "name profilePicture");
     } catch (error) {
       await session.abortTransaction();
       throw error;
@@ -92,11 +95,7 @@ export class CaseService {
 
   // Get a case by ID
   async getCaseById(id: Types.ObjectId) {
-    const caseData = await CaseModel.findByIdAndUpdate(
-      id,
-      { $inc: { viewCount: 1 }, lastViewed: new Date() },
-      { new: true }
-    )
+    const caseData = await CaseModel.findById(id, { "reports.chunk": 0 })
       .lean()
       .populate("user", "email name role profilePicture");
     // .populate("tags");
@@ -107,9 +106,44 @@ export class CaseService {
       await this.populateReportFromCaseDocuments(id.toString());
     }
 
-    const documents = await DocumentModel.find({ case: id }, "case url").lean();
+    const documents = await DocumentModel.find(
+      { case: id },
+      "case url createdAt"
+    ).lean();
 
     return { ...caseData, documents };
+  }
+
+  async updateCaseDetails({
+    caseId,
+    user,
+    caseNumber,
+    plaintiff,
+    targetCompletion,
+  }: {
+    caseId: string;
+    user: string;
+    caseNumber: string;
+    plaintiff: string;
+    targetCompletion: string;
+  }) {
+    const caseData = await CaseModel.findOneAndUpdate(
+      {
+        _id: caseId,
+        user,
+      },
+      {
+        plaintiff,
+        caseNumber,
+        targetCompletion,
+      },
+      { new: true }
+    );
+
+    if (!caseData) {
+      return null;
+    }
+    return caseData;
   }
 
   async getCaseByIdWithBodyParts(caseId: string) {
@@ -124,7 +158,8 @@ export class CaseService {
     const newReports = await Promise.all(
       reportsWithIcdCodes.map(async (report: any) => {
         const bodyParts = await this.dcService.getImagesByIcdCodesTwo(
-          report.icdCodes
+          report.icdCodes,
+          report._id
         );
         // console.log("bodyParts", bodyParts);
 
@@ -139,10 +174,24 @@ export class CaseService {
     return { ...caseResponse, reports: newReports };
   }
 
+  async getCaseExtractionStatus(id: string) {
+    const caseData = await CaseModel.findById(
+      id,
+      "caseNumber plaintiff user cronStatus percentageCompletion"
+    )
+      .lean()
+      .populate("user", "name profilePicture");
+    if (!caseData) {
+      return null;
+    }
+
+    return caseData;
+  }
+
   async cacheCaseData(caseId: string) {
     const response = await this.getCaseByIdWithBodyParts(caseId);
     // await redis.set(caseId, JSON.stringify(response), "EX", CACHE_TTL);
-    console.log(`case ${caseId} has been cached successfully`);
+    // console.log(`case ${caseId} has been cached successfully`);
   }
 
   // Get all cases
@@ -219,30 +268,60 @@ export class CaseService {
   }: {
     userId: string;
     query?: {
+      showFav: string;
       claimStatus?: string;
     };
   }) {
-    const invitedCases = await CaseInvitationModel.find({
-      invitedUser: userId,
-      // status: CaseInvitationStatus.ACCEPTED,
-    }).lean();
-    let invitedCaseIds = invitedCases.map((inv) => inv.case);
-    const casesQuery: mongoose.FilterQuery<any> = {
-      $and: [
-        {
-          $or: [{ user: userId }, { _id: { $in: invitedCaseIds } }],
-        },
-        // {
-        //   $or: [{ isArchived: false }, { isArchived: { $exists: false } }],
-        // },
-      ],
-    };
+    const user = await UserModel.findById(userId).lean();
+    if (!user) throw new Error("User not found");
+    // console.log("role", query);
+    if (user.role === "super_admin") {
+      const adminQuery: mongoose.FilterQuery<any> = {};
 
-    if (query?.claimStatus) {
-      casesQuery["claimStatus"] = query.claimStatus;
+      if (query?.claimStatus) {
+        adminQuery["claimStatus"] = query.claimStatus;
+      }
+
+      if (query?.showFav) {
+        adminQuery["isFavorite"] = query.showFav == "true";
+      }
+
+      return CaseModel.find(
+        adminQuery,
+        "caseNumber plaintiff dateOfClaim claimStatus actionRequired targetCompletion viewCount user isArchived isFavorite cronStatus"
+      )
+        .populate("user", "name profilePicture")
+        .sort({ createdAt: -1 })
+        .lean();
+    } else {
+      const invitedCases = await CaseInvitationModel.find({
+        invitedUser: userId,
+        // status: CaseInvitationStatus.ACCEPTED,
+      }).lean();
+
+      let invitedCaseIds = invitedCases.map((inv) => inv.case);
+
+      const casesQuery: mongoose.FilterQuery<any> = {
+        $and: [
+          {
+            $or: [
+              { user: userId },
+              { _id: { $in: invitedCaseIds } },
+              { organization: user.organization },
+            ],
+          },
+        ],
+      };
+
+      if (query?.claimStatus) {
+        casesQuery["claimStatus"] = query.claimStatus;
+      }
+
+      return CaseModel.find(casesQuery)
+        .populate("user", "name profilePicture")
+        .sort({ createdAt: -1 })
+        .lean();
     }
-
-    return CaseModel.find(casesQuery).sort({ createdAt: -1 }).lean();
   }
 
   //get user archived cases
@@ -277,7 +356,9 @@ export class CaseService {
 
   // Delete a case by ID
   async deleteCase(id: Types.ObjectId) {
-    return CaseModel.findByIdAndDelete(id).lean();
+    await CaseModel.findByIdAndDelete(id).lean();
+    await this.documentService.deleteAllCaseDocument(id.toString());
+    return true;
   }
 
   // Helper function to check if a report is valid
@@ -297,6 +378,7 @@ export class CaseService {
     // If all the items in icdCodes are the same, then remove the duplicate
     const uniqueReports = data.filter(
       (report: any, index: number, self: any) => {
+        if (!report.icdCodes) return false;
         const icdCodes = report.icdCodes.sort().toString();
         const foundIndex = self.findIndex(
           (r: any) => r.icdCodes.sort().toString() === icdCodes
@@ -406,6 +488,7 @@ export class CaseService {
         { reports: distinctReports },
         { new: true }
       ).lean();
+      return distinctReports;
     }
   }
 
@@ -427,36 +510,7 @@ export class CaseService {
       ).flat();
 
       if (flattenedResults.length) {
-        await this.updateCaseReports(caseId, flattenedResults);
-      }
-
-      return flattenedResults;
-    } catch (error) {
-      console.error("Error populating report from case documents:", error);
-      throw new Error("Failed to populate report from case documents");
-    }
-  }
-
-  // Populate report from case documents
-  async populateReportFromCaseDocumentsV2(caseId: string): Promise<any> {
-    try {
-      const documents = await DocumentModel.find({ case: caseId }).lean();
-
-      if (!documents.length) {
-        return [];
-      }
-
-      const flattenedResults = (
-        await Promise.all(
-          documents.map((doc) =>
-            this.documentService.generateReportForDocumentV2(doc)
-          )
-        )
-      ).flat();
-
-      console.log('flattenedResults', flattenedResults)
-
-      if (flattenedResults.length) {
+        await this.updateCaseCompletion(caseId);
         await this.updateCaseReports(caseId, flattenedResults);
       }
 
@@ -470,62 +524,85 @@ export class CaseService {
   //process case
   async processCase(caseId: string) {
     try {
-      const { extractCaseDocumentData, hasError } =
-        await this.documentService.extractCaseDocumentData(caseId);
-      // console.log("processCase - hasError", hasError);
-      // console.log("extractCaseDocumentData", extractCaseDocumentData);
-      const extractCaseDocumentWithoutContent =
-        await this.documentService.extractCaseDocumentWithoutContent(caseId);
-      // console.log(
-      //   "extractCaseDocumentWithoutContent",
-      //   extractCaseDocumentWithoutContent
-      // );
-      const populateReportFromCaseDocuments =
-        await this.populateReportFromCaseDocumentsV2(caseId);
-      console.log(
-        "populateReportFromCaseDocuments",
-        populateReportFromCaseDocuments
+      console.log("processCase... ⌛");
+      const reponse = await this.documentService.extractCaseDocumentData(
+        caseId,
+        () => this.updateCaseCompletion(caseId)
       );
-      return hasError;
+      console.log("extractCaseDocumentData... ✅");
+      await this.documentService.extractCaseDocumentWithoutContent(caseId, () =>
+        this.updateCaseCompletion(caseId)
+      );
+      console.log("extractCaseDocumentWithoutContent... ✅");
+      await this.populateReportFromCaseDocuments(caseId);
+      console.log("populateReportFromCaseDocuments... ✅");
+      return reponse?.hasError || false;
     } catch (error) {
       console.error("Error processing case:", error);
     }
   }
 
-  async processCases() {
-    const caseItem = await CaseModel.findOneAndUpdate(
-      {
-        $or: [
-          { cronStatus: CronStatus.Pending },
-          { cronStatus: "" },
-          { cronStatus: { $exists: false } }, // Matches undefined (i.e., field does not exist)
-        ],
-      },
-      { cronStatus: CronStatus.Processing },
-      { new: true }
+  async updateCaseCompletion(caseId: string) {
+    const caseItem = await CaseModel.findById(caseId);
+    if (!caseItem) return;
+    const progressSteps: Record<number, number> = {
+      5: 13,
+      13: 21,
+      21: 34,
+      34: 37,
+      37: 46,
+      46: 58,
+      58: 65,
+      65: 84,
+      84: 93,
+      93: 97,
+    };
+    console.log(
+      "updateCaseCompletion",
+      progressSteps[caseItem.percentageCompletion]
     );
+    caseItem.percentageCompletion =
+      progressSteps[caseItem.percentageCompletion];
+
+    await caseItem.save();
+  }
+
+  async processCases() {
+    const caseItem = await CaseModel.findOne({
+      $or: [
+        { cronStatus: CronStatus.Pending },
+        { cronStatus: "" },
+        { cronStatus: { $exists: false } },
+      ],
+      env: process.env.NODE_ENV,
+    });
 
     if (!caseItem) {
-      return;
-    }
-
-    if (caseItem.env && caseItem.env !== process.env.NODE_ENV) {
-      caseItem.cronStatus = CronStatus.Pending;
-      await caseItem.save();
+      console.log("no case to process");
+      return null;
     }
 
     console.log(`Processing case: ${caseItem?._id}`);
 
     try {
       // Process the case
+      caseItem.cronStatus = CronStatus.Processing;
+      caseItem.percentageCompletion = 5;
+      await caseItem.save();
       const hasError = await this.processCase(caseItem._id);
+      console.log(`Processed case: ${caseItem?._id}`, { hasError });
       if (!hasError) {
-        // Update to processed
-        await CaseModel.findByIdAndUpdate(
-          caseItem._id,
-          { cronStatus: CronStatus.Processed },
-          { new: true }
+        const pendingOcrDoc = await this.getPendingDocumentToProcess(
+          caseItem?._id
         );
+        if (!pendingOcrDoc) {
+          // Update to processed
+          await CaseModel.findByIdAndUpdate(
+            caseItem._id,
+            { cronStatus: CronStatus.Processed, percentageCompletion: 100 },
+            { new: true }
+          );
+        }
       }
     } catch (error) {
       // Handle error and revert status to pending if needed
@@ -563,33 +640,77 @@ export class CaseService {
 
   // just return sample reports for now .. adjust later
   async getClaimRelatedReports(userId: string) {
-    const reports = await CaseModel.aggregate([
+    const claimTag = await CaseTagModel.findOne({
+      case: { $exists: false },
+      tagName: "Claim Related",
+    }).lean();
+    console.log("getClaimRelatedReports", claimTag);
+    if (!claimTag) {
+      return [];
+    }
+    return DiseaseClassificationTagMappingModel.aggregate([
       {
         $match: {
-          user: new Types.ObjectId(userId), // Match cases by user ID
+          caseTag: claimTag._id, // Match only claim-related cases
+        },
+      },
+      {
+        $lookup: {
+          from: "cases",
+          let: { caseId: { $toObjectId: "$case" }, reportId: "$report" }, // Pass case ID & report ID
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ["$_id", "$$caseId"] }, // Match case ID
+                    { $eq: ["$user", new Types.ObjectId(userId)] }, // Match user ID
+                  ],
+                },
+              },
+            },
+            { $project: { _id: 1, caseNumber: 1, reports: 1 } }, // Keep only required fields
+            { $unwind: "$reports" }, // Unwind reports array to process each report separately
+            {
+              $match: {
+                $expr: { $eq: ["$reports._id", "$$reportId"] }, // Match report ID
+              },
+            },
+          ],
+          as: "caseDetails",
+        },
+      },
+      {
+        $unwind: {
+          path: "$caseDetails",
+          preserveNullAndEmptyArrays: true, // Retain cases even if they have no matching reports
         },
       },
       {
         $project: {
-          _id: 1, // Include the case ID in the projection
-          caseNumber: 1, // Include caseNumber in the projection
-          reports: 1, // Also include the reports array
+          case: "$caseDetails._id",
+          caseNumber: "$caseDetails.caseNumber",
+          report: "$caseDetails.reports._id",
+          nameOfDisease: "$caseDetails.reports.nameOfDisease",
+          amountSpent: "$caseDetails.reports.amountSpent",
+          icdCode: 1,
+          // providerName: "$caseDetails.reports.providerName",
+          // doctorName: "$caseDetails.reports.doctorName",
+          // medicalNote: "$caseDetails.reports.medicalNote",
+          // dateOfClaim: "$caseDetails.reports.dateOfClaim",
+          // icdCodes: "$caseDetails.reports.icdCodes",
+          // document: "$caseDetails.reports.document",
         },
       },
       {
-        $unwind: "$reports", // Unwind the reports array
-      },
-      {
-        $addFields: {
-          "reports.caseId": "$_id", // Add the original case ID to each report
-          "reports.caseNumber": "$caseNumber", // Add the caseNumber to each report
+        $match: {
+          caseNumber: { $exists: true, $ne: "" }, // Ensure caseNumber is not null or empty
         },
       },
       {
-        $replaceRoot: { newRoot: "$reports" }, // Replace the root with the report object
+        $sample: { size: 3 }, // Randomly pick 1 document
       },
     ]);
-    return reports;
   }
 
   async getMostVisitedCasesByUser(userId: string) {
@@ -701,41 +822,138 @@ export class CaseService {
   async updateCaseReportTags({
     caseId,
     reportId,
-    tags,
+    caseTagId,
     isRemove,
+    ...rest
   }: {
     caseId: string;
     reportId: string;
-    tags: string[];
+    caseTagId: string;
     isRemove: boolean;
+    dc?: string;
+    icdCode?: string;
   }) {
     if (!isRemove) {
-      return CaseModel.findByIdAndUpdate(
-        caseId,
+      return DiseaseClassificationTagMappingModel.findOneAndUpdate(
         {
-          $addToSet: {
-            "reports.$[report].tags": { $each: tags },
-          },
+          caseTag: caseTagId,
+          report: reportId,
+          case: caseId,
+          ...(rest.dc && { dc: rest.dc }),
+          ...(rest.icdCode && { icdCode: rest.icdCode }),
         },
-        {
-          arrayFilters: [{ "report._id": reportId }],
-          new: true,
-        }
-      ).lean();
+        {},
+        { upsert: true }
+      );
     } else {
-      return CaseModel.findByIdAndUpdate(
-        caseId,
-        {
-          $pull: {
-            "reports.$[report].tags": { $in: tags },
-          },
-        },
-        {
-          arrayFilters: [{ "report._id": reportId }],
-          new: true,
-        }
-      ).lean();
+      return DiseaseClassificationTagMappingModel.findOneAndDelete({
+        caseTag: caseTagId,
+        report: reportId,
+        case: caseId,
+        ...(rest.dc && { dc: rest.dc }),
+        ...(rest.icdCode && { icdCode: rest.icdCode }),
+      }).lean();
     }
+  }
+
+  async updateCaseReportMultipleTags(
+    inputData: {
+      case: string;
+      report: string;
+      caseTag: string;
+      isRemove: boolean;
+      dc?: string;
+      icdCode?: string;
+    }[]
+  ) {
+    await Promise.all(
+      inputData.map(async (input) => {
+        if (!input.isRemove) {
+          return DiseaseClassificationTagMappingModel.findOneAndUpdate(
+            {
+              caseTag: input.caseTag,
+              report: input.report,
+              case: input.case,
+              ...(input.dc && { dc: input.dc }),
+              ...(input.icdCode && { icdCode: input.icdCode }),
+            },
+            {},
+            { upsert: true }
+          );
+        } else {
+          return DiseaseClassificationTagMappingModel.findOneAndDelete({
+            caseTag: input.caseTag,
+            report: input.report,
+            case: input.case,
+            ...(input.dc && { dc: input.dc }),
+            ...(input.icdCode && { icdCode: input.icdCode }),
+          }).lean();
+        }
+      })
+    );
+    return true;
+  }
+
+  async getDcTagMapping({
+    reportId,
+    caseId,
+    ...rest
+  }: {
+    reportId: string;
+    caseId: string;
+    dc?: string;
+    icdCode?: string;
+  }) {
+    console.log("test", {
+      report: reportId,
+      case: caseId,
+      ...(rest.dc && { dc: rest.dc }),
+      ...(rest.icdCode && { icdCode: rest }),
+    });
+    return DiseaseClassificationTagMappingModel.find({
+      report: reportId,
+      case: caseId,
+      ...(rest.dc && { dc: rest.dc }),
+      ...(rest.icdCode && { icdCode: rest.icdCode }),
+    }).lean();
+  }
+
+  async getCaseDcTagMapping({ caseId }: { caseId: string }) {
+    return DiseaseClassificationTagMappingModel.find({
+      case: caseId,
+    }).lean();
+  }
+
+  async getReportsByDcTagMapping({
+    caseTagId,
+    dc,
+    caseId,
+  }: {
+    caseTagId: string;
+    dc: string;
+    caseId: string;
+  }) {
+    return DiseaseClassificationTagMappingModel.find(
+      {
+        caseTag: caseTagId,
+        case: caseId,
+        dc,
+      },
+      "report"
+    ).lean();
+  }
+
+  async getReportsByTagMapping({
+    caseTagId,
+    caseId,
+  }: {
+    caseTagId: string;
+    caseId: string;
+  }) {
+    return DiseaseClassificationTagMappingModel.find({
+      caseTag: caseTagId,
+      case: caseId,
+    }).lean();
   }
 
   async updateCaseNote({
@@ -910,10 +1128,11 @@ export class CaseService {
         $unwind: "$userDetails",
       },
       {
-        $sort: { createdAt: -1 },
+        $sort: { updatedAt: -1 },
       },
       {
         $project: {
+          _id: 1,
           caseNumber: 1, // Project caseNumber
           "userDetails.name": 1, // Project user details
           "userDetails._id": 1,
@@ -927,14 +1146,14 @@ export class CaseService {
       },
       {
         $project: {
-          _id: 0, // Exclude the case ID
+          _id: 1, // Exclude the case ID
           userDetails: 1, // Return user details
           reports: 1,
           caseNumber: 1, // Return case number
         },
       },
     ]);
-    console.log("favoriteCases", favoriteCases);
+    // console.log("favoriteCases", favoriteCases);
 
     return favoriteCases;
   }
@@ -1038,14 +1257,106 @@ export class CaseService {
     }
   }
 
+  async getPendingDocumentToProcess(caseId: string) {
+    try {
+      const document = await DocumentModel.findOne({
+        $or: [
+          {
+            status: ExtractionStatus.PENDING,
+          },
+          {
+            content: null,
+          },
+          {
+            content: "",
+          },
+          {
+            isCompleted: false,
+          },
+        ],
+        case: caseId,
+      }).lean();
+
+      if (!document) {
+        console.log("No document found for OCR extraction");
+        return null;
+      }
+      return document;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  async checkOcrExtractionStatus(jobId: string) {
+    const document = await DocumentModel.findOne({ jobId }).lean();
+    if (!document) return null;
+    // Extract content from the document
+    console.log("getCombinedDocumentContent...");
+    const content = await this.documentService.getCombinedDocumentContent(
+      document.jobId!
+    );
+
+    if (!content) {
+      console.log("No ocr content...");
+
+      return null;
+    }
+
+    await this.updateCaseCompletion(document.case.toString());
+
+    // Update document with extracted content and status
+    const updatedDoc = await DocumentModel.findByIdAndUpdate(
+      document._id,
+      {
+        content,
+        status: ExtractionStatus.SUCCESS,
+      },
+      {
+        new: true,
+      }
+    );
+
+    if (!updatedDoc) return null;
+
+    // Generate report for the document and update case reports
+    console.log("generateReportForDocument...");
+    const results = await this.documentService.generateReportForDocument(
+      updatedDoc
+    );
+
+    await this.updateCaseCompletion(document.case.toString());
+
+    if (results.length) {
+      updatedDoc.isCompleted = true;
+      await updatedDoc.save();
+    }
+
+    console.log("updateCaseReports...");
+    await this.updateCaseReports(document.case as string, results);
+
+    const pendingCaseDoc = await this.getPendingDocumentToProcess(
+      document.case as string
+    );
+
+    if (!pendingCaseDoc) {
+      await CaseModel.findByIdAndUpdate(
+        document.case,
+        {
+          cronStatus: CronStatus.Processed,
+          percentageCompletion: 100,
+        },
+        { new: true }
+      );
+      // console.log("Ocr Case Extraction Reports =>", updatedCase?.reports);
+    }
+    return results;
+  }
+
   //run ocr document extraction
-  async runOcrDocumentExtraction() {
+  async runOcrDocumentExtraction(docId: string) {
     try {
       // Find document with jobId and status PENDING
-      const document = await DocumentModel.findOne({
-        jobId: { $ne: null },
-        status: ExtractionStatus.PENDING,
-      }).lean();
+      const document = await DocumentModel.findById(docId).lean();
 
       if (!document) {
         console.log("No document found for OCR extraction");
@@ -1058,43 +1369,33 @@ export class CaseService {
       );
 
       // Extract content from the document
-      const content = await this.documentService.getCombinedDocumentContent(
-        document.jobId!
-      );
-
-      // Update document with extracted content and status
-      await DocumentModel.findByIdAndUpdate(document._id, {
-        content,
-        status: ExtractionStatus.SUCCESS,
-      });
-
-      // Generate report for the document and update case reports
-      const results = await this.documentService.generateReportForDocument(
-        document
-      );
-
-      await this.updateCaseReports(document.case as string, results);
-
-      const pendingCaseDoc = await DocumentModel.find({
-        case: document.case,
-        status: ExtractionStatus.PENDING,
-      }).lean();
-
-      if (pendingCaseDoc.length === 0) {
-        await CaseModel.findByIdAndUpdate(
-          document.case,
-          {
-            cronStatus: CronStatus.Processed,
-          },
-          { new: true }
-        );
-      }
+      const results = await this.checkOcrExtractionStatus(document.jobId!);
 
       return results;
     } catch (error) {
       console.error("Error running OCR document extraction:", error);
       throw new Error("Failed to run OCR document extraction");
     }
+  }
+
+  async queueIcdcodeCls({
+    icdCodes,
+    diseaseNames,
+    caseId,
+    reportId,
+  }: {
+    icdCodes: string[];
+    diseaseNames: string;
+    caseId: string;
+    reportId: string;
+  }) {
+    await addIcdcodeClassificationBackgroundJob("icdcode-cls", {
+      caseId,
+      reportId,
+      icdCodes,
+      diseaseNames,
+    });
+    return true;
   }
 
   async getStreamlinedDiseaseName({
@@ -1108,27 +1409,46 @@ export class CaseService {
     caseId: string;
     reportId: string;
   }) {
-    const diseaseNameByIcdCode = this.documentService.getStreamlinedDiseaseName(
-      {
-        icdCodes,
+    const caseList = await CaseModel.findById(caseId);
+    if (!caseList) return null;
+    const reportToUpdateIndex = caseList.reports.findIndex(
+      (report: any) => report?._id.toString() === reportId
+    );
+    console.log("reportToUpdateIndex", reportToUpdateIndex);
+
+    if (reportToUpdateIndex < 0) return null;
+    const report = caseList.reports[reportToUpdateIndex];
+    if (!report) return null;
+
+    console.log("reportToUpdateIndex 2", report?._id);
+
+    const diseaseNameByIcdCode =
+      await this.documentService.getStreamlinedDiseaseName({
+        icdCodes: icdCodes.reverse(),
         diseaseNames,
-      }
+        chunk: report?.chunk || "",
+      });
+
+    console.log("reportToUpdateIndex 3", diseaseNameByIcdCode);
+    const nameOfDiseaseByIcdCode = report.nameOfDiseaseByIcdCode || [];
+
+    const existingIcdCodes = new Set(
+      nameOfDiseaseByIcdCode.map((d) => d.icdCode)
     );
 
-    await CaseModel.findOneAndUpdate(
-      {
-        _id: caseId,
-        "reports._id": reportId,
-      },
-      {
-        $set: {
-          "reports.$.nameOfDiseaseByIcdCode": diseaseNameByIcdCode,
-        },
-      }
-    );
+    // Merge and filter so that only new items with unique icdCodes are added
+    const mergedDiseaseNameByIcdCode = [
+      ...nameOfDiseaseByIcdCode,
+      ...diseaseNameByIcdCode.filter(
+        (newItem) => !existingIcdCodes.has(newItem.icdCode)
+      ),
+    ];
 
-    console.log(diseaseNameByIcdCode);
-    return diseaseNameByIcdCode;
+    caseList.reports[reportToUpdateIndex].nameOfDiseaseByIcdCode =
+      mergedDiseaseNameByIcdCode;
+    await caseList.save();
+
+    return mergedDiseaseNameByIcdCode;
   }
 
   async createCaseTag({
@@ -1162,7 +1482,14 @@ export class CaseService {
   }
 
   async getCaseTags({ caseId }: { caseId: string }) {
-    return CaseTagModel.find({ case: caseId }).lean();
+    return CaseTagModel.find({
+      $or: [
+        { case: caseId },
+        {
+          case: { $exists: false },
+        },
+      ],
+    }).lean();
   }
 
   async getCaseNotes({ caseId }: { caseId: string }) {
@@ -1170,21 +1497,5 @@ export class CaseService {
       .lean()
       .populate("user", "_id name profilePicture")
       .sort({ updatedAt: -1 });
-  }
-
-  async uploadSvg() {
-    console.log("uploading...");
-    const svgList = await BodyPartToImageModel.find({}).limit(1).lean();
-    console.log("svg", svgList);
-    //   for (const svg of svgList.slice(0, 2)) {
-    //     try {
-    //       // const url = await uploadSvgToS3(svg._id.toString(), svg.svg);
-    //       // await BodyPartToImageModel.findByIdAndUpdate(svg._id, {
-    //       //   svgUrl: url,
-    //       // });
-    //     } catch (error) {
-    //       console.error("Error uploading SVG to S3:", error);
-    //     }
-    //   }
   }
 }
