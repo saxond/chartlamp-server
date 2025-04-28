@@ -186,6 +186,9 @@ export class Case {
   @prop({ default: 0, max: 100, min: 0 })
   public percentageCompletion!: number;
 
+  @prop({ required: false, default: "" })
+  public currentExtractionState?: string;
+
   @prop({ type: () => [Report], default: [] })
   public reports!: Report[];
 

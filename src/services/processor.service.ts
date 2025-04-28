@@ -42,6 +42,7 @@ export class ProcessorService {
     caseId: string,
     pageNumber: number,
     totalPages: number,
+    currentExtractionState: string,
     denominator = 4
   ) {
     try {
@@ -69,7 +70,7 @@ export class ProcessorService {
       // Update the accumulated percentage
       const updatedCase = await CaseModel.findByIdAndUpdate(
         caseId,
-        { percentageCompletion: accumulatedPercentage },
+        { percentageCompletion: accumulatedPercentage, currentExtractionState },
         { new: true }
       );
 
@@ -156,7 +157,12 @@ export class ProcessorService {
             savedDoc.jobId = jobId;
             savedDoc.pdfS3Key = pdfS3Key;
             if (jobId) await addOcrPageExtractorBackgroundJob(jobId);
-            await this.updatePercentageCompletion(caseId, i + 1, numberOfPages);
+            await this.updatePercentageCompletion(
+              caseId,
+              i + 1,
+              numberOfPages,
+              `Page ${i + 1} (OCR) text is being extracted`
+            );
             hasOcr = true;
             appLogger(
               `Page ${i + 1} ocr has been added to queue for ${documentUrl}`
@@ -167,7 +173,12 @@ export class ProcessorService {
               `Page ${i + 1} normal text been extracted for ${documentUrl}`
             );
           }
-          await this.updatePercentageCompletion(caseId, i + 1, numberOfPages);
+          await this.updatePercentageCompletion(
+            caseId,
+            i + 1,
+            numberOfPages,
+            `Page ${i + 1} (Normal) text is extracted`
+          );
           await savedDoc.save();
         }
         if (!hasOcr) {
@@ -269,6 +280,7 @@ export class ProcessorService {
           document.case.toString(),
           doc.pageNumber,
           doc.totalPages,
+          `Page ${doc.pageNumber} report has been generated ${document.url}`,
           1
         );
       }
