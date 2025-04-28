@@ -138,7 +138,11 @@ export class DocumentService {
 
   // Get ICD code from description
   async getIcdCodeFromDescription(description: string): Promise<string[]> {
-    const prompt = `Get the ICD 10 code for the following description: ${description}. Give the exact code no any added text after the ICD 10 code. For example, if the description is "Acute bronchitis due to coxsackievirus", the response should be J20.0. If there are multiple codes, provide all of them separated by commas. Do not fabricate the codes, only provide the exact codes. if none return empty string.`;
+    const prompt = `Get the ICD 10 code for the following description: ${description}. 
+    Give the exact code no any added text after the ICD 10 code. For example, if the 
+    description is "Acute bronchitis due to coxsackievirus", the response should be J20.0.
+    If there are multiple codes, provide all of them separated by commas. Do not fabricate the codes,
+    nly provide the exact codes. if none return empty string.`;
 
     // If the description contains the word "not provided" or "N/A", return an empty array
     if (
@@ -157,14 +161,35 @@ export class DocumentService {
       });
 
       if (response) {
-        return Array.from(
-          new Set(
-            response
-              .split(",")
-              .map((code: string) => code.trim())
-              .filter((code: string) => code)
+        const lowerResponse = response.toLowerCase();
+
+        if (
+          ["not", "n/a", "no", "none", "icd-10", "description"].includes(
+            lowerResponse
           )
+        ) {
+          return [];
+        }
+
+        // Split by commas, clean up whitespace
+        const codes = response
+          .split(",")
+          .map((code: string) => code.trim())
+          .filter((code: string) => code);
+
+        // New Check: Are the codes valid-looking ICD codes?
+        const icdCodePattern = /^[A-Z][0-9]{2}(\.[0-9A-Z]{1,4})?$/i;
+
+        const validIcdCodes = codes.filter((code: string) =>
+          icdCodePattern.test(code)
         );
+
+        // If we find no valid ICD codes, assume it's just a long text
+        if (validIcdCodes.length === 0) {
+          return [];
+        }
+
+        return Array.from(new Set(validIcdCodes));
       }
 
       return [];
@@ -287,9 +312,7 @@ Extracted document:
             nameOfDisease + " " + result.medicalNote
           );
 
-          if (icdCodes.join("") == "") return [];
-          if (!icdCodes.length || !/[a-zA-Z0-9]/.test(icdCodes.join("")))
-            return [];
+          if (!icdCodes.length) return [];
 
           const diseaseNameByIcdCode = await this.getStreamlinedDiseaseName({
             icdCodes,
@@ -349,27 +372,30 @@ Extracted document:
       ),
     });
 
-    // - The **pageNumber** where the match occurs.
     const basePrompt = `
-Your task:
-1. From this list of disease names: ${diseaseNames}, please match these disease names to their respective ICD codes: ${icdCodes.join(
+Your strict task:
+
+1. From the given list of disease names: ${diseaseNames}, find only exact or highly relevant matches to the following ICD codes: ${icdCodes.join(
       ","
     )}.
    
-2. Use the following text to find these matches:
+2. Use ONLY the provided text below for matching (no assumptions, no hallucination):
 \n${chunk}\n
 
+Strict Matching Rules:
+- Only assign an ICD code if the disease name, symptom, or condition is **explicitly** mentioned in the text, or if the description strongly matches it.
+- Pay close attention to **anatomical regions** (e.g., thorax vs head vs abdomen) to avoid misclassification.
+- DO NOT guess or infer based on general symptoms unless the anatomical location is clearly aligned with the disease name.
+
 For each matched ICD code, extract the following:
-- An **excerpt** that includes the **exact line where the match is found**, along with **10 words before and 10 words after**.
-- A brief **summary** explaining why this ICD code is relevant in the context of the provided text.
+- An **excerpt**: include the exact sentence or line where the match occurs, plus 10 words before and 10 words after if available.
+- A **brief explanation**: explain why this ICD code was matched, including reference to specific phrases or anatomical clues from the text.
 
-Please ensure the output is clear, structured, and easy to parse.
+Important:
+- If no match is found for a particular ICD code, simply omit it from the output.
+- Focus strictly on matches where the disease or symptom description explicitly corresponds to the ICD meaning.
+- Prioritize anatomical accuracy over broad symptom similarity.
 `;
-
-    // Important:
-    // - Only use the ICD codes provided.
-    // - If no match exists for a disease name, do not assign an ICD code.
-    // - Do not generate or assume additional ICD codes beyond the provided list.
 
     const prompt = `${basePrompt}`.trim();
 
