@@ -52,7 +52,11 @@ router.post(
   caseController.getDcTagMapping
 );
 
-router.get("/:id/dcId/tags", isAuthenticated, caseController.getCaseDcTagMapping);
+router.get(
+  "/:id/dcId/tags",
+  isAuthenticated,
+  caseController.getCaseDcTagMapping
+);
 
 router.post(
   "/:id/dc/addRemove",

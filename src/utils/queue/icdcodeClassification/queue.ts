@@ -1,10 +1,10 @@
 import { Queue } from "bullmq";
-import { redisOptions } from "../../redis/config";
+import { redis } from "../../redis";
 import { icdcodeClassificationQueueName } from "../types";
 
 export const createIcdcodeClassificationQueue = () => {
   const icdcodeClassificationQueue = new Queue(icdcodeClassificationQueueName, {
-    connection: redisOptions,
+    connection: redis,
   });
   return icdcodeClassificationQueue;
 };

@@ -49,8 +49,8 @@ export async function addOcrExtractionStatusPollingJob(jobId: string) {
   await ocrExtractionStatusQueue.upsertJobScheduler(
     `scheduler-${jobId}`,
     {
-      every: 60000, // 1 min
-      limit: 50,
+      every: 120000, // 2 min
+      limit: 5000,
       immediately: false,
     },
     {
@@ -61,60 +61,27 @@ export async function addOcrExtractionStatusPollingJob(jobId: string) {
   );
 }
 
-export async function addOcrPageExtractorBackgroundJobV2(jobId: string) {
-  console.log("adding job to backgrounds...", jobId);
-  try {
-    await ocrPageExtractorQueue.upsertJobScheduler(
-      `scheduler-${jobId}`,
-      {
-        every: 60000, // 1 min
-        limit: 100,
-        immediately: false,
-      },
-      {
-        name: "ocrPageExtractor",
-        data: { jobId },
-      }
-    );
-  } catch (error) {
-    console.error("Error adding job to background:", error);
-    throw error;
-  }
-}
-
 export async function addOcrPageExtractorBackgroundJob(jobId: string) {
-  console.log("Adding job to background queue...", jobId);
-  try {
-    const jobKey = `ocr-${jobId}`;
-
-    const existingJob = await ocrPageExtractorQueue.getJob(jobKey);
-    if (existingJob) {
-      console.log("Job already exists in the queue:", jobKey);
-      return;
+  await ocrPageExtractorQueue.upsertJobScheduler(
+    `scheduler-${jobId}`,
+    {
+      every: 120000, // 2 min
+      limit: 5000,
+      immediately: false,
+    },
+    {
+      name: "ocrPageExtractor",
+      data: { jobId },
+      // opts: {}, // Optional additional job options
     }
-
-    await ocrPageExtractorQueue.add(
-      "ocrPageExtractor",
-      { jobId },
-      {
-        jobId: jobKey,
-        // repeat: { every: 60000 }, // Repeat every minute
-        removeOnComplete: true,
-        removeOnFail: true,
-      }
-    );
-
-    console.log("Job successfully added:", jobKey);
-  } catch (error) {
-    console.error("Error adding job to background:", error);
-    throw error;
-  }
+  );
 }
 
 export async function cancelOcrExtractionPolling(jobId: string) {
   await ocrExtractionStatusQueue.removeJobScheduler(`scheduler-${jobId}`);
   console.log("🛑 Stopped polling job");
 }
+
 export async function cancelOcrPageExtractorPolling(jobId: string) {
   await ocrPageExtractorQueue.removeJobScheduler(`scheduler-${jobId}`);
   console.log("🛑 Stopped polling job");
@@ -122,6 +89,10 @@ export async function cancelOcrPageExtractorPolling(jobId: string) {
 
 export const closeQueues = async () => {
   await casePopulationQueue.close();
+  await ocrExtractionQueue.close();
+  await ocrExtractionStatusQueue.close();
+  await icdcodeClassificationQueue.close();
+  await ocrPageExtractorQueue.close();
 };
 
 process.on("SIGTERM", closeQueues);

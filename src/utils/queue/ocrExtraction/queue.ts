@@ -1,10 +1,10 @@
 import { Queue } from "bullmq";
-import { redisOptions } from "../../redis/config";
 import { ocrQueueName } from "../types";
+import { redis } from "../../redis";
 
 export const createOcrQueue = () => {
   const ocrExtractionQueue = new Queue(ocrQueueName, {
-    connection: redisOptions,
+    connection: redis,
   });
   return ocrExtractionQueue;
 };
