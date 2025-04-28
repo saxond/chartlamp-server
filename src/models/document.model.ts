@@ -81,6 +81,13 @@ export class TempPageDocument {
   @prop({ default: null })
   public jobId?: string;
 
+  @prop({
+    required: true,
+    enum: ["local", "development", "production"],
+    default: "production",
+  })
+  public env!: string;
+
   @prop()
   public report?: Object[];
 
