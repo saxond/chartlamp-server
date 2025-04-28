@@ -41,7 +41,8 @@ export class ProcessorService {
   async updatePercentageCompletion(
     caseId: string,
     pageNumber: number,
-    totalPages: number
+    totalPages: number,
+    denominator = 4
   ) {
     try {
       if (totalPages === 0) throw new Error("Total pages cannot be zero");
@@ -50,7 +51,7 @@ export class ProcessorService {
 
       // Calculate the contribution as half of the page's value
       const pageContribution = 100 / totalPages;
-      newContribution = pageContribution / 2;
+      newContribution = pageContribution / denominator;
 
       // Fetch the current completion percentage from the database
       const currentCase = await CaseModel.findById(caseId);
@@ -140,6 +141,7 @@ export class ProcessorService {
             totalPages: numberOfPages,
             pageRawData: Buffer.from(subPdfBytes),
             pageText: processedText,
+            env: process.env.NODE_ENV,
           });
           if (!processedText) {
             const pdfS3Key = await uploadToS3(
@@ -154,6 +156,7 @@ export class ProcessorService {
             savedDoc.jobId = jobId;
             savedDoc.pdfS3Key = pdfS3Key;
             if (jobId) await addOcrPageExtractorBackgroundJob(jobId);
+            await this.updatePercentageCompletion(caseId, i + 1, numberOfPages);
             hasOcr = true;
             appLogger(
               `Page ${i + 1} ocr has been added to queue for ${documentUrl}`
@@ -208,6 +211,11 @@ export class ProcessorService {
   }
 
   async processOcrPage(jobId: string) {
+    const isEnvMatch = await TempPageDocumentModel.findOne({
+      jobId,
+      env: process.env.NODE_ENV,
+    }).lean();
+    if (!isEnvMatch) return;
     const pageText = await this.documentService.getCombinedDocumentContent(
       jobId!
     );
@@ -260,7 +268,8 @@ export class ProcessorService {
         await this.updatePercentageCompletion(
           document.case.toString(),
           doc.pageNumber,
-          doc.totalPages
+          doc.totalPages,
+          1
         );
       }
       await TempPageDocumentModel.findByIdAndUpdate(
