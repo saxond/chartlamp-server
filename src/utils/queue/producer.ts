@@ -5,30 +5,14 @@ import { createOcrQueue } from "./ocrExtraction/queue";
 import { createOcrStatusQueue } from "./ocrExtractionStatus/queue";
 import { createOcrPageExtractorQueue } from "./ocrPageExtractor/queue";
 import { caseQueueName } from "./types";
+import { redis } from "../redis";
 
 const casePopulationQueue = new Queue(caseQueueName, {
   connection: redisOptions,
 });
 
-const ocrExtractionQueue = createOcrQueue();
-const ocrExtractionStatusQueue = createOcrStatusQueue();
 const icdcodeClassificationQueue = createIcdcodeClassificationQueue();
 const ocrPageExtractorQueue = createOcrPageExtractorQueue();
-
-export async function addOcrExtractionBackgroundJob(
-  jobName: string,
-  input?: any
-) {
-  console.log("adding job to backgrounds...", { jobName, input });
-  try {
-    await ocrExtractionQueue.add(jobName, input, {
-      jobId: `ocr-${input.documentId}`,
-    });
-  } catch (error) {
-    console.error("Error adding job to background:", error);
-    throw error;
-  }
-}
 
 export async function addIcdcodeClassificationBackgroundJob(
   jobName: string,
@@ -45,22 +29,6 @@ export async function addIcdcodeClassificationBackgroundJob(
   }
 }
 
-export async function addOcrExtractionStatusPollingJob(jobId: string) {
-  await ocrExtractionStatusQueue.upsertJobScheduler(
-    `scheduler-${jobId}`,
-    {
-      every: 120000, // 2 min
-      limit: 5000,
-      immediately: false,
-    },
-    {
-      name: "ocrExtractionStatus",
-      data: { jobId },
-      // opts: {}, // Optional additional job options
-    }
-  );
-}
-
 export async function addOcrPageExtractorBackgroundJob(jobId: string) {
   await ocrPageExtractorQueue.upsertJobScheduler(
     `scheduler-${jobId}`,
@@ -72,14 +40,12 @@ export async function addOcrPageExtractorBackgroundJob(jobId: string) {
     {
       name: "ocrPageExtractor",
       data: { jobId },
-      // opts: {}, // Optional additional job options
+      opts: {
+        removeOnComplete: true,
+        removeOnFail: false,
+      },
     }
   );
-}
-
-export async function cancelOcrExtractionPolling(jobId: string) {
-  await ocrExtractionStatusQueue.removeJobScheduler(`scheduler-${jobId}`);
-  console.log("🛑 Stopped polling job");
 }
 
 export async function cancelOcrPageExtractorPolling(jobId: string) {
@@ -88,12 +54,30 @@ export async function cancelOcrPageExtractorPolling(jobId: string) {
 }
 
 export const closeQueues = async () => {
+  console.log("closing queues...");
   await casePopulationQueue.close();
-  await ocrExtractionQueue.close();
-  await ocrExtractionStatusQueue.close();
   await icdcodeClassificationQueue.close();
   await ocrPageExtractorQueue.close();
 };
+
+export async function clearQueue(queueName: string) {
+  const queue = new Queue(queueName, { connection: redis });
+
+  await queue.drain(true); // true => also removes delayed jobs
+  console.log(`Queue ${queueName} drained!`);
+
+  await queue.clean(0, 0, "completed");
+  await queue.clean(0, 0, "failed");
+  await queue.clean(0, 0, "delayed");
+  await queue.clean(0, 0, "wait");
+  await queue.clean(0, 0, "active");
+
+  console.log(`Queue ${queueName} cleaned!`);
+}
+
+ocrPageExtractorQueue.on("waiting", ({ jobId }) => {
+  console.log(`Job ${jobId} is waiting`);
+});
 
 process.on("SIGTERM", closeQueues);
 process.on("SIGINT", closeQueues);

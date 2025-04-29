@@ -4,7 +4,7 @@ export function createWorker(
   name: string,
   processor: string | Processor,
   connection: ConnectionOptions,
-  concurrency = 1
+  concurrency = 3
 ) {
   const worker = new Worker(name, processor, {
     connection,
