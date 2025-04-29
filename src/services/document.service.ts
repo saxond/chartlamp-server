@@ -22,9 +22,7 @@ import {
   TempPageDocument,
   TempPageDocumentModel,
 } from "../models/document.model";
-import {
-  cancelOcrPageExtractorPolling,
-} from "../utils/queue/producer";
+import { cancelOcrPageExtractorPolling } from "../utils/queue/producer";
 import { textractClient } from "../utils/textract";
 import OpenAIService from "./openai.service";
 
@@ -800,10 +798,10 @@ Important:
 
       // 1️⃣ Check if Textract job is still running before fetching results
       const jobStatus = await this.getTextractJobStatus(jobId);
-      if (!jobStatus) return "";
+      if (!jobStatus) throw new Error("Textract job not found");
       if (jobStatus === "IN_PROGRESS") {
         console.log("⏳ Textract job still processing...");
-        return ""; // Exit early since the job isn't done
+        throw new Error("Textract job still processing");
       }
       if (jobStatus === "SUCCEEDED") {
         console.log("✅ Textract job completed successfully");
