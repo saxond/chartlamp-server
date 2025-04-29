@@ -3,6 +3,7 @@ import { redisOptions as redisOptionsI } from "../../redis/config";
 import { ocrPageExtractorQueueName } from "../types";
 import { createWorker } from "../worker.factory";
 import processor from "./processor";
+import { redis } from "../../redis";
 
 export async function createOcrPageExtractorWorker() {
   const redisOptions = {
@@ -10,11 +11,7 @@ export async function createOcrPageExtractorWorker() {
     maxRetriesPerRequest: null,
   };
 
-  const { worker } = createWorker(
-    ocrPageExtractorQueueName,
-    processor,
-    new IORedis(redisOptions)
-  );
+  const { worker } = createWorker(ocrPageExtractorQueueName, processor, redis);
 
   await worker.startStalledCheckTimer();
 

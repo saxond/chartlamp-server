@@ -74,7 +74,7 @@ console.log("Cron job scheduled....");
 
 const start = async (): Promise<void> => {
   try {
-    console.error = () => {};
+    // console.error = () => {};
     await connectToMongo();
     startBackgroundJobs();
     app.listen(PORT, () => {

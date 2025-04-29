@@ -3,6 +3,7 @@ import { redisOptions as redisOptionsI } from "../../redis/config";
 import { icdcodeClassificationQueueName } from "../types";
 import { createWorker } from "../worker.factory";
 import icdcodClassificationProcessor from "./processor";
+import { redis } from "../../redis";
 
 export async function createIcdcodClassificationWorker() {
   const redisOptions = {
@@ -13,7 +14,7 @@ export async function createIcdcodClassificationWorker() {
   const { worker: icdcodClassificationWorker } = createWorker(
     icdcodeClassificationQueueName,
     icdcodClassificationProcessor,
-    new IORedis(redisOptions)
+    redis
   );
 
   await icdcodClassificationWorker.startStalledCheckTimer();

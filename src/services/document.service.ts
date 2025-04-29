@@ -23,9 +23,6 @@ import {
   TempPageDocumentModel,
 } from "../models/document.model";
 import {
-  addOcrExtractionBackgroundJob,
-  addOcrExtractionStatusPollingJob,
-  addOcrPageExtractorBackgroundJob,
   cancelOcrPageExtractorPolling,
 } from "../utils/queue/producer";
 import { textractClient } from "../utils/textract";
@@ -700,11 +697,11 @@ Important:
           jobId: content,
         });
         if (doc) {
-          await addOcrExtractionBackgroundJob("extractOcr", {
-            documentId: doc._id,
-            isSinglePage: true,
-          });
-          await addOcrExtractionStatusPollingJob(content);
+          // await addOcrExtractionBackgroundJob("extractOcr", {
+          //   documentId: doc._id,
+          //   isSinglePage: true,
+          // });
+          // await addOcrExtractionStatusPollingJob(content);
         }
       }
       content = "";

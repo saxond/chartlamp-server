@@ -18,11 +18,12 @@ import {
   loadPdfJs,
 } from "../utils";
 import { deleteFromS3, uploadToS3 } from "../utils/aws/s3";
-import { addOcrPageExtractorBackgroundJob } from "../utils/queue/producer";
+import { addOcrPageExtractorBackgroundJob, clearQueue } from "../utils/queue/producer";
 import { textractClient } from "../utils/textract";
 import { CaseService } from "./case.service";
 import { DocumentService } from "./document.service";
 import OpenAIService from "./openai.service";
+import { ocrPageExtractorQueueName } from "../utils/queue/types";
 
 export class ProcessorService {
   private openAiService: OpenAIService;
@@ -300,6 +301,7 @@ export class ProcessorService {
 
     if (!pendingPageDocs.length) {
       appLogger(`No Pending Pages found`);
+      await clearQueue(ocrPageExtractorQueueName);
       await DocumentModel.findByIdAndUpdate(
         document._id,
         {

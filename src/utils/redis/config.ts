@@ -4,4 +4,5 @@ export const redisOptions = {
     ? parseInt(process.env.REDIS_PORT, 10)
     : undefined,
   password: process.env.REDIS_PASSWORD,
+  maxRetriesPerRequest: null,
 };
