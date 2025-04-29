@@ -18,7 +18,10 @@ import {
   loadPdfJs,
 } from "../utils";
 import { deleteFromS3, uploadToS3 } from "../utils/aws/s3";
-import { addOcrPageExtractorBackgroundJob, clearQueue } from "../utils/queue/producer";
+import {
+  addOcrPageExtractorBackgroundJob,
+  clearQueue,
+} from "../utils/queue/producer";
 import { textractClient } from "../utils/textract";
 import { CaseService } from "./case.service";
 import { DocumentService } from "./document.service";
@@ -128,7 +131,7 @@ export class ProcessorService {
       } else {
         const pdfDoc = await PDFDocument.load(pdfBytes);
         const numberOfPages = pdfDoc.getPages().length;
-        // const numberOfPages = pdfDoc.getPages().slice(0, 3).length;
+        // const numberOfPages = pdfDoc.getPages().slice(0, 2).length;
         let hasOcr = false;
         for (let i = 0; i < numberOfPages; i++) {
           const subDocument = await PDFDocument.create();
@@ -227,7 +230,7 @@ export class ProcessorService {
       jobId,
       env: process.env.NODE_ENV,
     }).lean();
-    if (!isEnvMatch) return;
+    if (!isEnvMatch) throw new Error("Environment does not match");
     const pageText = await this.documentService.getCombinedDocumentContent(
       jobId!
     );
