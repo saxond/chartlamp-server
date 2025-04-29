@@ -1,26 +1,27 @@
-import { redisOptions as redisOptionsI } from "../redis/config";
 import { createIcdcodClassificationWorker } from "./icdcodeClassification/worker";
-import { createOcrExtractionWorker } from "./ocrExtraction/worker";
-import { createOcrExtractionStatusWorker } from "./ocrExtractionStatus/worker";
 import { createOcrPageExtractorWorker } from "./ocrPageExtractor/worker";
 
 export async function startBackgroundJobs() {
-  const redisOptions = {
-    ...redisOptionsI,
-    maxRetriesPerRequest: null,
-  };
-
-  const ocrExtractionWorker = await createOcrExtractionWorker();
-  const ocrExtractionStatusWorker = await createOcrExtractionStatusWorker();
+  console.log("Creating worker environments for background jobs...");
   const icdcodClassificationWorker = await createIcdcodClassificationWorker();
   const ocrPageExtractorWorker = await createOcrPageExtractorWorker();
 
+  let isShuttingDown = false; 
+
   const shutdown = async () => {
-    await ocrExtractionWorker.close();
-    await ocrExtractionStatusWorker.close();
-    await icdcodClassificationWorker.close();
-    await ocrPageExtractorWorker.close();
-    process.exit(0);
+    if (isShuttingDown) return;
+    isShuttingDown = true;
+    console.log("Shutdown signal received. Closing workers...");
+
+    try {
+      await icdcodClassificationWorker.close();
+      await ocrPageExtractorWorker.close();
+      console.log("Worker environments for background jobs closed.");
+    } catch (err) {
+      console.error("Error during shutdown:", err);
+    } finally {
+      process.exit(0);
+    }
   };
 
   process.on("SIGTERM", shutdown);

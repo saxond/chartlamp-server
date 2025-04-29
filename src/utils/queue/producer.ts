@@ -1,15 +1,7 @@
 import { Queue } from "bullmq";
-import { redisOptions } from "../redis/config";
 import { createIcdcodeClassificationQueue } from "./icdcodeClassification/queue";
-import { createOcrQueue } from "./ocrExtraction/queue";
-import { createOcrStatusQueue } from "./ocrExtractionStatus/queue";
 import { createOcrPageExtractorQueue } from "./ocrPageExtractor/queue";
-import { caseQueueName } from "./types";
 import { redis } from "../redis";
-
-const casePopulationQueue = new Queue(caseQueueName, {
-  connection: redisOptions,
-});
 
 const icdcodeClassificationQueue = createIcdcodeClassificationQueue();
 const ocrPageExtractorQueue = createOcrPageExtractorQueue();
@@ -55,7 +47,6 @@ export async function cancelOcrPageExtractorPolling(jobId: string) {
 
 export const closeQueues = async () => {
   console.log("closing queues...");
-  await casePopulationQueue.close();
   await icdcodeClassificationQueue.close();
   await ocrPageExtractorQueue.close();
 };
