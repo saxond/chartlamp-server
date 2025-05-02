@@ -285,7 +285,6 @@ export class ProcessorService {
           doc.pageNumber,
           doc.totalPages,
           `Page ${doc.pageNumber} report has been generated ${document.url}`,
-          1
         );
       }
       await TempPageDocumentModel.findByIdAndUpdate(
