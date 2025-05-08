@@ -1292,9 +1292,10 @@ export class CaseService {
     if (!document) return null;
     // Extract content from the document
     console.log("getCombinedDocumentContent...");
-    const content = await this.documentService.getCombinedDocumentContent(
-      document.jobId!
-    );
+    // const content = await this.documentService.getCombinedDocumentContent(
+    //   document.jobId!
+    // );
+    const content = ``
 
     if (!content) {
       console.log("No ocr content...");
