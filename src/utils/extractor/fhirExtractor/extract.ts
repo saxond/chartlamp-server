@@ -1,7 +1,7 @@
 // chains/fhirExtractor.ts
 import { PromptTemplate } from "@langchain/core/prompts";
 import { RunnableSequence } from "@langchain/core/runnables";
-import { StructuredOutputParser } from "langchain/output_parsers";
+import { StructuredOutputParser } from "@langchain/core/output_parsers";
 import { aiService } from "../../../services/ai.service";
 import { BundleSchemaV2 } from "./structuredOutputs";
 
