@@ -1,33 +1,33 @@
-import { BufferMemory, BufferMemoryInput } from "langchain/memory";
+// import { BufferMemory, BufferMemoryInput } from "langchain/memory";
 
-class CustomLangchainMemory extends BufferMemory {
-  private maxPages: number;
+// class CustomLangchainMemory extends BufferMemory {
+//   private maxPages: number;
 
-  constructor({
-    maxPages = 3,
-    ...rest
-  }: { maxPages?: number } & BufferMemoryInput) {
-    super({ ...rest });
-    this.maxPages = maxPages;
-  }
+//   constructor({
+//     maxPages = 3,
+//     ...rest
+//   }: { maxPages?: number } & BufferMemoryInput) {
+//     super({ ...rest });
+//     this.maxPages = maxPages;
+//   }
 
-  async saveContext(inputValues: any, outputValues: any) {
-    await super.saveContext(inputValues, outputValues);
+//   async saveContext(inputValues: any, outputValues: any) {
+//     await super.saveContext(inputValues, outputValues);
 
-    const allMessages = await this.chatHistory.getMessages();
+//     const allMessages = await this.chatHistory.getMessages();
 
-    const maxMessages = this.maxPages * 2;
+//     const maxMessages = this.maxPages * 2;
 
-    if (allMessages.length > maxMessages) {
-      const keepMessages = allMessages.slice(-maxMessages);
+//     if (allMessages.length > maxMessages) {
+//       const keepMessages = allMessages.slice(-maxMessages);
 
-      await this.chatHistory.clear();
+//       await this.chatHistory.clear();
 
-      for (const msg of keepMessages) {
-        await this.chatHistory.addMessage(msg);
-      }
-    }
-  }
-}
+//       for (const msg of keepMessages) {
+//         await this.chatHistory.addMessage(msg);
+//       }
+//     }
+//   }
+// }
 
-export default CustomLangchainMemory;
+// export default CustomLangchainMemory;
