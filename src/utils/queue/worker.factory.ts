@@ -3,7 +3,7 @@ import os from "os";
 
 function getOptimalConcurrency({
   minConcurrency = 1,
-  maxConcurrency = 10,
+  maxConcurrency = 3,
   memoryPerJobMb = 50,
 } = {}) {
   const totalMemoryMb = os.totalmem() / (1024 * 1024); // in MB

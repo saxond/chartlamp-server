@@ -35,6 +35,11 @@ export async function addOcrPageExtractorBackgroundJob(jobId: string) {
       opts: {
         removeOnComplete: true,
         removeOnFail: false,
+        attempts: 10,
+        backoff: {
+          type: "exponential",
+          delay: 10000,
+        },
       },
     }
   );

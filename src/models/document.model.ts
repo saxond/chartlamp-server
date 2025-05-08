@@ -5,6 +5,10 @@ import {
   Ref,
 } from "@typegoose/typegoose";
 import { Case } from "./case.model"; // Ensure this path is correct
+import {
+  BundelV2,
+  Bundle,
+} from "../utils/extractor/fhirExtractor/structuredOutputs";
 
 export enum ExtractionStatus {
   PENDING = "PENDING",
@@ -38,6 +42,9 @@ export class Document {
   //job Id from the document processing service
   @prop({ default: null })
   public jobId?: string;
+
+  @prop({ default: null })
+  public fhir?: Bundle;
 
   //extraction status default PENDING
   @prop({ enum: ExtractionStatus, default: ExtractionStatus.PENDING })
@@ -91,7 +98,28 @@ export class TempPageDocument {
   @prop()
   public report?: Object[];
 
+  @prop()
+  public fhirSummary?: BundelV2;
+
   public createdAt?: Date;
 }
 
 export const TempPageDocumentModel = getModelForClass(TempPageDocument);
+
+export class PageVectorStore {
+  public _id?: string;
+
+  @prop({ default: null })
+  public document!: string;
+
+  @prop({ default: null })
+  public pageNumber!: number;
+
+  @prop({ default: null })
+  public pageText!: string;
+
+  @prop({ default: null })
+  public embedding!: number[];
+}
+
+export const PageVectorStoreModel = getModelForClass(PageVectorStore);

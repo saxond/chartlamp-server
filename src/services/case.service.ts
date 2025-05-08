@@ -1498,4 +1498,10 @@ export class CaseService {
       .populate("user", "_id name profilePicture")
       .sort({ updatedAt: -1 });
   }
+
+  async getCaseFhirBundle({ caseId }: { caseId: string }) {
+    const caseItem = await CaseModel.findById(caseId).lean();
+    if (!caseItem) return null;
+    return caseItem?.fhir || null;
+  }
 }
