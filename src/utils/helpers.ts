@@ -112,26 +112,35 @@ export async function updatePercentageCompletion(
 
     const caseDocCount = await DocumentModel.countDocuments({ case: caseId });
     const denominatorByCaseDocCount = caseDocCount * denominator;
+
     const pageContribution = 100 / totalPages;
-    const newContribution = pageContribution / denominatorByCaseDocCount;
+    const newContributionRaw = pageContribution / denominatorByCaseDocCount;
+    const newContribution = Math.round(newContributionRaw); // round to whole number
 
-    console.log("🔢 contribution this step:", newContribution.toFixed(4));
+    console.log("🔢 rounded contribution this step:", newContribution);
 
-    // Atomic increment
+    // Fetch current percentage
+    const currentCase = await CaseModel.findById(caseId);
+    if (!currentCase) throw new Error("Case not found");
+
+    const currentCompletion = Math.round(currentCase.percentageCompletion || 0);
+    const updatedCompletion = Math.min(currentCompletion + newContribution, 95); // cap at 95%
+
+    // Update case
     const updatedCase = await CaseModel.findByIdAndUpdate(
       caseId,
       {
-        $inc: { percentageCompletion: newContribution },
-        $set: { currentExtractionState },
+        $set: {
+          percentageCompletion: updatedCompletion,
+          currentExtractionState,
+        },
       },
       { new: true }
     );
 
     if (updatedCase) {
       appLogger(
-        `✅ Updated case ${caseId} to ~${updatedCase.percentageCompletion?.toFixed(
-          2
-        )}%`
+        `✅ Updated case ${caseId} to ${updatedCase.percentageCompletion}%`
       );
     }
 
