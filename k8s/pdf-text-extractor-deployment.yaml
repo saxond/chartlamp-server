@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pdf-text-extractor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pdf-text-extractor
+  template:
+    metadata:
+      labels:
+        app: pdf-text-extractor
+    spec:
+      tolerations:
+        - key: "dedicated"
+          operator: "Equal"
+          value: "worker"
+          effect: "NoSchedule"
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: role
+                    operator: In
+                    values:
+                      - worker
+      containers:
+        - name: pdf-text-worker
+          image: <your_ecr_image_uri>
+          command: ["node", "dist/utils/queue/pdfExtractor/index.js"]
+          envFrom:
+            - secretRef:
+                name: app-secrets

@@ -13,7 +13,7 @@ import { DocumentModel, ExtractionStatus } from "../models/document.model";
 import { Organization } from "../models/organization.model";
 import { UserModel } from "../models/user.model";
 // import { redis } from "../utils/redis";
-import { addIcdcodeClassificationBackgroundJob } from "../utils/queue/producer";
+import { addIcdcodeClassificationBackgroundJob } from "../utils/queue/icdcodeClassification/producer";
 import { DiseaseClassificationService } from "./diseaseClassification.service";
 import { DocumentService } from "./document.service";
 import notificationService from "./notification.service";

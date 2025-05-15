@@ -1,11 +1,10 @@
 import {
-  FeatureType,
-  StartDocumentAnalysisCommand,
   StartDocumentTextDetectionCommand,
   StartDocumentTextDetectionCommandOutput,
 } from "@aws-sdk/client-textract";
 import { PDFDocument } from "pdf-lib";
 import sharp from "sharp";
+import textract from "textract";
 import { CaseModel, CronStatus } from "../models/case.model";
 import {
   Document,
@@ -20,18 +19,21 @@ import {
   fetchPdfFromUrl,
   loadPdfJs,
 } from "../utils";
-import { deleteFromS3, uploadToS3 } from "../utils/aws/s3";
-import { updatePercentageCompletion } from "../utils/helpers";
+import { deleteFromS3 } from "../utils/aws/s3";
+import { safeLoopPause, updatePercentageCompletion } from "../utils/helpers";
+import { addPageProcessingBackgroundJob } from "../utils/queue/pageProcessing/producer";
 import {
-  addOcrPageExtractorBackgroundJob,
-  clearQueue,
-} from "../utils/queue/producer";
+  addPdfTextExtractorBackgroundJob,
+  cancelPdfTextExtractorPolling,
+} from "../utils/queue/pdfExtractor/producer";
 import { ocrPageExtractorQueueName } from "../utils/queue/types";
+import { clearQueue } from "../utils/queue/utils";
 import { textractClient } from "../utils/textract";
 import { aiVectorService } from "./ai.vector.service";
 import { CaseService } from "./case.service";
 import { DocumentService } from "./document.service";
 import OpenAIService from "./openai.service";
+import { ocrPdfWithTesseract } from "../utils/tesseract";
 
 export class ProcessorService {
   private openAiService: OpenAIService;
@@ -46,32 +48,6 @@ export class ProcessorService {
       process.env.OPENAI_API_KEY as string
     );
   }
-
-  // async extractContentFromDocumentUsingTextract(s3ObjectKey: string) {
-  //   try {
-  //     const startDocumentAnalysisCommand = new StartDocumentAnalysisCommand({
-  //       DocumentLocation: {
-  //         S3Object: {
-  //           Bucket: (process.env.AWS_BUCKET_NAME as string) || "chartlamp",
-  //           Name: s3ObjectKey!,
-  //         },
-  //       },
-  //       FeatureTypes: [
-  //         FeatureType.TABLES,
-  //         FeatureType.FORMS,
-  //         FeatureType.SIGNATURES,
-  //       ],
-  //     });
-
-  //     const { JobId } = await textractClient.send(startDocumentAnalysisCommand);
-
-  //     return JobId || "";
-  //   } catch (error: any) {
-  //     appErrorLogger(
-  //       `Textract error details: ${JSON.stringify(error?.message, null, 2)}`
-  //     );
-  //   }
-  // }
 
   async extractContentFromDocumentUsingTextract(s3ObjectKey: string) {
     try {
@@ -116,130 +92,22 @@ export class ProcessorService {
         const pdfDoc = await PDFDocument.load(pdfBytes);
         const numberOfPages = pdfDoc.getPages().length;
         // const numberOfPages = pdfDoc.getPages().slice(0, 2).length;
-        let hasOcr = false;
-
-        // for (let i = 0; i < numberOfPages; i++) {
-        //   const subDocument = await PDFDocument.create();
-        //   const [copiedPage] = await subDocument.copyPages(pdfDoc, [i]);
-        //   subDocument.addPage(copiedPage);
-        //   const subPdfBytes = await subDocument.save();
-        //   const pdfCon1 = new Uint8Array(subPdfBytes);
-        //   const processedText = await this.preProcessPage(pdfCon1);
-        //   const savedDoc = await TempPageDocumentModel.create({
-        //     document: documentId,
-        //     pageNumber: i + 1,
-        //     totalPages: numberOfPages,
-        //     pageRawData: Buffer.from(subPdfBytes),
-        //     pageText: processedText,
-        //     env: process.env.NODE_ENV,
-        //   });
-        //   if (!processedText) {
-        //     const pdfS3Key = await uploadToS3(
-        //       documentId,
-        //       savedDoc._id,
-        //       subPdfBytes
-        //     );
-        //     console.log("pdfS3Key", pdfS3Key);
-        //     if (!pdfS3Key) continue;
-        //     const jobId = await this.extractContentFromDocumentUsingTextract(
-        //       pdfS3Key
-        //     );
-        //     savedDoc.jobId = jobId;
-        //     savedDoc.pdfS3Key = pdfS3Key;
-        //     if (jobId) await addOcrPageExtractorBackgroundJob(jobId);
-        //     await updatePercentageCompletion(
-        //       caseId,
-        //       i + 1,
-        //       numberOfPages,
-        //       `Page ${i + 1} (OCR) text is being extracted`
-        //     );
-        //     hasOcr = true;
-        //     appLogger(
-        //       `Page ${i + 1} ocr has been added to queue for ${documentUrl}`
-        //     );
-        //   } else {
-        //     savedDoc.isCompleted = true;
-        //     appLogger(
-        //       `Page ${i + 1} normal text been extracted for ${documentUrl}`
-        //     );
-        //     await aiVectorService.storePage(savedDoc);
-        //   }
-        //   await updatePercentageCompletion(
-        //     caseId,
-        //     i + 1,
-        //     numberOfPages,
-        //     `Page ${i + 1} (Normal) text is extracted`
-        //   );
-        //   await savedDoc.save();
-        // }
 
         for (let i = 0; i < numberOfPages; i++) {
-          const subDocument = await PDFDocument.create();
-          const [copiedPage] = await subDocument.copyPages(pdfDoc, [i]);
-          subDocument.addPage(copiedPage);
-          const subPdfBytes = await subDocument.save();
-          const pdfCon1 = new Uint8Array(subPdfBytes);
-          const processedText = await this.preProcessPage(pdfCon1);
+          console.log("Page number", i + 1);
+          // const subDocument = await PDFDocument.create();
+          // const [copiedPage] = await subDocument.copyPages(pdfDoc, [i]);
+          // subDocument.addPage(copiedPage);
+          // const subPdfBytes = await subDocument.save();
 
-          const savedDoc = await TempPageDocumentModel.create({
-            document: documentId,
-            pageNumber: i + 1,
+          await addPageProcessingBackgroundJob({
+            pageNumber: i,
             totalPages: numberOfPages,
-            pageRawData: Buffer.from(subPdfBytes),
-            pageText: processedText,
-            env: process.env.NODE_ENV,
-          });
-
-          let extractionNote = "";
-
-          if (!processedText) {
-            const pdfS3Key = await uploadToS3(
-              documentId,
-              savedDoc._id,
-              subPdfBytes
-            );
-            if (!pdfS3Key) continue;
-
-            const jobId = await this.extractContentFromDocumentUsingTextract(
-              pdfS3Key
-            );
-            savedDoc.jobId = jobId;
-            savedDoc.pdfS3Key = pdfS3Key;
-
-            if (jobId) await addOcrPageExtractorBackgroundJob(jobId);
-
-            hasOcr = true;
-            extractionNote = `Page ${i + 1} (OCR) text is being extracted`;
-            appLogger(`Page ${i + 1} OCR queued for ${documentUrl}`);
-          } else {
-            savedDoc.isCompleted = true;
-            extractionNote = `Page ${i + 1} (Normal) text is extracted`;
-            appLogger(`Page ${i + 1} normal text extracted for ${documentUrl}`);
-            await aiVectorService.storePage(savedDoc);
-          }
-
-          await savedDoc.save();
-
-          // ✅ Single call for updating percentage — safe and isolated
-          await updatePercentageCompletion(
+            // pageBytes: Buffer.from(subPdfBytes),
+            documentId,
             caseId,
-            i + 1,
-            numberOfPages,
-            extractionNote
-          );
-        }
-
-        if (!hasOcr) {
-          const tempDoc = await TempPageDocumentModel.findOne({
-            document: documentId,
-          })
-            .lean()
-            .populate<{
-              document: Document;
-            }>("document");
-          if (tempDoc) {
-            await this.processDocument(tempDoc.document);
-          }
+            documentUrl,
+          });
         }
       }
     } catch (error: any) {
@@ -263,7 +131,117 @@ export class ProcessorService {
     }
   }
 
-  async preProcessPage(pdfCon1: Uint8Array) {
+  async processPage({
+    pageNumber,
+    totalPages,
+    documentId,
+    caseId,
+    documentUrl,
+  }: {
+    pageNumber: number;
+    totalPages: number;
+    documentId: string;
+    caseId: string;
+    documentUrl: string;
+  }) {
+    try {
+      console.log("Processing page", pageNumber);
+      const pdfBytes = await fetchPdfFromUrl(documentUrl);
+      const pdfDoc = await PDFDocument.load(pdfBytes);
+      const subDocument = await PDFDocument.create();
+      const [copiedPage] = await subDocument.copyPages(pdfDoc, [pageNumber]);
+      subDocument.addPage(copiedPage);
+      const pageBytes = await subDocument.save();
+
+      const byteArray = new Uint8Array(pageBytes);
+      const pageBuffer = Buffer.from(pageBytes);
+      const processedText = await this.getPageText(byteArray);
+
+      const savedDoc = await TempPageDocumentModel.create({
+        document: documentId,
+        pageNumber: pageNumber + 1,
+        totalPages,
+        pageRawData: pageBuffer,
+        pageText: processedText,
+        env: process.env.NODE_ENV,
+      });
+
+      let extractionNote = "";
+
+      if (!processedText) {
+        // const pdfS3Key = await uploadToS3(documentId, savedDoc._id, pageBytes);
+        // if (!pdfS3Key) return;
+
+        // const jobId = await this.extractContentFromDocumentUsingTextract(
+        //   pdfS3Key
+        // );
+        // savedDoc.jobId = jobId;
+        // savedDoc.pdfS3Key = pdfS3Key;
+
+        // if (jobId) await addOcrPageExtractorBackgroundJob(jobId);
+        await addPdfTextExtractorBackgroundJob(savedDoc._id);
+        extractionNote = `Page ${pageNumber} (OCR) text is being extracted`;
+      } else {
+        savedDoc.isCompleted = true;
+        extractionNote = `Page ${pageNumber} (Normal) text is extracted`;
+        await aiVectorService.storePage(savedDoc);
+      }
+
+      await savedDoc.save();
+
+      const document = await DocumentModel.findById(documentId).lean();
+
+      if (document) await this.processDocument(document);
+
+      await updatePercentageCompletion(
+        caseId,
+        pageNumber,
+        totalPages,
+        extractionNote
+      );
+    } catch (error) {
+      appErrorLogger(`Error processing page ${pageNumber}: ${error}`);
+    }
+  }
+
+  async processTesseractJob(pageId: string): Promise<boolean> {
+    try {
+      const pageDoc = await TempPageDocumentModel.findById(pageId).populate<{
+        document: Document;
+      }>("document");
+      if (!pageDoc) throw new Error("Page document not found");
+
+      const pageBuffer = pageDoc.pageRawData;
+
+      const text = await ocrPdfWithTesseract(
+        pageBuffer,
+        `${pageId}-${pageDoc.pageNumber}`
+      );
+
+      pageDoc.pageText = text;
+      pageDoc.isCompleted = true;
+      await pageDoc.save();
+
+      if (text) await aiVectorService.storePage(pageDoc);
+
+      appLogger(
+        `processTextractJob - Page ${pageDoc.pageNumber} => text = ${text.slice(
+          0,
+          20
+        )}`
+      );
+
+      await cancelPdfTextExtractorPolling(pageId);
+      await this.processDocument(pageDoc.document);
+
+      return true;
+    } catch (error) {
+      appErrorLogger(`Error processing textract job: ${error}`);
+      throw new Error("Failed to process textract job");
+    }
+  }
+
+  async getPageText(pdfCon1: Uint8Array) {
     const pdfjsLib = await loadPdfJs();
     const loadingTask = pdfjsLib.getDocument({ data: pdfCon1 });
     const pdf = await loadingTask.promise;
@@ -309,10 +287,11 @@ export class ProcessorService {
         await updatedDoc.save();
       }
 
-      await this.processDocument(updatedDoc.document);
+      // await this.processDocument(updatedDoc.document);
     }
   }
 
+  // done
   private async handleProcessCaseReports(document: Document) {
     const completedPageDocs = await TempPageDocumentModel.find({
       document: document._id,
@@ -322,9 +301,11 @@ export class ProcessorService {
     if (completedPageDocs.length) {
       for (const pageDoc of completedPageDocs) {
         if (!pageDoc.fhirSummary) continue;
+
         const report = await this.documentService.processReportFromFhir(
           pageDoc.fhirSummary
         );
+
         await this.caseService.updateCaseReports(document.case as string, [
           {
             ...report[0],
@@ -332,15 +313,18 @@ export class ProcessorService {
             document: document._id,
           },
         ]);
+
         appLogger(
           `Page ${pageDoc.pageNumber} report has been generated ${document.url}`
         );
+
         await updatePercentageCompletion(
           document.case.toString(),
           pageDoc.pageNumber,
           pageDoc.totalPages,
           `Page ${pageDoc.pageNumber} report has been generated ${document.url}`
         );
+
         await TempPageDocumentModel.findByIdAndUpdate(
           pageDoc._id,
           {
@@ -348,13 +332,20 @@ export class ProcessorService {
           },
           { new: true }
         ).lean();
+
+        await safeLoopPause();
+
+        if (pageDoc.pageNumber % 10 === 0) {
+          appLogger(`🔁 Processed ${pageDoc.pageNumber} pages so far...`);
+        }
       }
     }
   }
 
+  // done
   private async handleProcessingCompletedV2(document: Document, fhirDoc: any) {
     appLogger(`No Pending Pages found`);
-    await clearQueue(ocrPageExtractorQueueName);
+    // await clearQueue(ocrPageExtractorQueueName);
     await DocumentModel.findByIdAndUpdate(
       document._id,
       {

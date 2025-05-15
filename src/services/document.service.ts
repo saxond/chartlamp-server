@@ -28,7 +28,7 @@ import {
   ReportSchema,
 } from "../utils/extractor/fhirExtractor/structuredOutputs/global";
 import { UnprocessedReport } from "../utils/extractor/report/interface";
-import { cancelOcrPageExtractorPolling } from "../utils/queue/producer";
+import { cancelOcrPageExtractorPolling } from "../utils/queue/ocrPageExtractor/producer";
 import { textractClient } from "../utils/textract";
 import OpenAIService from "./openai.service";
 

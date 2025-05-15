@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chartlamp-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chartlamp-worker
+  template:
+    metadata:
+      labels:
+        app: chartlamp-worker
+    spec:
+      tolerations:
+        - key: "dedicated"
+          operator: "Equal"
+          value: "worker"
+          effect: "NoSchedule"
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: role
+                    operator: In
+                    values:
+                      - worker
+      containers:
+        - name: worker
+          image: <your_ecr_image_uri> 
+          command: ["node", "dist/utils/queue/index.js"]
+          envFrom:
+            - secretRef:
+                name: app-secrets

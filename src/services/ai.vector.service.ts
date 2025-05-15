@@ -6,7 +6,7 @@ import {
 } from "../models/document.model";
 import { fhirExtractorChain } from "../utils/extractor/fhirExtractor/extract";
 import { BundelV2 } from "../utils/extractor/fhirExtractor/structuredOutputs";
-import { updatePercentageCompletion } from "../utils/helpers";
+import { safeLoopPause, updatePercentageCompletion } from "../utils/helpers";
 import { AIService } from "./ai.service";
 import OpenAIService from "./openai.service";
 import fs from "fs";
@@ -113,6 +113,7 @@ class AIVectorService {
           `Page ${page.pageNumber} FHIR has been generated`
         );
         console.log(`Processed page ${page.pageNumber}`);
+        await safeLoopPause();
       } catch (err: any) {
         console.warn(`Skipping page ${page.pageNumber}: ${err.message}`);
       }
@@ -238,6 +239,12 @@ class AIVectorService {
             fullUrl: `urn:uuid:${id}`,
             resource: { ...resource, id },
           });
+
+          await safeLoopPause();
+
+          if (mergedResources.length % 100 === 0) {
+            console.log(`🔁 Merged ${mergedResources.length} resources...`);
+          }
         }
       }
     }
