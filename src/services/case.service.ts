@@ -13,7 +13,7 @@ import { DocumentModel, ExtractionStatus } from "../models/document.model";
 import { Organization } from "../models/organization.model";
 import { UserModel } from "../models/user.model";
 // import { redis } from "../utils/redis";
-import { addIcdcodeClassificationBackgroundJob } from "../utils/queue/producer";
+import { addIcdcodeClassificationBackgroundJob } from "../utils/queue/icdcodeClassification/producer";
 import { DiseaseClassificationService } from "./diseaseClassification.service";
 import { DocumentService } from "./document.service";
 import notificationService from "./notification.service";
@@ -1292,9 +1292,10 @@ export class CaseService {
     if (!document) return null;
     // Extract content from the document
     console.log("getCombinedDocumentContent...");
-    const content = await this.documentService.getCombinedDocumentContent(
-      document.jobId!
-    );
+    // const content = await this.documentService.getCombinedDocumentContent(
+    //   document.jobId!
+    // );
+    const content = ``
 
     if (!content) {
       console.log("No ocr content...");
@@ -1497,5 +1498,11 @@ export class CaseService {
       .lean()
       .populate("user", "_id name profilePicture")
       .sort({ updatedAt: -1 });
+  }
+
+  async getCaseFhirBundle({ caseId }: { caseId: string }) {
+    const caseItem = await CaseModel.findById(caseId).lean();
+    if (!caseItem) return null;
+    return caseItem?.fhir || null;
   }
 }

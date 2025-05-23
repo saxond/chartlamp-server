@@ -1,0 +1,109 @@
+name: Deploy Chartlamp to EKS
+
+on:
+  push:
+    branches: [aws-main]
+
+env:
+  AWS_REGION: us-east-1
+  CLUSTER_NAME: chartlamp-eks-cluster
+  IMAGE_TAG: ${{ github.sha }}
+  ECR_REPO: chartlamp-api
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_wrapper: false
+
+      - name: Terraform Init
+        run: terraform init
+        working-directory: terraform/
+
+      - name: Terraform Plan
+        run: terraform plan -out=tfplan
+        working-directory: terraform/
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve tfplan
+        working-directory: terraform/
+
+      - name: Get ECR repo URL from Terraform output
+        id: ecr_output
+        working-directory: terraform/
+        run: |
+          ECR_URI=$(terraform output -raw ecr_repo_url 2>/dev/null || echo "")
+          echo "ecr_uri=$ECR_URI" >> $GITHUB_OUTPUT
+          echo "Cleaned ECR URI: $ECR_URI"
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build and Push Docker Image
+        run: |
+          IMAGE_URI=${{ steps.ecr_output.outputs.ecr_uri }}:${{ env.IMAGE_TAG }}
+          echo "Using image: $IMAGE_URI"
+          docker build -t $IMAGE_URI .
+          docker push $IMAGE_URI
+          echo "ECR_URI=$IMAGE_URI" >> $GITHUB_ENV
+
+      - name: Build and Push PDF Worker Docker Image
+        run: |
+          PDF_IMAGE_URI=${{ steps.ecr_output.outputs.ecr_uri }}-pdf-worker:${{ env.IMAGE_TAG }}
+          echo "Using PDF worker image: $PDF_IMAGE_URI"
+          docker build -f Dockerfile.pdf-worker -t $PDF_IMAGE_URI .
+          docker push $PDF_IMAGE_URI
+          echo "PDF_ECR_URI=$PDF_IMAGE_URI" >> $GITHUB_ENV
+
+       
+      - name: Configure kubectl
+        run: |
+          aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME
+
+      - name: Apply Kubernetes secrets
+        run: |
+          sed "s|<API_KEY>|${{ secrets.API_KEY }}|g" k8s/secret.yaml |
+          sed "s|<APP_NAME>|${{ secrets.APP_NAME }}|g" |
+          sed "s|<SERVER_URL>|${{ secrets.SERVER_URL }}|g" |
+          sed "s|<AWS_ACCESS_KEY_ID>|${{ secrets.AWS_ACCESS_KEY_ID }}|g" |
+          sed "s|<AWS_REGION>|${{ secrets.AWS_REGION }}|g" |
+          sed "s|<AWS_SECRET_ACCESS_KEY>|${{ secrets.AWS_SECRET_ACCESS_KEY }}|g" |
+          sed "s|<MONGODB_CONNECTION_STRING>|${{ secrets.MONGODB_CONNECTION_STRING }}|g" |
+          sed "s|<NODE_ENV>|${{ secrets.NODE_ENV }}|g" |
+          sed "s|<JWT_SECRET>|${{ secrets.JWT_SECRET }}|g" |
+          sed "s|<OPENAI_API_KEY>|${{ secrets.OPENAI_API_KEY }}|g" |
+          sed "s|<PRIVATE_KEY>|${{ secrets.PRIVATE_KEY }}|g" |
+          sed "s|<PUBLIC_KEY>|${{ secrets.PUBLIC_KEY }}|g" |
+          sed "s|<SENDGRID_API_KEY>|${{ secrets.SENDGRID_API_KEY }}|g" |
+          sed "s|<SESSION_SECRET>|${{ secrets.SESSION_SECRET }}|g" |
+          sed "s|<TWILIO_ACCOUNT_SID>|${{ secrets.TWILIO_ACCOUNT_SID }}|g" |
+          sed "s|<TWILIO_AUTH_TOKEN>|${{ secrets.TWILIO_AUTH_TOKEN }}|g" |
+          sed "s|<TWILIO_PHONE_NUMBER>|${{ secrets.TWILIO_PHONE_NUMBER }}|g" |
+          sed "s|<FROM_EMAIL>|${{ secrets.FROM_EMAIL }}|g" |
+          sed "s|<CORS_WHITELIST>|${{ secrets.CORS_WHITELIST }}|g" |
+          sed "s|<FRONTEND_URL>|${{ secrets.FRONTEND_URL }}|g" |
+          sed "s|<REDIS_HOST>|${{ secrets.REDIS_HOST }}|g" |
+          sed "s|<REDIS_PORT>|${{ secrets.REDIS_PORT }}|g" |
+          sed "s|<REDIS_PASSWORD>|${{ secrets.REDIS_PASSWORD }}|g" |
+          kubectl apply -f -
+
+      - name: Deploy to EKS
+        run: |
+          sed "s|<your_ecr_image_uri>|$ECR_URI|g" k8s/api-deployment.yaml | kubectl apply -f -
+          sed "s|<your_ecr_image_uri>|$ECR_URI|g" k8s/worker-deployment.yaml | kubectl apply -f -
+          sed "s|<your_ecr_image_uri>|$PDF_ECR_URI|g" k8s/pdf-text-extractor-deployment.yaml | kubectl apply -f -
+          kubectl apply -f k8s/api-service.yaml

@@ -1,8 +1,7 @@
 import {
-  AnalyzeDocumentCommand,
   FeatureType,
-  GetDocumentAnalysisCommand,
-  GetDocumentAnalysisCommandOutput,
+  GetDocumentTextDetectionCommand,
+  GetDocumentTextDetectionCommandOutput,
   JobStatus,
   StartDocumentAnalysisCommand,
 } from "@aws-sdk/client-textract";
@@ -19,12 +18,17 @@ import {
   Document,
   DocumentModel,
   ExtractionStatus,
+  PageVectorStoreModel,
   TempPageDocument,
   TempPageDocumentModel,
 } from "../models/document.model";
+import { BundelV2 } from "../utils/extractor/fhirExtractor/structuredOutputs";
 import {
-  cancelOcrPageExtractorPolling,
-} from "../utils/queue/producer";
+  ReportResponse,
+  ReportSchema,
+} from "../utils/extractor/fhirExtractor/structuredOutputs/global";
+import { UnprocessedReport } from "../utils/extractor/report/interface";
+import { cancelOcrPageExtractorPolling } from "../utils/queue/ocrPageExtractor/producer";
 import { textractClient } from "../utils/textract";
 import OpenAIService from "./openai.service";
 
@@ -209,9 +213,6 @@ export class DocumentService {
       medicalNote: z.string(),
       date: z.string(),
     });
-
-    // const prompt = `Here's the extracted document of a patient's medical record: ${chunk} I want you to process this text and provide me the information.
-    //  please ignore any questionnaire like content`;
 
     const prompt = `
 You are processing a patient's medical document. Extract the following structured data:
@@ -417,6 +418,77 @@ Important:
     return diseaseNameByIcdCode;
   }
 
+  async getStreamlinedDiseaseNameV2({
+    icdCodes,
+    diseaseNames,
+    chunk,
+  }: {
+    icdCodes: string[];
+    diseaseNames: string;
+    chunk: string;
+    note?: string;
+  }): Promise<NameOfDiseaseByIcdCode[]> {
+    if (!icdCodes.length || icdCodes.join("") === "") return [];
+
+    const IcdCodesToDiseaseName = z.object({
+      data: z.array(
+        z.object({
+          icdCode: z.string(),
+          nameOfDisease: z.string(),
+          // summary: z.string(),
+          // excerpt: z.string(),
+        })
+      ),
+    });
+
+    const basePrompt = `
+Your strict task:
+
+1. From the given list of disease names: ${diseaseNames}, find only exact or highly relevant matches to the following ICD codes: ${icdCodes.join(
+      ","
+    )}.
+   
+2. Use ONLY the provided text below for matching (no assumptions, no hallucination):
+\n${chunk}\n
+
+Strict Matching Rules:
+- Only assign an ICD code if the disease name, symptom, or condition is **explicitly** mentioned in the text, or if the description strongly matches it.
+- Pay close attention to **anatomical regions** (e.g., thorax vs head vs abdomen) to avoid misclassification.
+- DO NOT guess or infer based on general symptoms unless the anatomical location is clearly aligned with the disease name.
+
+For each matched ICD code, extract the following:
+- An **excerpt**: include the exact sentence or line where the match occurs, plus 10 words before and 10 words after if available.
+- A **brief explanation**: explain why this ICD code was matched, including reference to specific phrases or anatomical clues from the text.
+
+Important:
+- If no match is found for a particular ICD code, simply omit it from the output.
+- Focus strictly on matches where the disease or symptom description explicitly corresponds to the ICD meaning.
+- Prioritize anatomical accuracy over broad symptom similarity.
+`;
+
+    const prompt = `${basePrompt}`.trim();
+
+    const response = await this.openAiService.completeChat({
+      context: "Match icd codes with disease names",
+      prompt,
+      model: "gpt-4o",
+      temperature: 0.4,
+      response_format: zodResponseFormat(IcdCodesToDiseaseName, "report"),
+    });
+
+    if (!response?.data) return [];
+    const diseaseNameByIcdCode: NameOfDiseaseByIcdCode[] = response.data.map(
+      (item: any) => ({
+        icdCode: item.icdCode,
+        nameOfDisease: item.nameOfDisease,
+        summary: item.summary,
+        excerpt: item.excerpt,
+        pageNumber: item.pageNumber,
+      })
+    );
+    return diseaseNameByIcdCode;
+  }
+
   // Create report from document
   async generateReportForTempPageDocument(
     doc: TempPageDocument
@@ -519,32 +591,53 @@ Important:
   }
 
   // //get document analysis output
-  async getDocumentAnalysisOutput(
+  //   async getDocumentAnalysisOutput(
+  //     jobId: string,
+  //     nextToken?: string
+  //   ): Promise<GetDocumentAnalysisCommandOutput> {
+  //     try {
+  //       // console.log("getDocumentAnalysisOutput", jobId);
+  //       const params = {
+  //         JobId: jobId,
+  //         MaxResults: 1000,
+  //         NextToken: nextToken,
+  //       };
+
+  //       //get document analysis output
+  //       // const startDocumentAnalysisCommand = new GetDocumentAnalysisCommand(
+  //       //   params
+  //       // );
+  //       const startDocumentAnalysisCommand = new GetDocumentAnalysisCommand(
+  //         params
+  //       );
+  //       AnalyzeDocumentCommand;
+  //       const response = await textractClient.send(startDocumentAnalysisCommand);
+
+  //       return response;
+  //     } catch (error) {
+  //       console.error("Error getting document analysis output:", error);
+  //       throw new Error("Failed to get document analysis output");
+  //     }
+  //   }
+
+  async getDocumentTextDetectionOutput(
     jobId: string,
     nextToken?: string
-  ): Promise<GetDocumentAnalysisCommandOutput> {
+  ): Promise<GetDocumentTextDetectionCommandOutput> {
     try {
-      // console.log("getDocumentAnalysisOutput", jobId);
       const params = {
         JobId: jobId,
         MaxResults: 1000,
         NextToken: nextToken,
       };
 
-      //get document analysis output
-      // const startDocumentAnalysisCommand = new GetDocumentAnalysisCommand(
-      //   params
-      // );
-      const startDocumentAnalysisCommand = new GetDocumentAnalysisCommand(
-        params
-      );
-      AnalyzeDocumentCommand;
-      const response = await textractClient.send(startDocumentAnalysisCommand);
+      const command = new GetDocumentTextDetectionCommand(params);
+      const response = await textractClient.send(command);
 
       return response;
     } catch (error) {
-      console.error("Error getting document analysis output:", error);
-      throw new Error("Failed to get document analysis output");
+      console.error("Error getting document text detection output:", error);
+      throw new Error("Failed to get document text detection output");
     }
   }
 
@@ -709,18 +802,39 @@ Important:
     }
   }
 
+  // async getTextractJobStatus(jobId: string): Promise<JobStatus | undefined> {
+  //   try {
+  //     const command = new GetDocumentAnalysisCommand({ JobId: jobId });
+  //     const response: GetDocumentAnalysisCommandOutput =
+  //       await textractClient.send(command);
+
+  //     console.log(`ℹ️ Textract Job ${jobId} Status:`, response.JobStatus);
+
+  //     return response.JobStatus;
+  //   } catch (error) {
+  //     console.error(
+  //       `❌ Error fetching Textract job status for ${jobId}:`,
+  //       error
+  //     );
+  //     throw new Error("Failed to get Textract job status");
+  //   }
+  // }
+
   async getTextractJobStatus(jobId: string): Promise<JobStatus | undefined> {
     try {
-      const command = new GetDocumentAnalysisCommand({ JobId: jobId });
-      const response: GetDocumentAnalysisCommandOutput =
+      const command = new GetDocumentTextDetectionCommand({ JobId: jobId });
+      const response: GetDocumentTextDetectionCommandOutput =
         await textractClient.send(command);
 
-      console.log(`ℹ️ Textract Job ${jobId} Status:`, response.JobStatus);
+      console.log(
+        `ℹ️ Textract TextDetection Job ${jobId} Status:`,
+        response.JobStatus
+      );
 
       return response.JobStatus;
     } catch (error) {
       console.error(
-        `❌ Error fetching Textract job status for ${jobId}:`,
+        `❌ Error fetching Textract text detection job status for ${jobId}:`,
         error
       );
       throw new Error("Failed to get Textract job status");
@@ -793,71 +907,127 @@ Important:
     return fileContent;
   }
 
-  async getCombinedDocumentContent(jobId: string): Promise<string> {
+  async processOcrJob(jobId: string): Promise<string> {
     try {
       let nextToken: string | undefined = undefined;
       console.log("Fetching combined document content for job:", jobId);
 
-      // 1️⃣ Check if Textract job is still running before fetching results
+      // 1️⃣ Check job status
       const jobStatus = await this.getTextractJobStatus(jobId);
-      if (!jobStatus) return "";
+      if (!jobStatus) throw new Error("Textract job not found");
       if (jobStatus === "IN_PROGRESS") {
-        console.log("⏳ Textract job still processing...");
-        return ""; // Exit early since the job isn't done
+        throw new Error("Textract job still processing");
       }
       if (jobStatus === "SUCCEEDED") {
-        console.log("✅ Textract job completed successfully");
+        console.log("✅ Textract job completed");
         await cancelOcrPageExtractorPolling(jobId);
-        // cancelOcrExtractionPolling(jobId);
       }
 
-      console.log("⏳ Running loop to get ocr content");
+      const pageContents: Record<number, string> = {};
 
-      // // 2️⃣ Fetch document content in pages
+      // do {
+      //   const response = await this.getDocumentTextDetectionOutput(
+      //     jobId,
+      //     nextToken
+      //   );
+      //   const blocks = response.Blocks || [];
+      //   const blocksMap = new Map<string, any>();
+      //   blocks.forEach((b) => {
+      //     if (b.Id) blocksMap.set(b.Id, b);
+      //   });
 
-      const pageContents: any = {}; // Keyed by page number
+      //   // ❌ Identify and skip pages with checkboxes
+      //   const pagesWithCheckboxes = new Set<number>();
+      //   for (const block of blocks) {
+      //     if (block.BlockType === "SELECTION_ELEMENT" && block.Page) {
+      //       pagesWithCheckboxes.add(block.Page);
+      //     }
+      //   }
+
+      //   for (const block of blocks) {
+      //     const pg = block.Page || 1;
+      //     if (pagesWithCheckboxes.has(pg)) continue;
+
+      //     if (!pageContents[pg]) pageContents[pg] = "";
+
+      //     // ✅ Add LINE blocks
+      //     if (block.BlockType === "LINE" && block.Text?.trim()) {
+      //       pageContents[pg] += block.Text + "\n";
+      //     }
+
+      //     // ✅ Handle KEY_VALUE_SET: key-value pair extraction
+      //     if (
+      //       block.BlockType === "KEY_VALUE_SET" &&
+      //       block.EntityTypes?.includes("KEY")
+      //     ) {
+      //       let keyText = "";
+      //       let valueText = "";
+
+      //       // Get KEY text
+      //       const keyChildIds =
+      //         block.Relationships?.find((rel) => rel.Type === "CHILD")?.Ids ||
+      //         [];
+      //       keyText = keyChildIds
+      //         .map((id) => blocksMap.get(id)?.Text)
+      //         .filter(Boolean)
+      //         .join(" ");
+
+      //       // Get VALUE block
+      //       const valueBlockId = block.Relationships?.find(
+      //         (rel) => rel.Type === "VALUE"
+      //       )?.Ids?.[0];
+      //       const valueBlock = valueBlockId
+      //         ? blocksMap.get(valueBlockId)
+      //         : undefined;
+
+      //       // Get VALUE text from its CHILD relationship
+      //       const valueChildIds =
+      //         valueBlock?.Relationships?.find(
+      //           (rel: { Type: string }) => rel.Type === "CHILD"
+      //         )?.Ids || [];
+      //       valueText = valueChildIds
+      //         .map((id) => blocksMap.get(id)?.Text)
+      //         .filter(Boolean)
+      //         .join(" ");
+
+      //       if (keyText || valueText) {
+      //         pageContents[pg] += `${keyText}: ${valueText}\n`;
+      //       }
+      //     }
+      //   }
+
+      //   nextToken = response.NextToken;
+      // } while (nextToken);
+
       do {
-        const response = await this.getDocumentAnalysisOutput(jobId, nextToken);
+        const response = await this.getDocumentTextDetectionOutput(
+          jobId,
+          nextToken
+        );
 
-        if (response.Blocks) {
-          const selectionElements = response.Blocks.filter(
-            (b) => b.BlockType === "SELECTION_ELEMENT"
-            // &&
-            // b.SelectionStatus === SelectionStatus.NOT_SELECTED
-          );
+        const blocks = response.Blocks || [];
 
-          // Example: build a set of page numbers that have checkboxes
-          const pagesWithCheckboxes = new Set(
-            selectionElements.map((b) => b.Page)
-          );
+        for (const block of blocks) {
+          if (block.BlockType === "LINE" && block.Text?.trim()) {
+            const pg = block.Page || 1;
 
-          // console.log("pagesWithCheckboxes", pagesWithCheckboxes);
-          for (const block of response.Blocks) {
-            // console.log("selection elements", JSON.stringify(block));
-            if (pagesWithCheckboxes.has(block.Page)) {
-              continue;
+            if (!pageContents[pg]) {
+              pageContents[pg] = "";
             }
-            if (block.BlockType === "LINE") {
-              const pageNumber = block.Page || 1; // Defaults to page 1 if no page (shouldn't happen with PDFs)
 
-              if (!pageContents[pageNumber]) {
-                pageContents[pageNumber] = ""; // Initialize for each page
-              }
-
-              pageContents[pageNumber] += block.Text + "\n";
-            }
+            pageContents[pg] += block.Text + "\n";
           }
         }
 
-        nextToken = response.NextToken; // Move to next set of blocks
+        nextToken = response.NextToken;
       } while (nextToken);
 
-      // Combine all pages into a single string with page headers
+      // 📝 Save original content
       this.processPageContents(pageContents, "document_output.txt");
 
+      // 🧼 Optionally filter out question-like pages (custom logic)
       const filteredPages = await this.filterQuestionPages(pageContents);
 
-      // Write filtered content to file
       const filteredFileContent = this.processPageContents(
         filteredPages,
         "filtered_in_document_output.txt"
@@ -865,7 +1035,7 @@ Important:
 
       return filteredFileContent || "";
     } catch (error) {
-      console.log("❌ Error getting combined document content:", error);
+      console.error("❌ Error getting combined document content:", error);
       throw new Error("Failed to get combined document content");
     }
   }
@@ -1152,29 +1322,6 @@ Important:
     }
   }
 
-  async extractReportFromDocumentOCRJobId(jobId: string) {
-    try {
-      // Get combined document content
-      const content = await this.getCombinedDocumentContent(jobId);
-
-      if (!content) {
-        throw new Error("No content extracted from document");
-      }
-
-      // Clean content with keywords
-      const contentExtracts = await this.getContentFromDocument(content);
-
-      if (!contentExtracts) {
-        throw new Error("No content extracted from document");
-      }
-
-      return await this.processDocumentContent(contentExtracts);
-    } catch (error) {
-      console.log("Error extracting report from document:", error);
-      return [];
-    }
-  }
-
   //extract report from document using document url
   async extractReportFromDocument(docUrl: string) {
     try {
@@ -1209,6 +1356,100 @@ Important:
     const alldocIds = alldocs.map((item) => item._id);
     await DocumentModel.deleteMany({ case: caseId });
     await TempPageDocumentModel.deleteMany({ document: { $in: alldocIds } });
+    await PageVectorStoreModel.deleteMany({ document: { $in: alldocIds } });
     return true;
+  }
+
+  async processRawReport(result: UnprocessedReport) {
+    try {
+      const amountSpent = await this.validateAmount(result.amountSpent || "");
+      const dateOfClaim = await this.validateDateStr(result.date || "");
+
+      const nameOfDisease = result.nameOfDisease.join(", ");
+
+      if (
+        !nameOfDisease
+        // || nameOfDisease.toLowerCase() === "not specified"
+      ) {
+        return [];
+      }
+
+      // const icdCodes = await this.getIcdCodeFromDescription(nameOfDisease);
+      const icdCodes = result.icdCodes;
+
+      if (!icdCodes.length || icdCodes.join("") === "") {
+        return [];
+      }
+
+      return [
+        {
+          icdCodes,
+          nameOfDisease: nameOfDisease || "",
+          amountSpent: amountSpent || 0,
+          providerName: result.providerName || "",
+          doctorName: result.doctorName || "",
+          medicalNote: result.medicalNote || "",
+          dateOfClaim,
+          nameOfDiseaseByIcdCode: result.nameOfDiseaseByIcdCode,
+          // pageText: result.chunk,
+          // pageNumber: result.pageNumber,
+          // pageId: result.pageId,
+        },
+      ];
+    } catch (error) {
+      console.log("Error processing document content:", error);
+      return [];
+    }
+  }
+
+  async processReportFromFhir(fhir: BundelV2) {
+    const prompt = `
+You are converting the following FHIR object into a normalized, structured medical report that conforms to a specific schema.
+
+FHIR Object:
+${JSON.stringify(fhir)}
+
+Target Output Schema:
+- icdCodes: array of ICD-10 codes
+- nameOfDisease: array of disease names (diagnoses)
+- amountSpent: total cost from all claims (as a string, e.g. "200.00")
+- providerName: name of the medical provider (if available)
+- doctorName: name of the treating doctor (if available)
+- medicalNote: short summary of medical notes or findings
+- nameOfDiseaseByIcdCode: array of objects each with:
+  - icdCode: ICD-10 code (string)
+  - nameOfDisease: the matching disease name (string)
+- date: the date of the main encounter, admission, or medical event (as string)
+
+Instructions:
+- Extract all diagnoses from the FHIR Condition resources.
+- For each diagnosis:
+  - If "code.coding[0].code" is present, use it as the "icdCode".
+  - If the ICD-10 code is missing or empty, assign the most appropriate one using your medical knowledge.
+- The "nameOfDiseaseByIcdCode" array should contain one entry per diagnosis, each with a name and ICD-10 code.
+- Ensure that:
+  - The "icdCodes" array contains all ICD-10 codes from "nameOfDiseaseByIcdCode"
+  - The "nameOfDisease" array contains all disease names from "nameOfDiseaseByIcdCode"
+  - The lengths of "icdCodes", "nameOfDisease", and "nameOfDiseaseByIcdCode" are all equal
+- Only include codes and diagnoses that appear in the FHIR object, or are clearly inferred from it.
+- Format your response as a valid JSON object that follows the structure described above.
+
+
+`.trim();
+
+    const response: ReportResponse = await this.openAiService.completeChat({
+      context:
+        "Convert this structured medical summary into following structured data",
+      prompt,
+      model: "gpt-4o",
+      temperature: 0.4,
+      response_format: zodResponseFormat(ReportSchema, "report"),
+    });
+
+    console.log("response", response);
+    const processedReportsNested = await this.processRawReport(response);
+
+    console.log("processedReports", processedReportsNested);
+    return processedReportsNested;
   }
 }

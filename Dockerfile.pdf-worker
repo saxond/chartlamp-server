@@ -1,0 +1,21 @@
+# Use Node.js base image
+FROM node:20
+
+# Install poppler-utils for PDF support
+RUN apt-get update && \
+    apt-get install -y poppler-utils && \
+    rm -rf /var/lib/apt/lists/*
+
+# App directory
+WORKDIR /usr/src/app
+
+# Install dependencies
+COPY package*.json ./
+RUN npm install
+
+# Copy code and build
+COPY . .
+RUN npm run build
+
+# Set the PDF worker entrypoint
+CMD ["node", "dist/utils/queue/pdfExtractor/index.js"]

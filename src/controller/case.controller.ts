@@ -621,4 +621,15 @@ export class CaseController {
       handleError(res, error);
     }
   }
+
+  async getCaseFhirBundle(req: AuthRequest, res: Response) {
+    try {
+      const response = await caseService.getCaseFhirBundle({
+        caseId: req.params.caseId,
+      });
+      res.status(200).json(response);
+    } catch (error) {
+      handleError(res, error);
+    }
+  }
 }

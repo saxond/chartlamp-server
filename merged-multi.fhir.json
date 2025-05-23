@@ -1,0 +1,17 @@
+{
+  "resourceType": "Bundle",
+  "type": "collection",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:258cd720-8d11-411d-9af8-819b526bea0c",
+      "resource": {
+        "resourceType": "Patient",
+        "id": "258cd720-8d11-411d-9af8-819b526bea0c",
+        "name": [],
+        "gender": "unknown",
+        "birthDate": "",
+        "address": []
+      }
+    }
+  ]
+}
