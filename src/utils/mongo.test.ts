@@ -1,7 +1,12 @@
 import {connectToMongo} from './mongo';
-import { describe, expect, it, jest } from '@jest/globals';
+import {afterEach, describe, expect, it, jest} from '@jest/globals';
+import mongoose from "mongoose";
 
 describe('connectToMongo', () => {
+
+    afterEach (async () => {
+        await mongoose.disconnect();
+    });
 
     it('should log success message if connection is successful', async () => {
         const consoleLogMock = jest.spyOn(console, 'log').mockImplementation(() => {
