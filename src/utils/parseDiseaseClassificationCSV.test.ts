@@ -12,7 +12,8 @@ describe('parseDiseaseClassificationCSV', () => {
         );
         const diseaseClassifications = parseDiseaseClassificationCSV(csvData);
         expect(diseaseClassifications.length).toEqual(71486);
-        const found = diseaseClassifications.findLast((data) => data.icdCode == "A221");
+        const found = diseaseClassifications.findLast(
+            (data) => data.icdCode == "A221");
         expect(found?.description).toEqual("Pulmonary anthrax");
     });
 

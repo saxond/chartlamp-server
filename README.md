@@ -23,3 +23,14 @@ ChartLamp Server is a Node.js project written in TypeScript.
    ```sh
    npm install
    npm run dev
+   
+## Tests
+
+1. Start the mongodb container:
+    ```sh
+    docker-compose up mongo &
+   
+2. Run the tests:
+   
+    ```sh
+    MONGODB_CONNECTION_STRING=mongodb://localhost:27017/test npm test
