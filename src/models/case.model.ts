@@ -8,6 +8,7 @@ import {
 import { DiseaseClassification } from "./diseaseClassification.model";
 import { Organization } from "./organization.model"; // Ensure this path is correct
 import { User } from "./user.model"; // Ensure this path is correct
+import { Bundle } from "../utils/extractor/fhirExtractor/structuredOutputs";
 
 export interface CaseWithDocuments {
   _id: string;
@@ -191,6 +192,9 @@ export class Case {
 
   @prop({ type: () => [Report], default: [] })
   public reports!: Report[];
+
+  @prop({ default: null })
+  public fhir?: Bundle;
 
   // @prop({
   //   ref: () => CaseTag,

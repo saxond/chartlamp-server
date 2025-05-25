@@ -153,4 +153,10 @@ router.patch(
   caseController.addDocumentToCase
 );
 
+router.get(
+  "/:caseId/fhir-bundle",
+  isAuthenticated,
+  caseController.getCaseFhirBundle
+);
+
 export default router;

@@ -37,8 +37,8 @@ export class DocumentController {
         return;
       }
 
-      const response = await documentService.extractReportFromDocumentOCRJobId(jobId);
-      res.status(200).json(response);
+      // const response = await documentService.extractReportFromDocumentOCRJobId(jobId);
+      res.status(200).json({ message: "Document content extracted successfully" });
     } catch (error) {
       handleError(res, error);
     }

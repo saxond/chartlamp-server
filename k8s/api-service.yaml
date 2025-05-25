@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: chartlamp-api
+spec:
+  type: LoadBalancer
+  selector:
+    app: chartlamp-api
+  ports:
+    - protocol: TCP
+      port: 80          # External port on ELB
+      targetPort: 3000  # Internal port in container
