@@ -18,10 +18,9 @@ services:
   backend:
     restart: always
     build:
-      context: backend
-      target: development
+      context: ./
     volumes:
-      - ./backend:/usr/src/app
+      - ./:/usr/src/app
       - /usr/src/app/node_modules
     depends_on:
       - mongo
@@ -31,6 +30,12 @@ services:
       - react-express
     expose:
       - 3000
+    environment:
+      API_KEY: ${API_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      CORS_WHITELIST: http://localhost:5000,http://localhost:3000
+      MONGODB_CONNECTION_STRING: mongodb://mongo:27017/test
+      REDIS_HOST: redis
   redis:
     restart: always
     image: redis
