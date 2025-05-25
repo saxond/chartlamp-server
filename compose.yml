@@ -25,11 +25,19 @@ services:
       - /usr/src/app/node_modules
     depends_on:
       - mongo
+      - redis
     networks:
       - express-mongo
       - react-express
     expose:
       - 3000
+  redis:
+    restart: always
+    image: redis
+    ports:
+      - 6379:6379
+    expose:
+      - 6379
   mongo:
     restart: always
     image: mongo:4.2.0
