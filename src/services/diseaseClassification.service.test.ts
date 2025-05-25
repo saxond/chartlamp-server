@@ -14,10 +14,7 @@ describe('DiseaseClassificationService - seedData', () => {
 
     beforeEach(async () => {
         await connectToMongo();
-        const collections = await mongoose.connection.db.collections();
-        for (const collection of collections) {
-            await collection.deleteMany({});
-        }
+        await mongoose.connection.db.dropDatabase();
         service = new DiseaseClassificationService();
     });
 
@@ -30,9 +27,24 @@ describe('DiseaseClassificationService - seedData', () => {
         const result = await service.seedData();
         expect(result).toHaveLength(71486);
     });
+});
+
+describe('DiseaseClassificationService - seeded', () => {
+    let service: DiseaseClassificationService;
+
+    beforeEach(async () => {
+        await connectToMongo();
+        await mongoose.connection.db.dropDatabase();
+        service = new DiseaseClassificationService();
+        await service.seedData();
+    });
+
+    afterEach(async () => {
+        jest.clearAllMocks();
+        await mongoose.disconnect();
+    });
 
     it('should fetch all disease classifications with pagination options', async () => {
-        await service.seedData();
         const result = await service.getAllDiseaseClassifications(0, 999999);
 
         expect(result).toHaveLength(71486);
