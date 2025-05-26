@@ -1,19 +1,35 @@
 import {RedisOptions} from "ioredis";
 
-const redisOptions = {
-  host: process.env.REDIS_HOST,
-  port: process.env.REDIS_PORT
-    ? parseInt(process.env.REDIS_PORT, 10)
-    : undefined,
-  username: process.env.REDIS_USER,
-  password: process.env.REDIS_PASSWORD,
-};
+export interface RedisEnv {
+  REDIS_HOST?: string
+  REDIS_PORT?: string
+  REDIS_USER?: string
+  REDIS_PASSWORD?: string
+  NODE_ENV?: string
+  // treated as boolean, used to disable tls for local testing
+  REDIS_TLS?: string
+}
 
-const enableTls = process.env.NODE_ENV !== "local" && process.env.REDIS_TLS !== "false";
+declare global {
+  namespace NodeJS {
+    interface ProcessEnv extends RedisEnv { }
+  }
+}
 
-function getRedisOptions() : RedisOptions {
+function getRedisOptions(env: RedisEnv) : RedisOptions {
+  const redisOptions = {
+    host: env.REDIS_HOST,
+    port: env.REDIS_PORT
+        ? parseInt(env.REDIS_PORT, 10)
+        : undefined,
+    username: env.REDIS_USER,
+    password: env.REDIS_PASSWORD,
+  };
+
+  const enableTls = env.NODE_ENV !== "local" && env.REDIS_TLS !== "false";
+
   return {
-    ...(process.env.NODE_ENV !== "local" && {
+    ...(env.NODE_ENV !== "local" && {
       ...redisOptions,
     }),
     ...(enableTls && {

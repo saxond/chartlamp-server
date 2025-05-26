@@ -1,7 +1,7 @@
 import Redis from "ioredis";
 import { getRedisOptions } from "./config";
 
-const redis = new Redis(getRedisOptions());
+const redis = new Redis(getRedisOptions(process.env));
 
 // Log connection events
 redis.on("connect", () => console.log("✅ Connected to Redis"));
