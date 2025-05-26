@@ -14,7 +14,9 @@ describe('DiseaseClassificationService - seedData', () => {
 
     beforeEach(async () => {
         await connectToMongo();
-        await mongoose.connection.db.dropDatabase();
+        if (mongoose.connection.db) {
+            await mongoose.connection.db.dropDatabase();
+        }
         service = new DiseaseClassificationService();
     });
 
@@ -34,7 +36,9 @@ describe('DiseaseClassificationService - seeded', () => {
 
     beforeEach(async () => {
         await connectToMongo();
-        await mongoose.connection.db.dropDatabase();
+        if (mongoose.connection.db) {
+            await mongoose.connection.db.dropDatabase();
+        }
         service = new DiseaseClassificationService();
         await service.seedData();
     });
