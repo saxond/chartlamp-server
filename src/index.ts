@@ -51,6 +51,7 @@ createBullBoard({
 
 app.use("/admin/queues", serverAdapter.getRouter());
 
+swaggerDocument.host = `localhost:${process.env.PORT}`;
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 app.use("/api/v1", api);
 app.use(notFoundMiddleware);
