@@ -321,6 +321,86 @@
 					}
 				}
 			}
+		},
+		"/dc/disease-classifications": {
+			"get": {
+				"tags": [
+					"chartlamp"
+				],
+				"summary": "List disease classifications",
+				"description": "Returns a list of disease classifications.",
+				"security": [
+					{
+						"api_key": []
+					}
+				],
+				"parameters": [
+					{
+						"name": "limit",
+						"in": "query",
+						"required": false,
+						"type": "integer",
+						"description": "Limit the number of classifications to fetch"
+					},
+					{
+						"name": "page",
+						"in": "query",
+						"required": false,
+						"type": "integer",
+						"description": "Page number"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "A list of disease classifications.",
+						"schema": {
+							"type": "object",
+							"properties": {
+								"response": {
+									"type": "array",
+									"items": {
+										"$ref": "#/definitions/DiseaseClassification"
+									}
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Unauthorized - API key missing or invalid"
+					}
+				}
+			}
+		}
+	},
+	"definitions": {
+		"DiseaseClassification": {
+			"type": "object",
+			"properties": {
+				"_id": {
+					"type": "string",
+					"format": "uuid"
+				},
+				"icdCode": {
+					"type": "string"
+				},
+				"description": {
+					"type": "string"
+				},
+				"affectedBodyPart": {
+					"type": "string"
+				},
+				"affectedBodyPartB": {
+					"type": "string"
+				},
+				"affectedBodyPartC": {
+					"type": "string"
+				}
+			},
+			"required": [
+				"_id",
+				"icdCode",
+				"description"
+			]
 		}
 	}
 }
