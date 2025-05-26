@@ -28,9 +28,20 @@ ChartLamp Server is a Node.js project written in TypeScript.
 
 1. Start the mongodb container:
     ```sh
-    docker-compose up mongo redis &
+    docker compose up mongo redis &
    
 2. Run the tests:
    
     ```sh
     MONGODB_CONNECTION_STRING=mongodb://localhost:27017/test npm test
+
+## Running the api service using docker compose
+
+1. Build the service:
+    ```sh
+    docker compose build api
+
+2. Run the service, setting the environment as needed:
+
+    ```sh
+    OPENAI_API_KEY=your-key docker compose up api

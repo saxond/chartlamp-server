@@ -10,35 +10,38 @@ services:
       - ./frontend:/usr/src/app
       - /usr/src/app/node_modules
     restart: always
-    networks:
-      - react-express
     depends_on:
-      - backend
+      - api
 
-  backend:
+  api:
     restart: always
     build:
       context: ./
-    volumes:
-      - ./:/usr/src/app
-      - /usr/src/app/node_modules
     depends_on:
       - mongo
       - redis
-    networks:
-      - express-mongo
-      - react-express
     expose:
-      - 3000
+      - 8001
+    ports:
+      - 8001:8001
     environment:
+      NODE_ENV: dev
+      SERVER_URL: localhost:8001
+      PORT: 8001
       API_KEY: ${API_KEY}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
-      CORS_WHITELIST: http://localhost:5000,http://localhost:3000
-      MONGODB_CONNECTION_STRING: mongodb://mongo:27017/test
+      CORS_WHITELIST: http://localhost:8001,http://localhost:3000
+      MONGODB_CONNECTION_STRING: mongodb://mongo:27017/chartlamp
       REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_TLS: false
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
+      SENDGRID_API_KEY: ${SENDGRID_API_KEY}
+
   redis:
     restart: always
-    image: redis
+    image: redis:8
     ports:
       - 6379:6379
     expose:
@@ -48,15 +51,10 @@ services:
     image: mongo:4.2.0
     volumes:
       - mongo_data:/data/db
-    networks:
-      - express-mongo
     ports:
       - 27017:27017
     expose:
       - 27017
-networks:
-  react-express:
-  express-mongo:
 
 volumes:
   mongo_data:

@@ -8,13 +8,15 @@ WORKDIR /usr/src/app
 COPY package*.json ./
 
 # Install production dependencies.
-RUN npm install
+RUN npm install --include=optional sharp
 
 # Copy application code.
 COPY . .
 
 # Build the TypeScript code.
 RUN npm run build
+
+RUN touch .env.example
 
 # Run the web service on container startup.
 CMD [ "node", "dist/index.js" ] 
