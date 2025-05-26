@@ -1,4 +1,3 @@
-import { redisOptions as redisOptionsI } from "../../redis/config";
 import { icdcodeClassificationQueueName } from "../types";
 import { createWorker } from "../worker.factory";
 import icdcodClassificationProcessor from "./processor";
