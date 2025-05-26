@@ -39,6 +39,22 @@ services:
       TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
       SENDGRID_API_KEY: ${SENDGRID_API_KEY}
 
+  worker:
+    command: ["node", "dist/utils/queue/index.js"]
+    restart: always
+    build:
+      context: ./
+    depends_on:
+      - mongo
+      - redis
+    environment:
+      NODE_ENV: dev
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      MONGODB_CONNECTION_STRING: mongodb://mongo:27017/chartlamp
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_TLS: false
+
   redis:
     restart: always
     image: redis:8
