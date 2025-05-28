@@ -55,6 +55,22 @@ services:
       REDIS_PORT: 6379
       REDIS_TLS: false
 
+  pdf-text-extractor:
+    command: ["node", "dist/utils/queue/pdfExtractor/index.js"]
+    restart: always
+    build:
+      context: ./
+    depends_on:
+      - mongo
+      - redis
+    environment:
+      NODE_ENV: dev
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      MONGODB_CONNECTION_STRING: mongodb://mongo:27017/chartlamp
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_TLS: false
+
   redis:
     restart: always
     image: redis:8
