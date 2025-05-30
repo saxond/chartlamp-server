@@ -27,18 +27,11 @@ async function initializeMongo ()  {
     }
 }
 
-async function disableTwoFactorAuth() {
-    // update the auth model to use app (no-op) instead of email
-    await TwoFactorAuthModel.findOneAndUpdate(
-        { method: "email" },
-        { method: "app" });
-}
-
 describe('UserService - register', () => {
     let userService: UserService;
 
     beforeEach(async () => {
-        userService = new UserService();
+        userService = new UserService({});
         jest.spyOn(userService, 'sendNewUserMailToAdmin').mockImplementation(() => Promise.resolve());
         await initializeMongo();
         jest.clearAllMocks();
@@ -55,6 +48,8 @@ describe('UserService - register', () => {
         expect(result).toBeDefined();
         expect(result.name).toMatch(dummyUser.name);
         expect(result.email).toMatch(dummyUser.email);
+
+        // we return the hashed password stored in the database :notsureif
         expect(result.password).toBeDefined();
         expect(result.password).not.toMatch(dummyUser.password);
         expect(result.organization).toBeDefined();
@@ -105,12 +100,11 @@ describe('UserService - login', () => {
     let user: User;
 
     beforeEach(async () => {
-        userService = new UserService();
+        userService = new UserService({ENABLE_TWO_FACTOR_AUTH: "false"});
         jest.spyOn(userService, 'sendNewUserMailToAdmin').mockImplementation(() => Promise.resolve());
         await initializeMongo();
 
         user = await userService.register(dummyUser);
-        await disableTwoFactorAuth();
 
         jest.clearAllMocks();
     });
@@ -136,7 +130,7 @@ describe('UserService - login', () => {
         expect(result).toBeDefined();
 
         expect(result.authToken).toBeDefined();
-        expect(result.twoFactorRequired).toEqual(true);
+        expect(result.twoFactorRequired).toEqual(false);
         expect(result.user.name).toMatch('John Doe');
         expect(result.user.email).toMatch(dummyUser.email);
     });
@@ -148,12 +142,11 @@ describe('UserService - logged in', () => {
     let authToken: string;
 
     beforeEach(async () => {
-        userService = new UserService();
+        userService = new UserService({ENABLE_TWO_FACTOR_AUTH: "false"});
         jest.spyOn(userService, 'sendNewUserMailToAdmin').mockImplementation(() => Promise.resolve());
         await initializeMongo();
 
         user = await userService.register(dummyUser);
-        await disableTwoFactorAuth();
         const login = await userService.login(dummyUser.email, dummyUser.password);
         authToken = login.authToken;
 
@@ -163,6 +156,12 @@ describe('UserService - logged in', () => {
     afterEach(async () => {
         jest.clearAllMocks();
         await mongoose.disconnect();
+    });
+
+    it("should be able to call me", async () => {
+       const me = await userService.me(user._id!);
+       expect(me).toBeDefined();
+       expect(me?.email).toMatch(user.email);
     });
 
     it("should fail to reset password with bad token", async () => {

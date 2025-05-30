@@ -12,10 +12,25 @@ import {
   TwoFactorAuthModel,
 } from "../models/twoFactorAuth.model";
 import { signJwt } from "../utils/jwt";
-import notificationService from "./notification.service"; // Import the instance directly
+import notificationService from "./notification.service";
+
+export interface UserServiceEnv {
+  ENABLE_TWO_FACTOR_AUTH?: string;
+}
+
+declare global {
+    namespace NodeJS {
+        interface ProcessEnv extends UserServiceEnv { }
+    }
+}
 
 class UserService {
   private notificationService = notificationService;
+  private env: UserServiceEnv;
+
+  constructor(env: UserServiceEnv) {
+    this.env = env;
+  }
 
   // Register a new user
   async register(input: UserRegistrationInput) {
@@ -42,8 +57,12 @@ class UserService {
     });
 
     await user.save();
+    
+    const enableTwoFactorAuth = this.env.ENABLE_TWO_FACTOR_AUTH !== "false";
+    const method = enableTwoFactorAuth ? "email" : "app";
+
     // Subscribe user to 2FA
-    await this.generateTwoFactorSecret({ user, method: "email" });
+    await this.generateTwoFactorSecret({ user, method: method, isEnabled: enableTwoFactorAuth });
 
     await this.sendNewUserMailToAdmin(name, userOrganizationName);
     return user;
@@ -220,6 +239,7 @@ class UserService {
         secret: secret.base32,
         method,
         phoneNumber,
+        isEnabled: isEnabled
       });
 
       await twoFactorAuth.save();

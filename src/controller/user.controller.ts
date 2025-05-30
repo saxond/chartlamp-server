@@ -16,7 +16,7 @@ export class UserController {
   private userService: UserService;
 
   constructor() {
-    this.userService = new UserService();
+    this.userService = new UserService(process.env);
   }
 
   private getSessionUser(
