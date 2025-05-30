@@ -4,7 +4,7 @@ services:
       context: frontend
       target: development
     ports:
-      - 3000:3000
+      - 3006:3006
     stdin_open: true
     volumes:
       - ./frontend:/usr/src/app
@@ -21,20 +21,21 @@ services:
       - mongo
       - redis
     expose:
-      - 8001
+      - 4001
     ports:
-      - 8001:8001
+      - 4001:4001
     environment:
       NODE_ENV: dev
       SERVER_URL: localhost:8001
-      PORT: 8001
+      PORT: 4001
       API_KEY: ${API_KEY}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
-      CORS_WHITELIST: http://localhost:8001,http://localhost:3000
-      MONGODB_CONNECTION_STRING: mongodb://mongo:27017/chartlamp
+      CORS_WHITELIST: http://localhost:4001,http://localhost:3006
+      MONGODB_CONNECTION_STRING: mongodb://mongo:27017/chartlamp?replicaSet=rs0
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_TLS: false
+      ENABLE_TWO_FACTOR_AUTH: false
       TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
       TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
       SENDGRID_API_KEY: ${SENDGRID_API_KEY}
@@ -50,7 +51,7 @@ services:
     environment:
       NODE_ENV: dev
       OPENAI_API_KEY: ${OPENAI_API_KEY}
-      MONGODB_CONNECTION_STRING: mongodb://mongo:27017/chartlamp
+      MONGODB_CONNECTION_STRING: mongodb://mongo:27017/chartlamp?replicaSet=rs0
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_TLS: false
@@ -66,7 +67,7 @@ services:
     environment:
       NODE_ENV: dev
       OPENAI_API_KEY: ${OPENAI_API_KEY}
-      MONGODB_CONNECTION_STRING: mongodb://mongo:27017/chartlamp
+      MONGODB_CONNECTION_STRING: mongodb://mongo:27017/chartlamp?replicaSet=rs0
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_TLS: false
@@ -78,15 +79,28 @@ services:
       - 6379:6379
     expose:
       - 6379
+
+  # https://medium.com/workleap/the-only-local-mongodb-replica-set-with-docker-compose-guide-youll-ever-need-2f0b74dd8384
+  # using 172.17.0.1 to resolve the host ip address instead of host.docker.internal
   mongo:
     restart: always
-    image: mongo:4.2.0
-    volumes:
-      - mongo_data:/data/db
+    image: mongo:7.0
+    command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27017"]
+    healthcheck:
+      test: echo "try { rs.status() } catch (err) { rs.initiate({_id:'rs0',members:[{_id:0,host:'172.17.0.1:27017'}]}) }" | mongosh --port 27017 --quiet
+      interval: 5s
+      timeout: 30s
+      start_period: 0s
+      start_interval: 1s
+      retries: 30
     ports:
       - 27017:27017
     expose:
       - 27017
+    volumes:
+      - "mongo_data:/data/db"
+      - "mongo_config:/data/configdb"
 
 volumes:
   mongo_data:
+  mongo_config:
