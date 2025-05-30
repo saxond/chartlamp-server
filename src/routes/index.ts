@@ -6,6 +6,7 @@ import documentRoutes from './doc';
 import invitationRoutes from './invitation';
 import openAiRoutes from './openai';
 import userRoutes from './user';
+import fileRoutes from './file';
 const router = express.Router();
 
 // Apply verifyApiKey middleware to all routes
@@ -22,5 +23,7 @@ router.use('/dc', diseaseClassificationRoutes);
 router.use('/case', caseRoutes);
 
 router.use('/doc', documentRoutes);
+
+router.use('/file', fileRoutes);
 
 export default router;
